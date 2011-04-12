@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<tal:root>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:tal="http://xml.zope.org/namespaces/tal">
+<body tal:define="specialFriend from f in friends where f.Age &lt; 30 select f">
+	
+	<!-- Executing void methods -->
+	<tal:tag tal:define='z 0;;Console.WriteLine("One!");;Console.WriteLine("Two!");;'/>
+
+	<!-- Include and use Macros in default namespace -->
+	<tal:tag metal:import="templates/imports 1.html"/>
+	<tal:tag metal:use-macro='macros["recursiveMacro"]' metal:fill-param="counter 10" />
+	<tal:tag metal:use-macro='macros["recursiveMacro2"]' metal:fill-param="counter 3" />
+
+	<!-- This Macro was imported in templates/imports1.html to imp0 namespace -->
+	<tal:tag metal:use-macro='imp0.macros["recursiveMacro2"]' metal:fill-param="counter 3" />
+
+	<!-- Include and use Macros into two custom namespaces -->
+	<tal:tag metal:import="imp1:templates/imports 1.html;imp2:templates/imports 2.html"/>
+	<tal:tag metal:use-macro='imp1.macros["recursiveMacro"]' metal:fill-param="counter 10" />
+	<tal:tag metal:use-macro='imp2.macros["recursiveMacro2"]' metal:fill-param="counter 2" />
+
+	<!-- Include and use Macros into one custom namespace -->
+	<tal:tag metal:import="imp3:templates/imports 1.html;imp3:templates/imports 2.html"/>
+	<tal:tag metal:use-macro='imp3.macros["recursiveMacro"]' metal:fill-param="counter 10" />
+	<tal:tag metal:use-macro='imp3.macros["recursiveMacro2"]' metal:fill-param="counter 1" />
+	
+	<!-- Enumarate all friends -->
+    <div tal:repeat='f friends'>
+		<i tal:content="string:Friend name: ${f.Name}. Age: ${f.Age}" />
+    </div>
+	
+	<!-- Enumarate specialFriends -->
+    <div tal:repeat='f specialFriend'>
+		<!-- Define variables without scope -->
+		<tal:omit-scope tal:define="FriendName f.Name" />
+		<tal:omit-scope tal:define="FriendAge f.Age" />
+		
+		<!-- Use Macro with Slot -->
+		<tal:tag metal:use-macro='Macros.macros["macroWithSlot"]'>
+			<i metal:fill-slot="slot"><tal:tag tal:replace="string:${FriendName} {{ ${FriendAge} }}" /></i>
+		</tal:tag>
+    </div>
+    
+    <!-- STRUCTURE TEST BEGIN -->
+	<tal:tag tal:content="structure xmlDoc.XmlToString()" />
+	<!-- STRUCTURE TEST END -->
+
+</body>
+</html>
+</tal:root>

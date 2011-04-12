@@ -1,0 +1,8 @@
+<tal:root>
+
+<!-- Recursive Macros Test -->
+<tal:tag metal:define-macro="recursiveMacro2" metal:define-param="int counter 0">
+	<tal:tag tal:replace="string:Counter=${counter};" tal:define="set counter counter - 1"/>
+	<tal:tag tal:condition="counter &gt; 0"><tal:tag metal:use-macro='macros["recursiveMacro2"]' metal:fill-param="counter counter" /></tal:tag></tal:tag>
+
+</tal:root>

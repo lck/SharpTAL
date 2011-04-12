@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1554AD7A-B0D0-4A66-B37F-68E582530BB6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>SharpTAL.Tests</RootNamespace>
+    <AssemblyName>SharpTAL.Tests</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework">
+      <SpecificVersion>False</SpecificVersion>
+      <Package>mono-nunit</Package>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CacheTests\FileSystemTemplateCacheTests.cs" />
+    <Compile Include="CacheTests\MemoryTemplateCacheTests.cs" />
+    <Compile Include="METALTests\METALDefineMacroTests.cs" />
+    <Compile Include="METALTests\METALDefineParamsTests.cs" />
+    <Compile Include="METALTests\METALDefineSlotsTests.cs" />
+    <Compile Include="METALTests\METALImportTests.cs" />
+    <Compile Include="METALTests\METALNameSpaceTests.cs" />
+    <Compile Include="TALESTests\TALESCSharpPathTests.cs" />
+    <Compile Include="TALESTests\TALESStringTests.cs" />
+    <Compile Include="TALTests\TALAttributesTests.cs" />
+    <Compile Include="TALTests\TALConditionTests.cs" />
+    <Compile Include="TALTests\TALContentTests.cs" />
+    <Compile Include="TALTests\TALDefineTests.cs" />
+    <Compile Include="TALTests\TALOmitTagTests.cs" />
+    <Compile Include="TALTests\TALRepeatTests.cs" />
+    <Compile Include="TALTests\TALReplaceTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="METALTests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SharpTAL\SharpTAL.csproj">
+      <Project>{B4F01A15-54FD-42A8-B979-7D448F225564}</Project>
+      <Name>SharpTAL</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="METALTests\Imports\Imports 1.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="METALTests\Imports\Imports 2.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>
