@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
 using System.Reflection;
 
@@ -13,7 +11,7 @@ namespace SharpTAL.SharpTALTests.TALTests
     [TestFixture]
     public class TALRepeatTests
     {
-        public static SharpTAL.Interfaces.ITemplateCache cache;
+        public static SharpTAL.ITemplateCache cache;
         public static Dictionary<string, object> globals;
 
         [TestFixtureSetUp]

@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Text;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Reflection;
 
 using NUnit.Framework;
 
@@ -12,7 +8,7 @@ namespace SharpTAL.SharpTALTests.METALTests
 	[TestFixture]
 	public class METALDefineMacroTests
 	{
-		public static SharpTAL.Interfaces.ITemplateCache cache;
+		public static SharpTAL.ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		[TestFixtureSetUp]

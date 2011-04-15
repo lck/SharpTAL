@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Text;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.IO;
 
@@ -12,7 +10,7 @@ namespace SharpTAL.SharpTALTests.TALESTests
 	[TestFixture]
 	public class TALESCSharpPathTests
 	{
-		public static SharpTAL.Interfaces.ITemplateCache cache;
+		public static SharpTAL.ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		public delegate object TestFuncDelegate(string param);
