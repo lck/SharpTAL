@@ -148,5 +148,14 @@ namespace SharpTAL.SharpTALTests.TALTests
 				, @"<html existingatt=""&quot;Testing&quot;"" href=""Does &quot;this&quot; work?"">Hello</html>"
 				, "Escaping of new attributes failed.");
 		}
+
+        [Test]
+        public void TestMultilineAttribute()
+        {
+            RunTest(
+                @"<html tal:attributes=""link link;" + "\n" + @"test test"" href=""owlfish.com"">Hello</html>",
+                @"<html href=""owlfish.com"" link=""www.owlfish.com"" test=""testing"">Hello</html>",
+                "Addition of attribute 'link' failed.");
+        }
 	}
 }
