@@ -6,5 +6,3 @@
 - Add support for variable substitutions in string TALES expressions
 
 - Implement new TAL statements tal:switch and tal:case 
-
-- Add support for .NET Framework 4.0 Client Profile
