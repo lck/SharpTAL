@@ -104,8 +104,18 @@ namespace SharpTAL
                 return;
             }
 
+            Dictionary<string, Type> globalsTypes = new Dictionary<string, Type>();
+            if (globals != null)
+            {
+                foreach (string objName in globals.Keys)
+                {
+                    object obj = globals[objName];
+                    globalsTypes.Add(objName, obj != null ? obj.GetType() : null);
+                }
+            }
+
             // Get template info from cache
-            templateInfo = GetTemplateInfo(templateBody, globals, inlineTemplates, referencedAssemblies);
+            templateInfo = GetTemplateInfo(templateBody, globalsTypes, inlineTemplates, referencedAssemblies);
 
             // Call the Render() method
             try
@@ -203,6 +213,21 @@ namespace SharpTAL
         }
 
         /// <summary>
+        /// Precompile template to ensure that the compiled assembly is already in cache when
+        /// RenderTemplate is called for the first time. For precompiling, the actual values
+        /// of globals are not required, just the names and types of the global variables.
+        /// </summary>
+        /// <param name="templateBody">The template body</param>
+        /// <param name="globalsTypes">Dictionary of global variable names and types, or null for no global variables.</param>
+        /// <param name="inlineTemplates">Dictionary of inline templates, or null for no inline templates.</param>
+        /// <param name="referencedAssemblies">List of referenced assemblies, or null for no referenced assemblies.</param>
+        public void PrecompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes,
+            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies)
+        {
+            GetTemplateInfo(templateBody, globalsTypes, inlineTemplates, referencedAssemblies);
+        }
+
+        /// <summary>
         /// Get template info from cache.
         /// </summary>
         /// <param name="templateBody">The template body</param>
@@ -211,7 +236,7 @@ namespace SharpTAL
         /// <param name="referencedAssemblies">List of referenced assemblies</param>
         /// <param name="sourceCode">Template source code</param>
         /// <returns>The TemplateInfo instance</returns>
-        protected abstract TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, object> globals,
+        protected abstract TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, Type> globalsTypes,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies);
 
         protected MethodInfo GetTemplateRenderMethod(Assembly assembly, TemplateInfo ti)
