@@ -1307,7 +1307,7 @@ Global variable with the same name allready exists.", templateName));
             this.WriteToBody("//  Command:  {0}", Constants.GetCommandName(command.ID));
             if (command.Tag != null)
             {
-                this.WriteToBody("//  Tag:        {0}", command.Tag.ToString().Replace(Environment.NewLine, ""));
+                this.WriteToBody("//  Tag:        {0}", command.Tag.ToString().Replace("\n", "").Replace("\r", ""));
                 this.WriteToBody("//  Line:       {0}", command.Tag.LineNumber);
                 this.WriteToBody("//  Position:   {0}", command.Tag.LinePosition);
                 this.WriteToBody("//  Source:     {0}", command.Tag.SourcePath);
