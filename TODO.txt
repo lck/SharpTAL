@@ -2,3 +2,7 @@
 - TALCompiler.CompileTemplate() optimization: Don't recompile templates each time - reuse compiled TALPrograms.
     Store compiled TALPrograms in TemplateCache, where the key is the template's hash value.
     TALPrograms of imported templates would be saved under the key of format "HASH:PATH"
+
+- Add support for variable substitutions in string TALES expressions
+
+- Implement new TAL statements tal:switch and tal:case 
