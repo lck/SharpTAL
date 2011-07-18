@@ -129,7 +129,7 @@ namespace SharpTAL
             }
         }
 
-        protected override TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, object> globals,
+        protected override TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, Type> globalsTypes,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies)
         {
             lock (m_CacheLock)
@@ -141,15 +141,6 @@ namespace SharpTAL
                 }
 
                 // Create template info
-                Dictionary<string, Type> globalsTypes = new Dictionary<string, Type>();
-                if (globals != null)
-                {
-                    foreach (string objName in globals.Keys)
-                    {
-                        object obj = globals[objName];
-                        globalsTypes.Add(objName, obj != null ? obj.GetType() : null);
-                    }
-                }
                 TemplateInfo ti = new TemplateInfo()
                 {
                     TemplateBody = templateBody,
