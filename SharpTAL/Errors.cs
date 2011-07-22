@@ -27,6 +27,7 @@
 //
 
 using System;
+using System.CodeDom.Compiler;
 
 namespace SharpTAL
 {
@@ -65,8 +66,9 @@ namespace SharpTAL
     public class CompileSourceException : Exception
     {
         protected TemplateInfo m_TemplateInfo;
+        protected CompilerErrorCollection m_Errors;
 
-        public CompileSourceException(TemplateInfo templateInfo, string message)
+        public CompileSourceException(TemplateInfo templateInfo, CompilerErrorCollection errors, string message)
             : base(message)
         {
             m_TemplateInfo = templateInfo;
@@ -77,6 +79,14 @@ namespace SharpTAL
             get
             {
                 return this.m_TemplateInfo;
+            }
+        }
+
+        public CompilerErrorCollection Errors
+        {
+            get
+            {
+                return this.m_Errors;
             }
         }
     }
