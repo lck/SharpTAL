@@ -354,10 +354,12 @@ namespace SharpTAL
             string globalTypes = "";
             if (ti.GlobalsTypes != null && ti.GlobalsTypes.Count > 0)
             {
-                foreach (string varName in ti.GlobalsTypes.Keys)
+                List<string> keys = new List<string>(ti.GlobalsTypes.Keys);
+                keys.Sort();
+                foreach (string varName in keys)
                 {
                     Type type = ti.GlobalsTypes[varName];
-                    globalTypes += type.FullName;
+                    globalTypes += varName + type.FullName;
                 }
             }
 
@@ -365,7 +367,9 @@ namespace SharpTAL
             string inlineTemplatesHashes = "";
             if (ti.InlineTemplates != null && ti.InlineTemplates.Count > 0)
             {
-                foreach (string templateName in ti.InlineTemplates.Keys)
+                List<string> keys = new List<string>(ti.InlineTemplates.Keys);
+                keys.Sort();
+                foreach (string templateName in keys)
                 {
                     inlineTemplatesHashes += Utils.ComputeHash(ti.InlineTemplates[templateName]);
                 }
@@ -375,7 +379,9 @@ namespace SharpTAL
             string importedTemplatesHashes = "";
             if (ti.ImportedPrograms != null && ti.ImportedPrograms.Count > 0)
             {
-                foreach (string path in ti.ImportedPrograms.Keys)
+                List<string> keys = new List<string>(ti.ImportedPrograms.Keys);
+                keys.Sort();
+                foreach (string path in keys)
                 {
                     importedTemplatesHashes += Utils.ComputeHash(ti.ImportedPrograms[path].Source);
                 }
