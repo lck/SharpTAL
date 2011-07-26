@@ -29,6 +29,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
+using System.Globalization;
 
 namespace SharpTAL
 {
@@ -47,6 +48,10 @@ namespace SharpTAL
         void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
 
+        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
+            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
+            CultureInfo culture);
+
         string RenderTemplate(string templateBody);
 
         string RenderTemplate(string templateBody, Dictionary<string, object> globals);
@@ -59,5 +64,9 @@ namespace SharpTAL
 
         string RenderTemplate(string templateBody, Dictionary<string, object> globals,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
+
+        string RenderTemplate(string templateBody, Dictionary<string, object> globals,
+            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
+            CultureInfo culture);
     }
 }
