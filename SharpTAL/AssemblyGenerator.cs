@@ -138,14 +138,24 @@ namespace SharpTAL
                 if (compilerResults.Errors.HasErrors)
                 {
                     StringBuilder exceptionBuilder = new StringBuilder("Compilation has failed with following errors:\n============\n");
+                    string[] sourceLines = ti.GeneratedSourceCode.Split('\n');
 
                     foreach (CompilerError error in compilerResults.Errors)
                     {
-                        exceptionBuilder.AppendLine(error.ToString());
+                        exceptionBuilder.AppendLine(error.ErrorNumber + ": " + error.ErrorText + " (line " + error.Line.ToString() + ")");
+                        
+                        // Add source lines for context
+                        int firstLine = Math.Max(0, error.Line - 2);
+                        int secondLine = Math.Min(sourceLines.Length, error.Line + 2);
+                        for (int i = firstLine; i <= secondLine; i++)
+                        {
+                            exceptionBuilder.AppendLine(sourceLines[i].Trim());
+                        }
+
                         exceptionBuilder.AppendLine("------------------");
                     }
 
-                    throw new CompileSourceException(ti, exceptionBuilder.ToString());
+                    throw new CompileSourceException(ti, compilerResults.Errors, exceptionBuilder.ToString());
                 }
 
                 return compilerResults.CompiledAssembly;

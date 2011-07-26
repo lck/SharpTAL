@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Globalization;
 
 namespace SharpTAL
 {
@@ -97,6 +98,23 @@ namespace SharpTAL
         public void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo)
         {
+            RenderTemplate(output, templateBody, globals, inlineTemplates, referencedAssemblies, out templateInfo, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Render the template
+        /// </summary>
+        /// <param name="output">The output stream</param>
+        /// <param name="templateBody">The template body</param>
+        /// <param name="globals">Dictionary of global variables</param>
+        /// <param name="inlineTemplates">Dictionary of inline templates</param>
+        /// <param name="referencedAssemblies">List of referenced assemblies</param>
+        /// <param name="sourceCode">Template source code</param>
+        /// <param name="culture">Culture to use for string conversions. Default is invariant culture.</param>
+        public void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
+            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
+            CultureInfo culture)
+        {
             templateInfo = null;
 
             if (string.IsNullOrEmpty(templateBody))
@@ -120,7 +138,7 @@ namespace SharpTAL
             // Call the Render() method
             try
             {
-                templateInfo.TemplateRenderMethod.Invoke(null, new object[] { output, globals });
+                templateInfo.TemplateRenderMethod.Invoke(null, new object[] { output, globals, culture });
             }
             catch (TargetInvocationException ex)
             {
@@ -190,14 +208,32 @@ namespace SharpTAL
         /// <param name="inlineTemplates">Dictionary of inline templates</param>
         /// <param name="referencedAssemblies">List of referenced assemblies</param>
         /// <param name="sourceCode">Template source code</param>
+        /// <param name="culture">Culture to use for string conversions. Default is invariant culture.</param>
         /// <returns>Rendered template</returns>
         public string RenderTemplate(string templateBody, Dictionary<string, object> globals,
             Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo)
         {
+            return RenderTemplate(templateBody, globals, inlineTemplates, referencedAssemblies, out templateInfo, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Render the template
+        /// </summary>
+        /// <param name="templateBody">The template body</param>
+        /// <param name="globals">Dictionary of global variables</param>
+        /// <param name="inlineTemplates">Dictionary of inline templates</param>
+        /// <param name="referencedAssemblies">List of referenced assemblies</param>
+        /// <param name="sourceCode">Template source code</param>
+        /// 
+        /// <returns>Rendered template</returns>
+        public string RenderTemplate(string templateBody, Dictionary<string, object> globals,
+            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
+            CultureInfo culture)
+        {
             // Expand template
             MemoryStream stream = new MemoryStream();
             StreamWriter writer = new StreamWriter(stream);
-            RenderTemplate(writer, templateBody, globals, inlineTemplates, referencedAssemblies, out templateInfo);
+            RenderTemplate(writer, templateBody, globals, inlineTemplates, referencedAssemblies, out templateInfo, culture);
             writer.Flush();
 
             // Reset stream position
@@ -254,12 +290,12 @@ namespace SharpTAL
             // Check if the template type has public method [static void Render(StreamWriter output, Dictionary<string, object>)]
             MethodInfo renderMethod = templateType.GetMethod("Render",
                 BindingFlags.Public | BindingFlags.Static,
-                null, new Type[] { typeof(StreamWriter), typeof(Dictionary<string, object>) }, null);
+                null, new Type[] { typeof(StreamWriter), typeof(Dictionary<string, object>), typeof(CultureInfo) }, null);
 
             if (renderMethod == null || renderMethod.ReturnType.FullName != "System.Void")
             {
                 throw new Exception(string.Format(@"Failed to find Render method in type [{0}] in assembly [{1}].
-The signature of method must be [static void Render(StreamWriter output, Dictionary<string, object>)]",
+The signature of method must be [static void Render(StreamWriter output, Dictionary<string, object>, CultureInfo culture)]",
                     templateTypeFullName, assembly.FullName));
             }
 
