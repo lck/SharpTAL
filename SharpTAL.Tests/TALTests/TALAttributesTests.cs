@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Globalization;
 
 using NUnit.Framework;
 
@@ -156,6 +157,27 @@ namespace SharpTAL.SharpTALTests.TALTests
                 @"<html tal:attributes=""link link;" + "\n" + @"test test"" href=""owlfish.com"">Hello</html>",
                 @"<html href=""owlfish.com"" link=""www.owlfish.com"" test=""testing"">Hello</html>",
                 "Addition of attribute 'link' failed.");
+        }
+
+        [Test]
+        public void TestAttributeInvariantCulture()
+        {
+            string template = @"<html tal:attributes=""value 1.05""> </html>";
+            string expected = @"<html value=""1.05""> </html>";
+            string actual = cache.RenderTemplate(template, globals);
+            Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
+                Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
+        }
+
+        [Test]
+        public void TestAttributeLocalCulture()
+        {
+            string template = @"<html tal:attributes=""value 1.05""> </html>";
+            string expected = @"<html value=""1,05""> </html>";
+            TemplateInfo ti;
+            string actual = cache.RenderTemplate(template, globals, null, null, out ti, new CultureInfo("fi-FI"));
+            Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
+                Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
         }
 	}
 }

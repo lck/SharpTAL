@@ -44,7 +44,7 @@ namespace Templates
     [SecurityPermission(SecurityAction.PermitOnly, Execution = true)]
     public class Template_${template_hash}
     {
-        public static void Render(StreamWriter output, Dictionary<string, object> globals)
+        public static void Render(StreamWriter output, Dictionary<string, object> globals, CultureInfo culture)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
             Stack<List<object>> __scopeStack = new Stack<List<object>>();
@@ -216,10 +216,14 @@ namespace Templates
             return result;
         }
         
-        private static string FormatResult(object result)
+        private static string FormatResult(object result, CultureInfo culture)
         {
+            IFormattable formattable = result as IFormattable;
             string resultValue = """";
-            resultValue = result.ToString();
+            if (formattable != null)
+                resultValue = formattable.ToString("""", culture);
+            else
+                resultValue = result.ToString();
             return resultValue;
         }
         
@@ -537,7 +541,8 @@ namespace Templates
 				"System.Collections",
 				"System.Collections.Generic",
 				"System.Security.Permissions",
-				"System.Security"
+				"System.Security",
+				"System.Globalization"
 			};
 
             // Find all namespaces with extension methods in assemblies where global types are defined
@@ -937,7 +942,7 @@ Global variable with the same name allready exists.", templateName));
                 this.WriteToBody(@"}}");
                 this.WriteToBody(@"else if (!IsDefaultValue(attribute_{0}_{1}))", attName, scopeID);
                 this.WriteToBody(@"{{");
-                this.WriteToBody(@"    __currentAttributes[""{1}""] = FormatResult(attribute_{1}_{0});", scopeID, attName);
+                this.WriteToBody(@"    __currentAttributes[""{1}""] = FormatResult(attribute_{1}_{0}, culture);", scopeID, attName);
                 this.WriteToBody(@"}}");
             }
         }
@@ -1120,7 +1125,7 @@ Global variable with the same name allready exists.", templateName));
             this.WriteToBody(@"    }}");
             this.WriteToBody(@"    else");
             this.WriteToBody(@"    {{");
-            this.WriteToBody(@"        output.Write(EscapeXml(FormatResult(__tagContent)));");
+            this.WriteToBody(@"        output.Write(EscapeXml(FormatResult(__tagContent, culture)));");
             this.WriteToBody(@"    }}");
             this.WriteToBody(@"}}");
 
