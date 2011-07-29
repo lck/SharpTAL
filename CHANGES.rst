@@ -9,6 +9,9 @@ Features added
 --------------
 
 - Added method AbstractTemplateCache.PrecompileTemplate() to precompile template before knowing the global variable values [Petteri Aimonen]
+- Allow setting CultureInfo for string formatting, default to InvariantCulture [Petteri Aimonen]
+- Add relevant lines of the generated source code to CompileSourceException message [Petteri Aimonen]
+- Made template hash calculation more robus [Petteri Aimonen]
 
 Bugs fixed
 ----------
