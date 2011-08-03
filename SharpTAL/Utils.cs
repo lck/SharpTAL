@@ -29,81 +29,135 @@
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 
 namespace SharpTAL
 {
-    class Utils
-    {
-        public static Assembly ReadAssembly(string asmPath)
-        {
-            FileStream asmStream = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
-            byte[] asmBytes = Utils.ReadStream(asmStream);
-            Assembly assembly = Assembly.Load(asmBytes);
-            return assembly;
-        }
+	class Utils
+	{
+		internal static readonly Regex _re_needs_escape = new Regex(@"[&<>""\']");
+		internal static readonly Regex _re_amp = new Regex(@"&(?!([A-Za-z]+|#[0-9]+);)");
 
-        public static byte[] ReadStream(Stream stream)
-        {
-            byte[] buffer = new byte[32768];
-            using (MemoryStream ms = new MemoryStream())
-            {
-                while (true)
-                {
-                    int read = stream.Read(buffer, 0, buffer.Length);
-                    if (read <= 0)
-                        return ms.ToArray();
-                    ms.Write(buffer, 0, read);
-                }
-            }
-        }
+		public static Assembly ReadAssembly(string asmPath)
+		{
+			FileStream asmStream = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
+			byte[] asmBytes = Utils.ReadStream(asmStream);
+			Assembly assembly = Assembly.Load(asmBytes);
+			return assembly;
+		}
 
-        public static string ComputeHash(string source)
-        {
-            byte[] tmpSource;
-            byte[] tmpHash;
+		public static byte[] ReadStream(Stream stream)
+		{
+			byte[] buffer = new byte[32768];
+			using (MemoryStream ms = new MemoryStream())
+			{
+				while (true)
+				{
+					int read = stream.Read(buffer, 0, buffer.Length);
+					if (read <= 0)
+						return ms.ToArray();
+					ms.Write(buffer, 0, read);
+				}
+			}
+		}
 
-            //Create a byte array from source data
-            tmpSource = ASCIIEncoding.ASCII.GetBytes(source);
+		public static string ComputeHash(string source)
+		{
+			byte[] tmpSource;
+			byte[] tmpHash;
 
-            //Compute hash based on source data
-            tmpHash = new SHA1CryptoServiceProvider().ComputeHash(tmpSource);
+			//Create a byte array from source data
+			tmpSource = ASCIIEncoding.ASCII.GetBytes(source);
 
-            string hash = ByteArrayToString(tmpHash);
-            return hash;
-        }
+			//Compute hash based on source data
+			tmpHash = new SHA1CryptoServiceProvider().ComputeHash(tmpSource);
 
-        public static string ByteArrayToString(byte[] arrInput)
-        {
-            int i;
-            StringBuilder sOutput = new StringBuilder(arrInput.Length);
-            for (i = 0; i < arrInput.Length - 1; i++)
-            {
-                sOutput.Append(arrInput[i].ToString("X2"));
-            }
-            return sOutput.ToString();
-        }
+			string hash = ByteArrayToString(tmpHash);
+			return hash;
+		}
 
-        public static string EscapeXml(string s)
-        {
-            return EscapeXml(s, false);
-        }
+		public static string ByteArrayToString(byte[] arrInput)
+		{
+			int i;
+			StringBuilder sOutput = new StringBuilder(arrInput.Length);
+			for (i = 0; i < arrInput.Length - 1; i++)
+			{
+				sOutput.Append(arrInput[i].ToString("X2"));
+			}
+			return sOutput.ToString();
+		}
 
-        public static string EscapeXml(string s, bool quote)
-        {
-            // Replace special characters "&", "<" and ">" to HTML-safe sequences.
-            // If the optional flag quote is true, the quotation mark character (")
-            // is also translated.'''
-            string xml = s;
-            if (!string.IsNullOrEmpty(xml))
-            {
-                xml = xml.Replace("&", "&amp;");
-                xml = xml.Replace("<", "&lt;");
-                xml = xml.Replace(">", "&gt;");
-                if (quote)
-                    xml = xml.Replace("\"", "&quot;");
-            }
-            return xml;
-        }
-    }
+		/// <summary>
+		/// Escape HTML entities in node content
+		/// </summary>
+		/// <param name="s"></param>
+		/// <returns></returns>
+		public static string Escape(string s)
+		{
+			return Escape(s, false);
+		}
+
+		/// <summary>
+		/// Escape HTML entities. Set quote to True to escape attribute value.
+		/// </summary>
+		/// <param name="str"></param>
+		/// <param name="quote"></param>
+		/// <returns></returns>
+		public static string Escape(string str, bool quote)
+		{
+			if (string.IsNullOrEmpty(str))
+				return str;
+
+			if (!_re_needs_escape.IsMatch(str))
+				return str;
+
+			if (str.IndexOf('&') >= 0)
+			{
+				// If there's a semicolon in the string, then
+				// it might be part of an HTML entity. We
+				// replace the ampersand character with its
+				// HTML entity counterpart only if it's
+				// precedes an HTML entity string.
+				if (str.IndexOf(';') >= 0)
+				{
+					str = _re_amp.Replace(str, "&amp;");
+				}
+				else
+				{
+					// Otherwise, it's safe to replace all ampersands:
+					str = str.Replace("&", "&amp;");
+				}
+			}
+
+			if (str.IndexOf('>') >= 0)
+				str = str.Replace("<", "&lt;");
+
+			if (str.IndexOf('>') >= 0)
+				str = str.Replace(">", "&gt;");
+
+			// TODO: Use Attr.Quote instead of hardcoded "
+			if (quote && str.IndexOf('"') >= 0)
+				str = str.Replace("\"", "&quot;");
+
+			return str;
+		}
+
+		public static string Unescape(string str)
+		{
+			if (string.IsNullOrEmpty(str))
+				return str;
+
+			int cp = HTMLEntityDefs.Name2Code["&lt;"];
+			str = str.Replace("&lt;", ((char)cp).ToString());
+
+			cp = HTMLEntityDefs.Name2Code["&gt;"];
+			str = str.Replace("&gt;", ((char)cp).ToString());
+
+			cp = HTMLEntityDefs.Name2Code["&quot;"];
+			str = str.Replace("&quot;", ((char)cp).ToString());
+
+			return str;
+		}
+	}
 }

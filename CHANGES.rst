@@ -2,13 +2,18 @@
 Changes
 =======
 
-Under development
-=================
+1.3 (not released)
+==================
 
 Features added
 --------------
 
-- Added method AbstractTemplateCache.PrecompileTemplate() to precompile template before knowing the global variable values [Petteri Aimonen]
+- New HTML/XML template parser (ported from project Chameleon: https://github.com/malthe/chameleon) [Roman Lacko]
+
+Other changes
+-------------
+
+- Added method PrecompileTemplate() to AbstractTemplateCache to precompile template before knowing the global variable values [Petteri Aimonen]
 - Allow setting CultureInfo for string formatting, default to InvariantCulture [Petteri Aimonen]
 - Add relevant lines of the generated source code to CompileSourceException message [Petteri Aimonen]
 - Made template hash calculation more robus [Petteri Aimonen]
@@ -16,7 +21,7 @@ Features added
 Bugs fixed
 ----------
 
-- In SourceGenerator, fix the handling of newlines (\n, \r\n worked already) in attributes [Petteri Aimonen]
+- In SourceGenerator, fix the handling of newlines in attributes [Petteri Aimonen]
 
 
 1.2 (released 26.01.2011)

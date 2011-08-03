@@ -2,8 +2,29 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <tal:root>
 
+<!-- CDATA parsing -->
+<![CDATA[
+	</div>
+	<
+	>
+	"
+]]>
+
+<!-- Multiline attributes -->
+<font tal:attributes="bold
+ string:true">
+
+<div></div>
+
+<!-- Singleton tags -->
+<br><br>
+
+<!-- HTML entities -->
+<p tal:content='string:=&=&amp;=&nbsp;=&lt;=&gt;=&quot;="='>Original</p>
+<p>=&=&amp;=&nbsp;=&lt;=&gt;=&quot;="=</p>
+
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:tal="http://xml.zope.org/namespaces/tal">
-<body tal:define="specialFriend from f in friends where f.Age &lt; 30 select f">
+<body title tal:define="specialFriend from f in friends where f.Age &lt; 30 select f">
 	
 	<!-- Executing void methods -->
 	<tal:tag tal:define='z 0;;Console.WriteLine("One!");;Console.WriteLine("Two!");;'/>

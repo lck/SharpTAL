@@ -14,7 +14,7 @@ namespace SharpTAL.SharpTALTests.TALTests
 			return s.ToUpper();
 		}
 	}
-	
+
 	[TestFixture]
 	public class TALContentTests
 	{
@@ -137,8 +137,8 @@ namespace SharpTAL.SharpTALTests.TALTests
 		[Test]
 		public void TestTALContentEscaping()
 		{
-			RunTest(@"<html><p tal:content=""string:=&amp;=&nbsp;&nbsp;=&lt;="">Original</p>=&amp;=&nbsp;&nbsp;=&lt;=</html>"
-				, string.Format("<html><p>=&amp;={0}{0}=&lt;=</p>=&amp;={0}{0}=&lt;=</html>", (char)160)
+			RunTest(@"<html><p tal:content='string:=&=&amp;=&nbsp;=&lt;=&gt;=&quot;=""='>Original</p>=&=&amp;=&nbsp;=&lt;=&gt;=&quot;=""=</html>"
+				, @"<html><p>=&amp;=&amp;=&nbsp;=&lt;=&gt;=""=""=</p>=&=&amp;=&nbsp;=&lt;=&gt;=&quot;=""=</html>"
 				, "Escaped content did not evaluate to expected result");
 		}
 	}
