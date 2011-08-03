@@ -76,7 +76,7 @@ namespace SharpTAL.Parser
 	public class ElementParser
 	{
 		static readonly Regex _match_tag_prefix_and_name = new Regex(
-			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
+			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \r\n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
 		static readonly Regex match_single_attribute = new Regex(
 			@"(?<space>\s+)(?!\d)" +
 			@"(?<name>[^ =/>\n\t]+)" +

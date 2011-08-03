@@ -141,5 +141,14 @@ namespace SharpTAL.SharpTALTests.TALTests
 				, @"<html><p>=&amp;=&amp;=&nbsp;=&lt;=&gt;=""=""=</p>=&=&amp;=&nbsp;=&lt;=&gt;=&quot;=""=</html>"
 				, "Escaped content did not evaluate to expected result");
 		}
+
+		[Test]
+		public void TestMultilineTag()
+		{
+			RunTest(@"<html><p
+	tal:content='string:str'>Original</p></html>"
+				, @"<html><p>str</p></html>"
+				, "Multiline tag did not evaluate to expected result");
+		}
 	}
 }
