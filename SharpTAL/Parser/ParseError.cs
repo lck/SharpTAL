@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// ParseError.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,19 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
-[assembly: AssemblyTitle("SharpTAL.Demo")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL.Demo")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("c42df432-89fb-4b8f-bdaa-11807221fbf7")]
-[assembly: AssemblyVersion("1.9.0.1")]
-[assembly: AssemblyFileVersion("1.9.0.1")]
+namespace SharpTAL.Parser
+{
+	/// <summary>
+	/// An error occurred during parsing.
+	/// Indicates an error on the structural level.
+	/// </summary>
+	public class ParseError : TemplateError
+	{
+		public ParseError(string msg, Token token)
+			: base(msg, token)
+		{
+		}
+	}
+}

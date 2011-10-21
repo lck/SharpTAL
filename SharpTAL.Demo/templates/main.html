@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<tal:root>
+<tal:root
+	tal:define='script_lang string:javascript;
+		quote string:["]'
+	tal:define="quote2 string:[']"
+	>
+
+<!-- Macro -->
+<tal:tag metal:define-macro="inlineMacro">
+    Hello from inline macro.
+</tal:tag>
 
 <!-- CDATA parsing -->
 <![CDATA[
@@ -10,7 +19,30 @@
 	"
 ]]>
 
-<!-- Multiline attributes and tag -->
+<!-- Inline string substitution -->
+Hello = ${string:hello { "${@"world
+!"}" < ${22 / 3}}}
+2 < 3 = ${2 < 3}
+PI = ${System.Math.PI}
+Hello ${string.Format("{0}!", "World")}
+Script language: ${script_lang}
+<div>22.0 / 3.0 = ${22.0 / 3.0}</div>
+<div title="2 < 3 = ${2 < 3}"></div>
+<div title="this is quote: [${quote}]"></div>
+<script language='${script_lang}' />
+<script language='${"javascript"}' src="${System.IO.Path.GetRandomFileName()}"></script>
+
+<!-- Inline string quote escaping and TAL command join and override -->
+<div
+	tal:attributes="class1 string:the_class1_with_guote_${quote}"
+	title="this is quote: ${quote} and this is not ${quote2}"
+	class2='${"the_class".ToUpper()}'
+	tal:attributes="class2 string:the_class2_with_guote_${quote}"
+	tal:condition='1 == 2'
+	tal:condition='3 == 3'
+/>
+
+<!-- Multiline attributes -->
 <font tal:attributes="bold
  string:true">
 
@@ -28,25 +60,22 @@ id="z">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:tal="http://xml.zope.org/namespaces/tal">
 <body title tal:define="specialFriend from f in friends where f.Age &lt; 30 select f">
 	
-	<!-- Executing void methods -->
-	<tal:tag tal:define='z 0;;Console.WriteLine("One!");;Console.WriteLine("Two!");;'/>
-
 	<!-- Include and use Macros in default namespace -->
 	<tal:tag metal:import="templates/imports 1.html"/>
-	<tal:tag metal:use-macro='macros["recursiveMacro"]' metal:fill-param="counter 10" />
-	<tal:tag metal:use-macro='macros["recursiveMacro2"]' metal:fill-param="counter 3" />
+	<tal:tag metal:use-macro='macros["recursiveMacro"]' metal:fill-param="counter 3" />
+	<tal:tag metal:use-macro='macros["recursiveMacro2"]' metal:fill-param="counter 2" />
 
 	<!-- This Macro was imported in templates/imports1.html to imp0 namespace -->
 	<tal:tag metal:use-macro='imp0.macros["recursiveMacro2"]' metal:fill-param="counter 3" />
 
 	<!-- Include and use Macros into two custom namespaces -->
 	<tal:tag metal:import="imp1:templates/imports 1.html;imp2:templates/imports 2.html"/>
-	<tal:tag metal:use-macro='imp1.macros["recursiveMacro"]' metal:fill-param="counter 10" />
+	<tal:tag metal:use-macro='imp1.macros["recursiveMacro"]' metal:fill-param="counter 3" />
 	<tal:tag metal:use-macro='imp2.macros["recursiveMacro2"]' metal:fill-param="counter 2" />
 
 	<!-- Include and use Macros into one custom namespace -->
 	<tal:tag metal:import="imp3:templates/imports 1.html;imp3:templates/imports 2.html"/>
-	<tal:tag metal:use-macro='imp3.macros["recursiveMacro"]' metal:fill-param="counter 10" />
+	<tal:tag metal:use-macro='imp3.macros["recursiveMacro"]' metal:fill-param="counter 3" />
 	<tal:tag metal:use-macro='imp3.macros["recursiveMacro2"]' metal:fill-param="counter 1" />
 	
 	<!-- Enumarate all friends -->
@@ -56,13 +85,17 @@ id="z">
 	
 	<!-- Enumarate specialFriends -->
     <div tal:repeat='f specialFriend'>
+		<!-- Use Macro -->
+		<tal:tag metal:use-macro='macros["inlineMacro"]'>
+		
 		<!-- Define variables without scope -->
 		<tal:omit-scope tal:define="FriendName f.Name" />
 		<tal:omit-scope tal:define="FriendAge f.Age" />
 		
 		<!-- Use Macro with Slot -->
-		<tal:tag metal:use-macro='Macros.macros["macroWithSlot"]'>
-			<i metal:fill-slot="slot"><tal:tag tal:replace="string:${FriendName} {{ ${FriendAge} }}" /></i>
+		<tal:tag metal:import="templates/macros.html"/>
+		<tal:tag metal:use-macro='macros["macroWithSlot"]'>
+			<i metal:fill-slot="slot">${FriendName} $\${{ $${FriendAge} }}</i>
 		</tal:tag>
     </div>
     

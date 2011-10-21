@@ -56,7 +56,7 @@ namespace SharpTAL.SharpTALTests.TALTests
                 {
                     new Dictionary<string, IEnumerable>()
                     {
-                        { "title", "Image 2"}, { "catList", new List<int>() { 5, 2, 3} }, { "selected", Constants.DEFAULTVALUE }
+                        { "title", "Image 2"}, { "catList", new List<int>() { 5, 2, 3} }, { "selected", Constants.DEFAULT_VALUE }
                     }
                 },
                 {
@@ -66,24 +66,18 @@ namespace SharpTAL.SharpTALTests.TALTests
                     }
                 },
             });
-            globals.Add("defList", new List<string>() { "Hello", Constants.DEFAULTVALUE, "World" });
+            globals.Add("defList", new List<string>() { "Hello", Constants.DEFAULT_VALUE, "World" });
             globals.Add("testString", "ABC"); ;
             globals.Add("testDict", new Dictionary<string, string>() { { "KeyA", "A" }, { "KeyB", "B" } }); ;
         }
 
         public static void RunTest(string template, string expected, string errMsg)
         {
-            RunTest(template, expected, errMsg, null);
-        }
-
-        public static void RunTest(string template, string expected, string errMsg,
-            Dictionary<string, string> inlineTemplates)
-        {
-            string actual = cache.RenderTemplate(template, globals, inlineTemplates);
-            actual = actual.Replace("{", "{{").Replace("}", "}}");
-            Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
-                Environment.NewLine, errMsg, template, actual, expected);
-        }
+			string actual = cache.RenderTemplate(template, globals);
+			actual = actual.Replace("{", "{{").Replace("}", "}}");
+			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
+				Environment.NewLine, errMsg, template, actual, expected);
+		}
 
         [Test]
         [ExpectedException(typeof(CompileSourceException))]

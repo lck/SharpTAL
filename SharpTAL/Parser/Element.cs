@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// Element.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,19 +26,41 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-[assembly: AssemblyTitle("SharpTAL.Demo")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL.Demo")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("c42df432-89fb-4b8f-bdaa-11807221fbf7")]
-[assembly: AssemblyVersion("1.9.0.1")]
-[assembly: AssemblyFileVersion("1.9.0.1")]
+namespace SharpTAL.Parser
+{
+	public class Element
+	{
+		public ElementKind Kind { get; private set; }
+		public Dictionary<string, object> StartTagTokens { get; private set; }
+		public Dictionary<string, object> EndTagTokens { get; private set; }
+		public List<Element> Children { get; private set; }
+
+		public Element(ElementKind kind, Token startTag)
+		{
+			Kind = kind;
+			StartTagTokens = new Dictionary<string, object> { { "", startTag } };
+			EndTagTokens = new Dictionary<string, object>();
+			Children = new List<Element>();
+		}
+
+		public Element(ElementKind kind, Dictionary<string, object> startTagTokens)
+		{
+			Kind = kind;
+			StartTagTokens = startTagTokens;
+			EndTagTokens = new Dictionary<string, object>();
+			Children = new List<Element>();
+		}
+
+		public Element(ElementKind kind, Dictionary<string, object> startTagTokens, Dictionary<string, object> endTagTokens, List<Element> children)
+		{
+			Kind = kind;
+			StartTagTokens = startTagTokens;
+			EndTagTokens = endTagTokens;
+			Children = children;
+		}
+	}
+}

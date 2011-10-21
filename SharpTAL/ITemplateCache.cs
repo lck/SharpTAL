@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
@@ -33,40 +34,107 @@ using System.Globalization;
 
 namespace SharpTAL
 {
-    public interface ITemplateCache
-    {
-        void RenderTemplate(StreamWriter output, string templateBody);
+	public interface ITemplateCache
+	{
+		/// <summary>
+		/// Compile template to ensure that the compiled assembly is already in cache when
+		/// RenderTemplate is called for the first time. For precompiling, the actual values
+		/// of globals are not required, just the names and types of the global variables.
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <returns>The TemplateInfo generated from compiled template body</returns>
+		TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies);
 
-        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
+		/// <param name="templateBody">The template body</param>
+		void RenderTemplate(StreamWriter output, string templateBody);
 
-        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals);
 
-        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies);
 
-        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <param name="sourceCode">Template source code</param>
+		void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
 
-        void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
-            CultureInfo culture);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <param name="sourceCode">Template source code</param>
+		/// <param name="culture">Culture to use for string conversions. Default is invariant culture.</param>
+		void RenderTemplate(StreamWriter output, string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo, CultureInfo culture);
 
-        string RenderTemplate(string templateBody);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <returns>Rendered template</returns>
+		string RenderTemplate(string templateBody);
 
-        string RenderTemplate(string templateBody, Dictionary<string, object> globals);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <returns>Rendered template</returns>
+		string RenderTemplate(string templateBody, Dictionary<string, object> globals);
 
-        string RenderTemplate(string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <returns>Rendered template</returns>
+		string RenderTemplate(string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies);
 
-        string RenderTemplate(string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies);
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <param name="sourceCode">Template source code</param>
+		/// <param name="culture">Culture to use for string conversions. Default is invariant culture.</param>
+		/// <returns>Rendered template</returns>
+		string RenderTemplate(string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
 
-        string RenderTemplate(string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo);
-
-        string RenderTemplate(string templateBody, Dictionary<string, object> globals,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo,
-            CultureInfo culture);
-    }
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="templateBody">The template body</param>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="referencedAssemblies">List of referenced assemblies</param>
+		/// <param name="sourceCode">Template source code</param>
+		/// <returns>Rendered template</returns>
+		string RenderTemplate(string templateBody, Dictionary<string, object> globals, List<Assembly> referencedAssemblies, out TemplateInfo templateInfo, CultureInfo culture);
+	}
 }

@@ -63,12 +63,6 @@ namespace SharpTAL.SharpTALTests.TALESTests
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			RunTest(template, expected, errMsg, null);
-		}
-
-		public static void RunTest(string template, string expected, string errMsg,
-			Dictionary<string, string> inlineTemplates)
-		{
 			globals = new Dictionary<string, object>();
 			globals.Add("top", "Hello from the top");
 			globals.Add("helloFunc", new TestFuncDelegate(simpleFunction));
@@ -77,8 +71,7 @@ namespace SharpTAL.SharpTALTests.TALESTests
 			globals.Add("testing", "testing");
 			globals.Add("map", new Dictionary<string, object>() { { "test", "maptest" } });
 			globals.Add("data", new Dictionary<string, object>() { { "one", 1 }, { "zero", 0 } });
-
-			string actual = cache.RenderTemplate(template, globals, inlineTemplates);
+			string actual = cache.RenderTemplate(template, globals);
 			actual = actual.Replace("{", "{{").Replace("}", "}}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);

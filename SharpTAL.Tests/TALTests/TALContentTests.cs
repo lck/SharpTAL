@@ -57,18 +57,11 @@ namespace SharpTAL.SharpTALTests.TALTests
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			RunTest(template, expected, errMsg, null);
-		}
-
-		public static void RunTest(string template, string expected, string errMsg,
-			Dictionary<string, string> inlineTemplates)
-		{
 			List<Assembly> referencedAssemblies = new List<Assembly>()
 			{
 				typeof(TALContentTests).Assembly
 			};
-			TemplateInfo ti;
-			string actual = cache.RenderTemplate(template, globals, inlineTemplates, referencedAssemblies, out ti);
+			string actual = cache.RenderTemplate(template, globals, referencedAssemblies);
 			actual = actual.Replace("{", "{{").Replace("}", "}}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);
@@ -109,21 +102,15 @@ namespace SharpTAL.SharpTALTests.TALTests
 		[Test]
 		public void TestContentStructure()
 		{
-			// This test has specific needs - i.e. wrap the weblog/entry in a template...
-			string entry = @"<p metal:define-macro=""entry"">Some structure: <b tal:content='weblog[""subject""]'></b></p>";
-			Dictionary<string, string> inlineTemplates = new Dictionary<string, string>()
-            {
-                { "entry_macros",  entry }
-            };
 			Dictionary<string, object> weblog = new Dictionary<string, object>
             {
                 { "subject", "Test subject" },
             };
 			globals["weblog"] = weblog;
-			RunTest(@"<html><p metal:use-macro='entry_macros.macros[""entry""]'>Original</p></html>"
+			string macros = @"<p metal:define-macro=""entry"">Some structure: <b tal:content='weblog[""subject""]'></b></p>";
+			RunTest(macros + @"<html><p metal:use-macro='macros[""entry""]'>Original</p></html>"
 				, "<html><p>Some structure: <b>Test subject</b></p></html>"
-				, "Content of Structure did not evaluate to expected result",
-				inlineTemplates);
+				, "Content of Structure did not evaluate to expected result");
 		}
 
 		[Test]

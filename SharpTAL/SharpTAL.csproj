@@ -61,6 +61,10 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ICSharpCode.NRefactory, Version=3.0.0.3800, Culture=neutral, PublicKeyToken=efe927acf176eea2, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Libs\ICSharpCode.NRefactory.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -69,13 +73,20 @@
   <ItemGroup>
     <Compile Include="AssemblyGenerator.cs" />
     <Compile Include="AbstractTemplateCache.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="TemplateProgramMacro.cs" />
+    <Compile Include="TemplateProgram.cs" />
+    <Compile Include="Parser\ParseError.cs" />
+    <Compile Include="Parser\ElementKind.cs" />
+    <Compile Include="Parser\TokenKind.cs" />
+    <Compile Include="Parser\Element.cs" />
+    <Compile Include="Template.cs" />
     <Compile Include="Parser\ElementParser.cs" />
-    <Compile Include="Parser\Exceptions.cs" />
+    <Compile Include="Parser\TemplateError.cs" />
     <Compile Include="Parser\Location.cs" />
     <Compile Include="Parser\Namespaces.cs" />
     <Compile Include="SourceGenerator.cs" />
     <Compile Include="MemoryTemplateCache.cs" />
-    <Compile Include="Parser\StringInjectExtension.cs" />
     <Compile Include="TemplateInfo.cs" />
     <Compile Include="Parser\Token.cs" />
     <Compile Include="Parser\Tokenizer.cs" />
@@ -85,7 +96,7 @@
     <Compile Include="Errors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HTMLEntityDefs.cs" />
-    <Compile Include="TALCompiler.cs" />
+    <Compile Include="TemplateProgramCompiler.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

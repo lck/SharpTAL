@@ -34,194 +34,190 @@ using System.Text.RegularExpressions;
 
 namespace SharpTAL
 {
-    public class FileSystemTemplateCache : AbstractTemplateCache
-    {
-        const string DEFAULT_FILENAME_PATTER = @"Template_{key}.dll";
-        const string SHA1_KEY_PATTERN = @"[a-zA-Z0-9]{38}";
+	public class FileSystemTemplateCache : AbstractTemplateCache
+	{
+		const string DEFAULT_FILENAME_PATTER = @"Template_{key}.dll";
+		const string SHA1_KEY_PATTERN = @"[a-zA-Z0-9]{38}";
 
-        object m_CacheLock;
-        string m_CacheFolder;
-        Dictionary<string, TemplateInfo> m_Cache;
-        string m_Pattern;
-        Regex m_PatternRex;
+		Dictionary<string, TemplateInfo> templateInfoCache;
+		object templateInfoCacheLock;
+		string templateCacheFolder;
+		string fileNamePattern;
+		Regex fileNamePatternRegex;
 
-        /// <summary>
-        /// Initialize the filesystem template cache
-        /// </summary>
-        /// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
-        public FileSystemTemplateCache(string cacheFolder)
-            : this(cacheFolder, false, null)
-        {
-        }
+		/// <summary>
+		/// Initialize the filesystem template cache
+		/// </summary>
+		/// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
+		public FileSystemTemplateCache(string cacheFolder)
+			: this(cacheFolder, false, null)
+		{
+		}
 
-        /// <summary>
-        /// Initialize the filesystem template cache
-        /// </summary>
-        /// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
-        /// <param name="clearCache">If it's true, clear all files matching the <paramref name="pattern"/> from cache folder</param>
-        public FileSystemTemplateCache(string cacheFolder, bool clearCache)
-            : this(cacheFolder, clearCache, null)
-        {
-        }
+		/// <summary>
+		/// Initialize the filesystem template cache
+		/// </summary>
+		/// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
+		/// <param name="clearCache">If it's true, clear all files matching the <paramref name="pattern"/> from cache folder</param>
+		public FileSystemTemplateCache(string cacheFolder, bool clearCache)
+			: this(cacheFolder, clearCache, null)
+		{
+		}
 
-        /// <summary>
-        /// Initialize the filesystem template cache
-        /// </summary>
-        /// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
-        /// <param name="clearCache">If it's true, clear all files matching the <paramref name="pattern"/> from cache folder</param>
-        /// <param name="pattern">
-        /// File name regular expression pattern.
-        /// Default pattern is "Template_{key}.dll".
-        /// Macro {key} will be replaced with computed hash key."
-        /// </param>
-        public FileSystemTemplateCache(string cacheFolder, bool clearCache, string pattern)
-        {
-            // Check cache folder
-            if (!Directory.Exists(cacheFolder))
-            {
-                throw new ArgumentException(string.Format("Template cache folder does not exists: [{0}]", cacheFolder));
-            }
+		/// <summary>
+		/// Initialize the filesystem template cache
+		/// </summary>
+		/// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
+		/// <param name="clearCache">If it's true, clear all files matching the <paramref name="pattern"/> from cache folder</param>
+		/// <param name="pattern">
+		/// File name regular expression pattern.
+		/// Default pattern is "Template_{key}.dll".
+		/// Macro {key} will be replaced with computed hash key."
+		/// </param>
+		public FileSystemTemplateCache(string cacheFolder, bool clearCache, string pattern) :
+			base()
+		{
+			this.templateInfoCacheLock = new object();
+			this.templateCacheFolder = cacheFolder;
+			this.templateInfoCache = null;
+			this.fileNamePattern = string.IsNullOrEmpty(pattern) ? DEFAULT_FILENAME_PATTER : pattern;
 
-            m_CacheLock = new object();
-            m_CacheFolder = cacheFolder;
-            m_Cache = null;
+			InitCache(clearCache);
+		}
 
-            //
-            // Setup pattern
-            //
+		public override TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies)
+		{
+			lock (templateInfoCacheLock)
+			{
+				// Cache is empty, load templates from cache folder
+				if (templateInfoCache == null)
+				{
+					templateInfoCache = LoadTemplatesInfo(templateCacheFolder);
+				}
 
-            // If input pattern is "Template_{key}.dll"
-            // then result pattern is "(^Template_)(?<key>[a-zA-Z0-9]{38})(\.dll$)"
-            m_Pattern = pattern;
-            if (string.IsNullOrEmpty(pattern))
-            {
-                m_Pattern = DEFAULT_FILENAME_PATTER;
-            }
+				// Compile template body and generate the TemplateKey
+				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				TemplateInfo ti = new TemplateInfo
+				{
+					TemplateBody = templateBody,
+					GlobalsTypes = globalsTypes,
+					ReferencedAssemblies = referencedAssemblies
+				};
+				compiler.CompileTemplate(ref ti);
 
-            string[] patternGroups = m_Pattern.Split(new string[] { "{key}" }, StringSplitOptions.None);
+				// Compute the template key
+				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
 
-            // Check if pattern contains exactly one "{key}" macro
-            if (patternGroups.Length != 2)
-            {
-                throw new ArgumentException(
-                    string.Format(@"Invalid pattern specified. Macro ""{key}"" is missing or specified more than once: [{0}]",
-                    m_Pattern));
-            }
+				// Generated template found in cache
+				if (templateInfoCache.ContainsKey(ti.TemplateKey))
+				{
+					return templateInfoCache[ti.TemplateKey];
+				}
 
-            // Normalize pattern
-            string rexPattern = string.Format(@"(^{0})(?<key>{1})({2}$)",
-                patternGroups[0].Replace(".", @"\."),
-                SHA1_KEY_PATTERN,
-                patternGroups[1].Replace(".", @"\."));
-            m_PatternRex = new Regex(rexPattern);
+				// Path to output assembly
+				string assemblyFileName = fileNamePattern.Replace("{key}", ti.TemplateKey);
+				string assemblyPath = Path.Combine(templateCacheFolder, assemblyFileName);
 
-            // Delete all files from cache folder matching the pattern
-            if (clearCache)
-            {
-                DirectoryInfo di = new DirectoryInfo(cacheFolder);
-                foreach (FileInfo fi in di.GetFiles())
-                {
-                    if (m_PatternRex.Match(fi.Name).Success)
-                    {
-                        File.Delete(fi.FullName);
-                    }
-                }
-            }
-        }
+				// Generate source
+				SourceGenerator sourceGenerator = new SourceGenerator();
+				ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
 
-        protected override TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, Type> globalsTypes,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies)
-        {
-            lock (m_CacheLock)
-            {
-                // Cache is empty, load templates from cache folder
-                if (m_Cache == null)
-                {
-                    m_Cache = LoadTemplatesInfo(m_CacheFolder);
-                }
+				// Generate assembly
+				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
+				Assembly assembly = assemblyCompiler.GenerateAssembly(ti, false, assemblyPath, null);
 
-                // Create template info
-                TemplateInfo ti = new TemplateInfo()
-                {
-                    TemplateBody = templateBody,
-                    TemplateHash = null,
-                    GlobalsTypes = globalsTypes,
-                    ReferencedAssemblies = referencedAssemblies,
-                    InlineTemplates = inlineTemplates,
-                    TemplateRenderMethod = null
-                };
+				// Try to load the Render() method from assembly
+				ti.RenderMethod = GetTemplateRenderMethod(assembly, ti);
 
-                // Compile Template to TALPrograms and generate the TemplateHash
-                TALCompiler.CompileTemplate(ti);
+				templateInfoCache.Add(ti.TemplateKey, ti);
 
-                // Generated template found in cache
-                if (m_Cache.ContainsKey(ti.TemplateHash))
-                {
-                    return m_Cache[ti.TemplateHash];
-                }
+				return ti;
+			}
+		}
 
-                // Path to output assembly
-                string assemblyFileName = m_Pattern.Replace("{key}", ti.TemplateHash);
-                string assemblyPath = Path.Combine(m_CacheFolder, assemblyFileName);
+		void InitCache(bool clearCache)
+		{
+			// Check cache folder
+			if (!Directory.Exists(templateCacheFolder))
+			{
+				throw new ArgumentException(string.Format("Template cache folder does not exists: [{0}]", templateCacheFolder));
+			}
 
-                // Generate source
-                SourceGenerator sourceGenerator = new SourceGenerator();
-                ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
+			// Setup pattern
+			// If input pattern is "Template_{key}.dll"
+			// then result pattern is "(^Template_)(?<key>[a-zA-Z0-9]{38})(\.dll$)"
+			string[] patternGroups = fileNamePattern.Split(new string[] { "{key}" }, StringSplitOptions.None);
 
-                // Generate assembly
-                AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
-                Assembly assembly = assemblyCompiler.GenerateAssembly(ti, false, assemblyPath, null);
+			// Check if pattern contains exactly one "{key}" macro
+			if (patternGroups.Length != 2)
+			{
+				throw new ArgumentException(
+					string.Format(@"Invalid pattern specified. Macro ""{key}"" is missing or specified more than once: [{0}]",
+					fileNamePattern));
+			}
 
-                // Try to load the Render() method from assembly
-                ti.TemplateRenderMethod = GetTemplateRenderMethod(assembly, ti);
+			// Normalize pattern
+			string rePattern = string.Format(@"(^{0})(?<key>{1})({2}$)",
+				patternGroups[0].Replace(".", @"\."),
+				SHA1_KEY_PATTERN,
+				patternGroups[1].Replace(".", @"\."));
+			fileNamePatternRegex = new Regex(rePattern);
 
-                m_Cache.Add(ti.TemplateHash, ti);
+			// Delete all files from cache folder matching the pattern
+			if (clearCache)
+			{
+				DirectoryInfo di = new DirectoryInfo(templateCacheFolder);
+				foreach (FileInfo fi in di.GetFiles())
+				{
+					if (fileNamePatternRegex.Match(fi.Name).Success)
+					{
+						File.Delete(fi.FullName);
+					}
+				}
+			}
+		}
 
-                return ti;
-            }
-        }
+		Dictionary<string, TemplateInfo> LoadTemplatesInfo(string cacheFolder)
+		{
+			Dictionary<string, TemplateInfo> templateCache = new Dictionary<string, TemplateInfo>();
 
-        private Dictionary<string, TemplateInfo> LoadTemplatesInfo(string cacheFolder)
-        {
-            Dictionary<string, TemplateInfo> templateCache = new Dictionary<string, TemplateInfo>();
+			// Load assemblies containing type with full name [<TEMPLATE_NAMESPACE>.<TEMPLATE_TYPENAME>],
+			// with one public method [public static string Render(Dictionary<string, object> globals)]
 
-            // Load assemblies containing type with full name [<TEMPLATE_NAMESPACE>.<TEMPLATE_TYPENAME>],
-            // with one public method [public static string Render(Dictionary<string, object> globals)]
+			DirectoryInfo di = new DirectoryInfo(cacheFolder);
+			foreach (FileInfo fi in di.GetFiles())
+			{
+				Match fileNameMatch = fileNamePatternRegex.Match(fi.Name);
+				if (fileNameMatch.Success)
+				{
+					// Try to load file as assembly
+					try
+					{
+						AssemblyName.GetAssemblyName(fi.FullName);
+					}
+					catch (System.BadImageFormatException)
+					{
+						// The file is not an Assembly
+						continue;
+					}
 
-            DirectoryInfo di = new DirectoryInfo(cacheFolder);
-            foreach (FileInfo fi in di.GetFiles())
-            {
-                Match fileNameMatch = m_PatternRex.Match(fi.Name);
-                if (fileNameMatch.Success)
-                {
-                    // Try to load file as assembly
-                    try
-                    {
-                        AssemblyName.GetAssemblyName(fi.FullName);
-                    }
-                    catch (System.BadImageFormatException)
-                    {
-                        // The file is not an Assembly
-                        continue;
-                    }
+					// Read assembly
+					Assembly assembly = Utils.ReadAssembly(fi.FullName);
 
-                    // Read assembly
-                    Assembly assembly = Utils.ReadAssembly(fi.FullName);
+					// Get template hash from file name
+					string templateHash = fileNameMatch.Groups["key"].Value;
 
-                    // Get template hash from file name
-                    string templateHash = fileNameMatch.Groups["key"].Value;
+					// Create template info
+					TemplateInfo ti = new TemplateInfo() { TemplateKey = templateHash };
 
-                    // Create template info
-                    TemplateInfo ti = new TemplateInfo() { TemplateHash = templateHash };
+					// Try to load the Render() method from assembly
+					ti.RenderMethod = GetTemplateRenderMethod(assembly, ti);
 
-                    // Try to load the Render() method from assembly
-                    ti.TemplateRenderMethod = GetTemplateRenderMethod(assembly, ti);
+					templateCache.Add(templateHash, ti);
+				}
+			}
 
-                    templateCache.Add(templateHash, ti);
-                }
-            }
-
-            return templateCache;
-        }
-    }
+			return templateCache;
+		}
+	}
 }

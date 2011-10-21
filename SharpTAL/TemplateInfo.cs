@@ -32,10 +32,20 @@ using System.Reflection;
 
 namespace SharpTAL
 {
-    public class TemplateInfo
+	public class TemplateInfo
     {
-        /// <summary>
-        /// Source xml of the template.
+		/// <summary>
+		/// Contains a unique key that represent the template in the template cache.
+		/// The template key is computed from the following parts:
+		///	 Template body hash
+		///	 Global types hash
+		///	 Imported templates hash
+		///	 Referenced assemblies hash
+		/// </summary>
+		public string TemplateKey;
+
+		/// <summary>
+        /// Template body.
         /// </summary>
         public string TemplateBody;
 
@@ -47,13 +57,6 @@ namespace SharpTAL
         public Dictionary<string, Type> GlobalsTypes;
 
         /// <summary>
-        /// Dictionary of inline templates xml sources.
-        /// The key contains the inline template name.
-        /// The value contains the inline template source xml.
-        /// </summary>
-        public Dictionary<string, string> InlineTemplates;
-
-        /// <summary>
         /// List of referenced assemblies.
         /// </summary>
         public List<Assembly> ReferencedAssemblies;
@@ -61,37 +64,24 @@ namespace SharpTAL
         /// <summary>
         /// Reference to generated method used to render the template.
         /// </summary>
-        public MethodInfo TemplateRenderMethod;
+        public MethodInfo RenderMethod;
 
-        /// <summary>
-        /// Contains a unique key that represent the template in the template cache.
-        /// It is computed from:
-        ///		"Template Body"
-        ///		"Full Names of Global Types"
-        ///		"Inline Templates Bodies"
-        ///		"Imported Templates Bodies"
-        ///		"Full Names of Referenced Assemblies"
+		/// <summary>
+		/// Main template program compiled from TemplateBody.
         /// </summary>
-        public string TemplateHash;
+        public TemplateProgram MainProgram;
 
-        /// <summary>
-        /// Dictionary of TALPrograms compiled from TemplateBody and InlineTemplates.
-        /// The key contains the template name.
-        /// The value contains the compiled template program.
+		/// <summary>
+		/// Dictionary of TemplatePrograms compiled from templates imported by "metal:import" command.
+		/// The key contains the full path to the template file.
+		/// The value contains the compiled program.
         /// </summary>
-        public Dictionary<string, TALProgram> Programs;
+        public Dictionary<string, TemplateProgram> ImportedPrograms;
 
         /// <summary>
-        /// Dictionary of TALPrograms compiled from templates imported by "metal:import" command.
-        /// The key contains the full path to the template source file.
-        /// The value contains the compiled template program.
-        /// </summary>
-        public Dictionary<string, TALProgram> ImportedPrograms;
-
-        /// <summary>
-        /// Dictionary of template namespaces created by "metal:import" command.
-        /// The key contains the imported template namespace.
-        /// The value contains the list of full paths to template source files.
+		/// Dictionary of paths to imported programs hashed by namespace created by "metal:import" command.
+		/// The key contains the imported program namespace.
+		/// The value contains the list of full paths to template files.
         /// </summary>
         public Dictionary<string, HashSet<string>> ImportedNamespaces;
 

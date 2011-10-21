@@ -41,7 +41,7 @@ namespace SharpTAL.SharpTALTests.TALTests
 			globals.Add("needsQuoting", @"Does ""this"" work?");
 			globals.Add("number", 5);
 			globals.Add("uniQuote", @"Does ""this"" work?");
-			globals.Add("anotherdefault", new Dictionary<string, string>() { { "inhere", Constants.DEFAULTVALUE } });
+			globals.Add("anotherdefault", new Dictionary<string, string>() { { "inhere", Constants.DEFAULT_VALUE } });
 		}
 
 		public static void RunTest(string template, string expected, string errMsg)
@@ -178,6 +178,51 @@ namespace SharpTAL.SharpTALTests.TALTests
 		}
 
 		[Test]
+		public void TestMultipleTalAttributeJoinAndOverride()
+		{
+			RunTest(
+				@"<html tal:attributes=""link link"" href=""owlfish.com"" tal:attributes=""link string:${1+1}"">Hello</html>",
+				@"<html href=""owlfish.com"" link=""2"">Hello</html>",
+				"Multiple attribute join and override failed.");
+		}
+
+		[Test]
+		public void TestInlineExpressions()
+		{
+			RunTest(
+				@"<html title='1 + 1 = ${1 + 1}'>Hello</html>",
+				@"<html title='1 + 1 = 2'>Hello</html>",
+				"Inline expressions escaping failed.");
+		}
+
+		[Test]
+		public void TestInlineExpressionsWithFormat()
+		{
+			RunTest(
+				@"<html title='${string.Format(""1 + 1 = {0}"", 1 + 1)}'>Hello</html>",
+				@"<html title='1 + 1 = 2'>Hello</html>",
+				"Inline expressions with format failed.");
+		}
+
+		[Test]
+		public void TestInlineExpressionsWithExprEscape()
+		{
+			RunTest(
+				@"<html title='This is \${escaped}, ${string.Format(""1 + 1 = {0}"", 1 + 1)}'>Hello</html>",
+				@"<html title='This is \${escaped}, 1 + 1 = 2'>Hello</html>",
+				"Inline expressions with expression escaping failed.");
+		}
+
+		[Test]
+		public void TestInlineExpressionsWithQuoteEscaping()
+		{
+			RunTest(
+				@"<html tal:define='quote string:[""]' tal:define=""quote2 string:[']"" tal:attributes=""class string:the_guote_${quote}"" title=""this is escaped: ${quote} and this is not: ${quote2}"" id='the unescaped quote ${quote}'>Hello</html>",
+				@"<html title=""this is escaped: [&quot;] and this is not: [']"" id='the unescaped quote [""]' class=""the_guote_[&quot;]"">Hello</html>",
+				"Inline expressions quote escaping failed.");
+		}
+
+		[Test]
 		public void TestAttributeInvariantCulture()
 		{
 			string template = @"<html tal:attributes=""value 1.05""> </html>";
@@ -193,7 +238,7 @@ namespace SharpTAL.SharpTALTests.TALTests
 			string template = @"<html tal:attributes=""value 1.05""> </html>";
 			string expected = @"<html value=""1,05""> </html>";
 			TemplateInfo ti;
-			string actual = cache.RenderTemplate(template, globals, null, null, out ti, new CultureInfo("fi-FI"));
+			string actual = cache.RenderTemplate(template, globals, null, out ti, new CultureInfo("fi-FI"));
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
 		}

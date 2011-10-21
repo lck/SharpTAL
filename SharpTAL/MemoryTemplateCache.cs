@@ -32,60 +32,59 @@ using System.Reflection;
 
 namespace SharpTAL
 {
-    public class MemoryTemplateCache : AbstractTemplateCache
-    {
-        object m_CacheLock;
-        Dictionary<string, TemplateInfo> m_Cache;
+	public class MemoryTemplateCache : AbstractTemplateCache
+	{
+		Dictionary<string, TemplateInfo> templateInfoCache;
+		object templateInfoCacheLock;
 
-        /// <summary>
-        /// Initialize the template cache
-        /// </summary>
-        public MemoryTemplateCache()
-        {
-            m_CacheLock = new object();
-            m_Cache = new Dictionary<string, TemplateInfo>();
-        }
+		/// <summary>
+		/// Initialize the template cache
+		/// </summary>
+		public MemoryTemplateCache() :
+			base()
+		{
+			templateInfoCache = new Dictionary<string, TemplateInfo>();
+			templateInfoCacheLock = new object();
+		}
 
-        protected override TemplateInfo GetTemplateInfo(string templateBody, Dictionary<string, Type> globalsTypes,
-            Dictionary<string, string> inlineTemplates, List<Assembly> referencedAssemblies)
-        {
-            lock (m_CacheLock)
-            {
-                // Create template info
-                TemplateInfo ti = new TemplateInfo()
-                {
-                    TemplateBody = templateBody,
-                    TemplateHash = null,
-                    GlobalsTypes = globalsTypes,
-                    ReferencedAssemblies = referencedAssemblies,
-                    InlineTemplates = inlineTemplates,
-                    TemplateRenderMethod = null
-                };
+		public override TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies)
+		{
+			lock (templateInfoCacheLock)
+			{
+				// Compile template body and generate the TemplateKey
+				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				TemplateInfo ti = new TemplateInfo
+				{
+					TemplateBody = templateBody,
+					GlobalsTypes = globalsTypes,
+					ReferencedAssemblies = referencedAssemblies
+				};
+				compiler.CompileTemplate(ref ti);
 
-                // Compile Template to TALPrograms and generate the TemplateHash
-                TALCompiler.CompileTemplate(ti);
+				// Compute the template key
+				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
 
-                // Generated template found in cache
-                if (m_Cache.ContainsKey(ti.TemplateHash))
-                {
-                    return m_Cache[ti.TemplateHash];
-                }
+				// Generated template found in cache
+				if (templateInfoCache.ContainsKey(ti.TemplateKey))
+				{
+					return templateInfoCache[ti.TemplateKey];
+				}
 
-                // Generate source
-                SourceGenerator sourceGenerator = new SourceGenerator();
-                ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
+				// Generate source
+				SourceGenerator sourceGenerator = new SourceGenerator();
+				ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
 
-                // Generate assembly
-                AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
-                Assembly assembly = assemblyCompiler.GenerateAssembly(ti, true, null, null);
+				// Generate assembly
+				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
+				Assembly assembly = assemblyCompiler.GenerateAssembly(ti, true, null, null);
 
-                // Try to load the Render() method from assembly
-                ti.TemplateRenderMethod = GetTemplateRenderMethod(assembly, ti);
+				// Try to load the Render() method from assembly
+				ti.RenderMethod = GetTemplateRenderMethod(assembly, ti);
 
-                m_Cache.Add(ti.TemplateHash, ti);
+				templateInfoCache.Add(ti.TemplateKey, ti);
 
-                return ti;
-            }
-        }
-    }
+				return ti;
+			}
+		}
+	}
 }

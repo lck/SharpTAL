@@ -82,8 +82,6 @@ String expression syntax::
 
         string_expression ::= ( plain_string | [ varsub ] )*
         varsub            ::= ( '${ Expression }' )
-        plain_string      ::= ( '$$' | non_dollar )*
-        non_dollar        ::= any character except '$'
 
 Description
 ~~~~~~~~~~~
@@ -93,8 +91,8 @@ expression string is supplied the resulting string is *empty*. The
 string can contain variable substitutions of the form ``${expression}``,
 where ``expression`` is a TALES-expression. The escaped string value of the expression is inserted into the string.
 
-.. note:: To prevent a ``$`` from being interpreted this
-   way, it must be escaped as ``$$``.
+.. note:: To prevent a ``${...}`` from being interpreted this
+   way, it must be escaped as ``\${...}``.
 
 Examples
 ~~~~~~~~
@@ -111,7 +109,12 @@ Basic string formatting::
 
 Including a dollar sign::
 
-    <p tal:content="string:$$${cost}">
+    <p tal:content="string:$${cost}">
       cost: $42.00
     </p>
 
+Including operator ${...}::
+
+    <p tal:content="string:The expression operator: \${cost}">
+      cost: $42.00
+    </p>

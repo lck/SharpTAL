@@ -26,7 +26,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -37,7 +39,6 @@ namespace SharpTAL
 	class Utils
 	{
 		internal static readonly Regex _re_needs_escape = new Regex(@"[&<>""\']");
-		internal static readonly Regex _re_amp = new Regex(@"&(?!([A-Za-z]+|#[0-9]+);)");
 
 		public static Assembly ReadAssembly(string asmPath)
 		{
@@ -67,14 +68,82 @@ namespace SharpTAL
 			byte[] tmpSource;
 			byte[] tmpHash;
 
-			//Create a byte array from source data
+			// Create a byte array from source data
 			tmpSource = ASCIIEncoding.ASCII.GetBytes(source);
 
-			//Compute hash based on source data
+			// Compute hash based on source data
 			tmpHash = new SHA1CryptoServiceProvider().ComputeHash(tmpSource);
 
 			string hash = ByteArrayToString(tmpHash);
 			return hash;
+		}
+
+		public static string ComputeHash(Dictionary<string, Type> globalsTypes)
+		{
+			string hash = string.Empty;
+			if (globalsTypes != null && globalsTypes.Count > 0)
+			{
+				List<string> names = new List<string>(globalsTypes.Keys);
+				names.Sort();
+				foreach (string name in names)
+				{
+					Type type = globalsTypes[name];
+					hash += name + type.FullName;
+				}
+				hash = ComputeHash(hash);
+			}
+			return hash;
+		}
+
+		public static string ComputeHash(List<Assembly> assemblies)
+		{
+			string hash = string.Empty;
+			if (assemblies != null && assemblies.Count > 0)
+			{
+				foreach (Assembly asm in assemblies)
+				{
+					hash += asm.FullName;
+				}
+				hash = ComputeHash(hash);
+			}
+			return hash;
+		}
+
+		/// <summary>
+		/// Returns a unique key that represent the template in the template cache.
+		/// The template key is computed from the following parts:
+		///	 Template body hash,
+		///	 Global types hash,
+		///	 Imported templates hash,
+		///	 Referenced assemblies hash
+		/// </summary>
+		/// <param name="ti">Template info</param>
+		/// <returns>Template key</returns>
+		public static string ComputeTemplateKey(TemplateInfo ti)
+		{
+			// Template body hash
+			string hash = Utils.ComputeHash(ti.TemplateBody);
+
+			// Global types hash
+			hash += Utils.ComputeHash(ti.GlobalsTypes);
+
+			// Imported templates hash
+			if (ti.ImportedPrograms != null && ti.ImportedPrograms.Count > 0)
+			{
+				List<string> keys = new List<string>(ti.ImportedPrograms.Keys);
+				keys.Sort();
+				foreach (string path in keys)
+				{
+					hash += Utils.ComputeHash(ti.ImportedPrograms[path].TemplateBody);
+				}
+			}
+
+			// Referenced assemblies hash
+			hash += Utils.ComputeHash(ti.ReferencedAssemblies);
+
+			// Template Key
+			string templateKey = Utils.ComputeHash(hash);
+			return templateKey;
 		}
 
 		public static string ByteArrayToString(byte[] arrInput)
@@ -89,23 +158,12 @@ namespace SharpTAL
 		}
 
 		/// <summary>
-		/// Escape HTML entities in node content
+		/// Escape HTML entities in attribute value
 		/// </summary>
-		/// <param name="s"></param>
-		/// <returns></returns>
-		public static string Escape(string s)
+		public static string EscapeAttrValue(Attr attr)
 		{
-			return Escape(s, false);
-		}
+			string str = attr.Value;
 
-		/// <summary>
-		/// Escape HTML entities. Set quote to True to escape attribute value.
-		/// </summary>
-		/// <param name="str"></param>
-		/// <param name="quote"></param>
-		/// <returns></returns>
-		public static string Escape(string str, bool quote)
-		{
 			if (string.IsNullOrEmpty(str))
 				return str;
 
@@ -113,22 +171,7 @@ namespace SharpTAL
 				return str;
 
 			if (str.IndexOf('&') >= 0)
-			{
-				// If there's a semicolon in the string, then
-				// it might be part of an HTML entity. We
-				// replace the ampersand character with its
-				// HTML entity counterpart only if it's
-				// precedes an HTML entity string.
-				if (str.IndexOf(';') >= 0)
-				{
-					str = _re_amp.Replace(str, "&amp;");
-				}
-				else
-				{
-					// Otherwise, it's safe to replace all ampersands:
-					str = str.Replace("&", "&amp;");
-				}
-			}
+				str = str.Replace("&", "&amp;");
 
 			if (str.IndexOf('>') >= 0)
 				str = str.Replace("<", "&lt;");
@@ -136,9 +179,8 @@ namespace SharpTAL
 			if (str.IndexOf('>') >= 0)
 				str = str.Replace(">", "&gt;");
 
-			// TODO: Use Attr.Quote instead of hardcoded "
-			if (quote && str.IndexOf('"') >= 0)
-				str = str.Replace("\"", "&quot;");
+			if (!string.IsNullOrEmpty(attr.Quote) && str.IndexOf(attr.Quote) >= 0)
+				str = str.Replace(attr.Quote, attr.QuoteEntity);
 
 			return str;
 		}
@@ -148,16 +190,29 @@ namespace SharpTAL
 			if (string.IsNullOrEmpty(str))
 				return str;
 
-			int cp = HTMLEntityDefs.Name2Code["&lt;"];
+			int cp = HTMLEntityDefs.Name2Code["lt"];
 			str = str.Replace("&lt;", ((char)cp).ToString());
 
-			cp = HTMLEntityDefs.Name2Code["&gt;"];
+			cp = HTMLEntityDefs.Name2Code["gt"];
 			str = str.Replace("&gt;", ((char)cp).ToString());
 
-			cp = HTMLEntityDefs.Name2Code["&quot;"];
+			cp = HTMLEntityDefs.Name2Code["quot"];
 			str = str.Replace("&quot;", ((char)cp).ToString());
 
 			return str;
+		}
+
+		public static string Char2Entity(string chr)
+		{
+			if (string.IsNullOrEmpty(chr))
+				return chr;
+			char c = chr.Substring(0, 1)[0];
+			int cp = (int)c;
+			string name = null;
+			if (HTMLEntityDefs.Code2Name.TryGetValue(cp, out name))
+				return string.Format("&{0};", name);
+			else
+				return string.Format("&#{0};", cp);
 		}
 	}
 }

@@ -58,14 +58,8 @@ namespace SharpTAL.SharpTALTests.TALESTests
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			RunTest(template, expected, errMsg, null);
-		}
-
-		public static void RunTest(string template, string expected, string errMsg,
-			Dictionary<string, string> inlineTemplates)
-		{
-			string actual = cache.RenderTemplate(template, globals, inlineTemplates);
-			actual = actual.Replace("{", "{{").Replace("}", "}}");
+			string actual = cache.RenderTemplate(template, globals);
+			actual = actual.Replace("{", "{").Replace("}", "}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);
 		}
@@ -184,19 +178,13 @@ namespace SharpTAL.SharpTALTests.TALESTests
 		}
 
 		[Test]
-		public void TestTrailingDollar()
+		public void TestInlineExpressions()
 		{
-			RunTest(@"<html tal:content=""string:A trailing dollar: $"">Exists</html>",
-			   "<html>A trailing dollar: </html>",
-			   "No such path failed!");
-		}
-
-		[Test]
-		public void TestDollarEscaping()
-		{
-			RunTest(@"<html tal:content=""string:$$A trailing $$dollar: $$"">Exists</html>",
-			   "<html>$A trailing $dollar: $</html>",
-			   "No such path failed!");
+			RunTest(@"<html>${string:Hello "" { ${string.Format(""{0}"", @""
+World"") + ""!""} }, \${escaped} 9 / 3 = ${9 / 3}}}</html>",
+			   @"<html>Hello "" { 
+World! }, \${escaped} 9 / 3 = 3}</html>",
+			   "Inline expression failed!");
 		}
 
 		[Test]

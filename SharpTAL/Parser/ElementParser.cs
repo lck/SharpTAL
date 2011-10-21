@@ -38,44 +38,12 @@ using System.Text.RegularExpressions;
 
 namespace SharpTAL.Parser
 {
-	public class Element
-	{
-		public string Kind { get; private set; }
-		public Dictionary<string, object> StartTagTokens { get; private set; }
-		public Dictionary<string, object> EndTagTokens { get; private set; }
-		public List<Element> Children { get; private set; }
-
-		public Element(string kind, Token startTag)
-		{
-			Kind = kind;
-			StartTagTokens = new Dictionary<string, object> { { "", startTag } };
-			EndTagTokens = new Dictionary<string, object>();
-			Children = new List<Element>();
-		}
-
-		public Element(string kind, Dictionary<string, object> startTagTokens)
-		{
-			Kind = kind;
-			StartTagTokens = startTagTokens;
-			EndTagTokens = new Dictionary<string, object>();
-			Children = new List<Element>();
-		}
-
-		public Element(string kind, Dictionary<string, object> startTagTokens, Dictionary<string, object> endTagTokens, List<Element> children)
-		{
-			Kind = kind;
-			StartTagTokens = startTagTokens;
-			EndTagTokens = endTagTokens;
-			Children = children;
-		}
-	}
-
 	/// <summary>
 	/// Parses tokens into elements.
 	/// </summary>
 	public class ElementParser
 	{
-		static readonly Regex _match_tag_prefix_and_name = new Regex(
+		static readonly Regex match_tag_prefix_and_name = new Regex(
 			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \r\n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
 		static readonly Regex match_single_attribute = new Regex(
 			@"(?<space>\s+)(?!\d)" +
@@ -84,137 +52,111 @@ namespace SharpTAL.Parser
 			@"((?<quote>[\'""])(?<value>.*?)\k<quote>|" +
 			@"(?<alt_value>[^\s\'"">/]+))|" +
 			@"(?<simple_value>(?![ \\n\\t\\r]*=)))", RegexOptions.Singleline);
-		static readonly Regex _match_comment = new Regex(@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
-		static readonly Regex _match_cdata = new Regex(@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
-		static readonly Regex _match_declaration = new Regex(@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
-		static readonly Regex _match_processing_instruction = new Regex(@"^<\?(?<text>.*?)\?>", RegexOptions.Singleline);
-		static readonly Regex _match_xml_declaration = new Regex(@"^<\?xml(?=[ /])", RegexOptions.Singleline);
+		static readonly Regex match_comment = new Regex(@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
+		static readonly Regex match_cdata = new Regex(@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
+		static readonly Regex match_declaration = new Regex(@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
+		static readonly Regex match_processing_instruction = new Regex(@"^<\?(?<text>.*?)\?>", RegexOptions.Singleline);
+		static readonly Regex match_xml_declaration = new Regex(@"^<\?xml(?=[ /])", RegexOptions.Singleline);
 
-		IEnumerable<Token> _stream;
-		List<Dictionary<string, string>> _namespaces;
-		List<Element> _queue;
-		Stack<KeyValuePair<Token, int>> _index;
+		IEnumerable<Token> stream;
+		List<Dictionary<string, string>> namespaces;
+		List<Element> queue;
+		Stack<KeyValuePair<Token, int>> index;
 
-		public ElementParser(IEnumerable<Token> stream, Dictionary<string, string> default_namespaces)
+		public ElementParser(IEnumerable<Token> stream, Dictionary<string, string> defaultNamespaces)
 		{
-			this._stream = stream;
-			this._queue = new List<Element>();
-			this._index = new Stack<KeyValuePair<Token, int>>();
-			this._namespaces = new List<Dictionary<string, string>> { new Dictionary<string, string>(default_namespaces) };
+			this.stream = stream;
+			this.queue = new List<Element>();
+			this.index = new Stack<KeyValuePair<Token, int>>();
+			this.namespaces = new List<Dictionary<string, string>> { new Dictionary<string, string>(defaultNamespaces) };
 		}
 
 		public IEnumerable<Element> Parse()
 		{
-			foreach (var token in this._stream)
+			foreach (var token in this.stream)
 			{
 				var item = this.ParseToken(token);
-				this._queue.Add(item);
+				this.queue.Add(item);
 			}
-			return this._queue;
+			return this.queue;
 		}
 
 		Element ParseToken(Token token)
 		{
-			string kind = IdentifyToken(token);
-			if (kind == "comment")
-				return visit_comment(kind, token);
-			if (kind == "end_tag")
-				return visit_end_tag(kind, token);
-			if (kind == "empty_tag")
-				return visit_empty_tag(kind, token);
-			if (kind == "start_tag")
-				return visit_start_tag(kind, token);
-			if (kind == "text")
-				return visit_text(kind, token);
-			return visit_default(kind, token);
+			TokenKind kind = token.Kind;
+			if (kind == TokenKind.Comment)
+				return visit_comment(token);
+			if (kind == TokenKind.EndTag)
+				return visit_end_tag(token);
+			if (kind == TokenKind.EmptyTag)
+				return visit_empty_tag(token);
+			if (kind == TokenKind.StartTag)
+				return visit_start_tag(token);
+			if (kind == TokenKind.Text)
+				return visit_text(token);
+			return visit_default(token);
 		}
 
-		static string IdentifyToken(Token token)
+		Element visit_comment(Token token)
 		{
-			string s = token.ToString();
-			if (s.StartsWith("<"))
-			{
-				if (s.StartsWith("<!--"))
-					return "comment";
-				if (s.StartsWith("<![CDATA["))
-					return "cdata";
-				if (s.StartsWith("<!"))
-					return "declaration";
-				if (s.StartsWith("<?xml"))
-					return "xml_declaration";
-				if (s.StartsWith("<?"))
-					return "processing_instruction";
-				if (s.StartsWith("</"))
-					return "end_tag";
-				if (s.EndsWith("/>"))
-					return "empty_tag";
-				if (s.EndsWith(">"))
-					return "start_tag";
-				return "error";
-			}
-			return "text";
+			return new Element(ElementKind.Comment, token);
 		}
 
-		Element visit_comment(string kind, Token token)
+		Element visit_default(Token token)
 		{
-			return new Element("comment", token);
+			return new Element(ElementKind.Default, token);
 		}
 
-		Element visit_default(string kind, Token token)
+		Element visit_text(Token token)
 		{
-			return new Element("default", token);
+			return new Element(ElementKind.Text, token);
 		}
 
-		Element visit_text(string kind, Token token)
+		Element visit_start_tag(Token token)
 		{
-			return new Element(kind, token);
-		}
-
-		Element visit_start_tag(string kind, Token token)
-		{
-			var ns = new Dictionary<string, string>(_namespaces.Last());
-			_namespaces.Add(ns);
+			var ns = new Dictionary<string, string>(namespaces.Last());
+			namespaces.Add(ns);
 			var node = parse_tag(token, ns);
-			_index.Push(new KeyValuePair<Token, int>(node["name"] as Token, _queue.Count));
-			return new Element(kind, node);
+			index.Push(new KeyValuePair<Token, int>(node["name"] as Token, queue.Count));
+			return new Element(ElementKind.StartTag, node);
 		}
 
-		Element visit_end_tag(string kind, Token token)
+		Element visit_end_tag(Token token)
 		{
 			Dictionary<string, string> ns;
 			try
 			{
-				ns = _namespaces.Last();
-				_namespaces.RemoveAt(_namespaces.Count - 1);
+				ns = namespaces.Last();
+				namespaces.RemoveAt(namespaces.Count - 1);
 			}
 			catch (InvalidOperationException ex)
 			{
 				throw new ParseError("Unexpected end tag.", token);
 			}
 			Dictionary<string, object> node = parse_tag(token, ns); ;
-			while (_index.Count > 0)
+			while (index.Count > 0)
 			{
-				KeyValuePair<Token, int> idx = _index.Pop();
+				KeyValuePair<Token, int> idx = index.Pop();
 				Token name = idx.Key;
 				int pos = idx.Value;
 				if (node["name"].Equals(name))
 				{
-					Element el = _queue[pos];
-					_queue.RemoveAt(pos);
+					Element el = queue[pos];
+					queue.RemoveAt(pos);
 					Dictionary<string, object> start = el.StartTagTokens;
-					List<Element> children = _queue.GetRange(pos, _queue.Count - pos);
-					_queue.RemoveRange(pos, _queue.Count - pos);
-					return new Element("element", start, node, children);
+					List<Element> children = queue.GetRange(pos, queue.Count - pos);
+					queue.RemoveRange(pos, queue.Count - pos);
+					return new Element(ElementKind.Element, start, node, children);
 				}
 			}
 			throw new ParseError("Unexpected end tag.", token);
 		}
 
-		Element visit_empty_tag(string kind, Token token)
+		Element visit_empty_tag(Token token)
 		{
-			var ns = new Dictionary<string, string>(_namespaces.Last());
+			var ns = new Dictionary<string, string>(namespaces.Last());
 			var node = parse_tag(token, ns);
-			return new Element("element", node);
+			return new Element(ElementKind.Element, node);
 		}
 
 		static Dictionary<string, object> groupdict(Regex r, Match m, Token token)
@@ -227,7 +169,7 @@ namespace SharpTAL.Parser
 				{
 					int i = g.Index;
 					int j = g.Length;
-					d.Add(name, token.SubString(i, j));
+					d.Add(name, token.Substring(i, j));
 				}
 				else
 				{
@@ -239,11 +181,11 @@ namespace SharpTAL.Parser
 
 		static Dictionary<string, object> match_tag(Token token)
 		{
-			Match match = _match_tag_prefix_and_name.Match(token.ToString());
-			Dictionary<string, object> node = groupdict(_match_tag_prefix_and_name, match, token);
+			Match match = match_tag_prefix_and_name.Match(token.ToString());
+			Dictionary<string, object> node = groupdict(match_tag_prefix_and_name, match, token);
 
 			int end = match.Index + match.Length;
-			token = token.SubString(end, -1);
+			token = token.Substring(end);
 
 			var attrs = new List<Dictionary<string, object>>();
 			node["attrs"] = attrs;
@@ -276,7 +218,7 @@ namespace SharpTAL.Parser
 				}
 				attrs.Add(attr);
 				int m_end = m.Index + m.Length;
-				node["suffix"] = token.SubString(m_end, -1);
+				node["suffix"] = token.Substring(m_end);
 			}
 
 			return node;
@@ -332,9 +274,9 @@ namespace SharpTAL.Parser
 					{
 						n = ns[prefix];
 					}
-					catch (IndexOutOfRangeException ex)
+					catch (KeyNotFoundException ex)
 					{
-						throw new IndexOutOfRangeException(
+						throw new KeyNotFoundException(
 							string.Format("Undefined namespace prefix: {0}.", prefix));
 					}
 				}

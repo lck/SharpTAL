@@ -42,16 +42,10 @@ namespace SharpTAL.SharpTALTests.TALTests
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			RunTest(template, expected, errMsg, null);
-		}
-
-		public static void RunTest(string template, string expected, string errMsg,
-			Dictionary<string, string> inlineTemplates)
-		{
 			TemplateInfo ti;
 			try
 			{
-				string actual = cache.RenderTemplate(template, globals, inlineTemplates, null, out ti);
+				string actual = cache.RenderTemplate(template, globals, null, out ti);
 				actual = actual.Replace("{", "{{").Replace("}", "}}");
 				Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 					Environment.NewLine, errMsg, template, actual, expected);

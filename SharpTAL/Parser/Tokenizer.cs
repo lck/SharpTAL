@@ -38,8 +38,6 @@ using System.Text.RegularExpressions;
 
 namespace SharpTAL.Parser
 {
-	using StringInject;
-
 	public static class Tokenizer
 	{
 		static Dictionary<string, string> res;
@@ -48,7 +46,9 @@ namespace SharpTAL.Parser
 
 		static void add(string name, string reg)
 		{
-			res.Add(name, reg.Inject(res));
+			foreach (var key in res.Keys)
+				reg = reg.Replace("{" + key + "}", res[key]);
+			res.Add(name, reg);
 		}
 
 		static Tokenizer()
@@ -76,7 +76,7 @@ namespace SharpTAL.Parser
 			add("DeclCE", "--(?:{CommentCE})?|\\[CDATA\\[(?:{CDATA_CE})?|DOCTYPE(?:{DocTypeCE})?");
 			add("PI_CE", "{Name}(?:{PI_Tail})?");
 			add("EndTagCE", "{Name}(?:{S})?>?");
-			add("AttValSE", "\"[^<\"]*\"|'[^<']*'");
+			add("AttValSE", "\"[^\"]*\"|'[^']*'");
 			add("ElemTagCE", "({Name})(?:({S})({Name})(((?:{S})?=(?:{S})?)(?:{AttValSE}|{Simple})|(?!(?:{S})?=)))*(?:{S})?(/?>)?");
 			add("MarkupSPE", "<(?:!(?:{DeclCE})?|\\?(?:{PI_CE})?|/(?:{EndTagCE})?|(?:{ElemTagCE})?)");
 			add("XML_SPE", "{TextSE}|{MarkupSPE}");
@@ -91,10 +91,15 @@ namespace SharpTAL.Parser
 		{
 			foreach (Match match in re_xml_spe.Matches(body))
 			{
-				string str = match.Value;
-				int pos = match.Index;
-				yield return new Token(str, pos, body, filename);
+				string token = match.Value;
+				int position = match.Index;
+				yield return new Token(token, position, body, filename);
 			}
+		}
+
+		public static IEnumerable<Token> TokenizeText(string body, string filename = null)
+		{
+			yield return new Token(body, 0, body, filename);
 		}
 	}
 }

@@ -27,6 +27,7 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
@@ -62,121 +63,127 @@ namespace SharpTAL.Demo
 	{
 		static void Main(string[] args)
 		{
-			TemplateInfo ti;
+			// Referenced Assemblies
+			List<Assembly> refAssemblies = new List<Assembly>() { typeof(Demo).Assembly };
+
+			// Globals
+			Dictionary<string, object> globals = new Dictionary<string, object>()
+			{
+				{
+					"friends", new List<Friend>()
+					{
+						new Friend() { Name="Samantha", Age=33 },
+						new Friend() { Name="Kim", Age=35 },
+						new Friend() { Name="Sandra", Age=22 },
+						new Friend() { Name="Natalie", Age=20 }
+					}
+				}
+			};
+			XmlDocument xmlDoc = new XmlDocument();
+			xmlDoc.LoadXml(Resources.Macros);
+			globals.Add("xmlDoc", xmlDoc);
+
+			// Globals types
+			Dictionary<string, Type> globalsTypes = new Dictionary<string, Type>();
+			foreach (var kw in globals)
+			{
+				globalsTypes.Add(kw.Key, kw.Value.GetType());
+			}
+
 			try
 			{
-				// Referenced Assemblies
-				List<Assembly> refAssemblies = new List<Assembly>() { typeof(Demo).Assembly };
-
-				// Globals
-				Dictionary<string, object> globals = new Dictionary<string, object>()
-                {
-                    {
-						"friends", new List<Friend>()
-						{
-							new Friend() { Name="Samantha", Age=33 },
-							new Friend() { Name="Kim", Age=35 },
-							new Friend() { Name="Sandra", Age=22 },
-							new Friend() { Name="Natalie", Age=20 }
-						}
-					}
-                };
-				XmlDocument xmlDoc = new XmlDocument();
-				xmlDoc.LoadXml(Resources.Macros);
-				globals.Add("xmlDoc", xmlDoc);
-
-				// Inline templates
-				Dictionary<string, string> inlineTemplates = new Dictionary<string, string>();
-				inlineTemplates.Add("Macros", Resources.Macros);
-
-				// Speed tests
-				Console.WriteLine("-------------------------------");
-				Console.WriteLine("Speed tests:");
-				Console.WriteLine("-------------------------------");
+				// Macro program compiler speed tests
+				Console.WriteLine("Macro program compilation speed tests:");
+				Console.WriteLine("======================================");
 				Stopwatch sw = new Stopwatch();
 				sw.Start();
-				int count = 200;
-				for (int i = 0; i < count; i++)
+				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				for (int i = 0; i < 5; i++)
 				{
-					TALCompiler.CompileTemplate(new TemplateInfo() { TemplateBody = Resources.Main, InlineTemplates = inlineTemplates });
+					sw.Reset();
+					sw.Start();
+					TemplateInfo ti = new TemplateInfo
+					{
+						TemplateBody = Resources.Main,
+						GlobalsTypes = globalsTypes,
+						ReferencedAssemblies = refAssemblies
+					};
+					compiler.CompileTemplate(ref ti);
+					sw.Stop();
+					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
 				}
 				sw.Stop();
-				Console.WriteLine(string.Format("Precompile {0} templates: {1} milliseconds", count, sw.ElapsedMilliseconds));
-				Console.WriteLine();
 
-				// Template cache no. 1
-				Console.WriteLine("-------------------------------");
-				Console.WriteLine("[1] Initializing template cache:");
-				Console.WriteLine("-------------------------------");
+				// Template generation speed tests
 				Console.WriteLine();
+				Console.WriteLine("Template compilation speed tests:");
+				Console.WriteLine("=================================");
+				Template template = new Template(Resources.Main, globalsTypes, refAssemblies);
+				for (int i = 0; i < 5; i++)
+				{
+					sw.Reset();
+					sw.Start();
+					template.Compile();
+					sw.Stop();
+					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+				}
 
+				// FS Template cache no. 1
+				Console.WriteLine();
+				Console.WriteLine("FS template cache no.1");
+				Console.WriteLine("======================");
 				string cacheFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Template Cache");
-				Console.WriteLine(string.Format("Cache folder: {0}", cacheFolder));
 				if (!Directory.Exists(cacheFolder))
 				{
 					Directory.CreateDirectory(cacheFolder);
 				}
 				FileSystemTemplateCache cache1 = new FileSystemTemplateCache(cacheFolder, true, @"Demo_{key}.dll");
-
-				// Template rendering no. 1
-				Console.WriteLine("-------------------------------");
-				Console.WriteLine("[1] Rendering template Main:");
-				Console.WriteLine("-------------------------------");
-				Console.WriteLine(Resources.Main);
+				template.TemplateCache = cache1;
+				string result = "";
+				for (int i = 0; i < 5; i++)
+				{
+					sw.Reset();
+					sw.Start();
+					result = template.Render(globals);
+					sw.Stop();
+					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+				}
 				Console.WriteLine();
 
-				for (int i = 0; i < 2; i++)
-				{
-					sw.Reset();
-					sw.Start();
-					string result = cache1.RenderTemplate(Resources.Main, globals, inlineTemplates, refAssemblies, out ti);
-					sw.Stop();
-
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(string.Format("[1] Result ({0}. Milliseconds: {1}):", i + 1, sw.ElapsedMilliseconds));
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(result);
-				}
-
-				// Template cache no. 2
-				Console.WriteLine("-------------------------------");
-				Console.WriteLine("[2] Initializing template cache (reusing templates):");
-				Console.WriteLine("-------------------------------");
+				// FS Template cache no. 2
+				Console.WriteLine();
+				Console.WriteLine("FS template cache no.2 (loading generated templates):");
+				Console.WriteLine("=====================================================");
 				FileSystemTemplateCache cache2 = new FileSystemTemplateCache(cacheFolder, false, @"Demo_{key}.dll");
-
-				// Template rendering no. 2
-				for (int i = 0; i < 2; i++)
+				template.TemplateCache = cache2;
+				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
 					sw.Start();
-					string result = cache2.RenderTemplate(Resources.Main, globals, inlineTemplates, refAssemblies, out ti);
+					template.Render(globals);
 					sw.Stop();
-
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(string.Format("[2] Result ({0}. Milliseconds: {1}):", i + 1, sw.ElapsedMilliseconds));
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(result);
+					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
 				}
 
-				// In-memory Template cache
-				Console.WriteLine("--------------------------------------------");
-				Console.WriteLine("[mem] Initializing in-memory template cache:");
-				Console.WriteLine("--------------------------------------------");
+				// Memory Template cache
+				Console.WriteLine();
+				Console.WriteLine("Memory template cache:");
+				Console.WriteLine("======================");
 				MemoryTemplateCache cache3 = new MemoryTemplateCache();
-
-				// In-memory Template rendering
-				for (int i = 0; i < 2; i++)
+				template.TemplateCache = cache3;
+				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
 					sw.Start();
-					string result = cache3.RenderTemplate(Resources.Main, globals, inlineTemplates, refAssemblies, out ti);
+					template.Render(globals);
 					sw.Stop();
-
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(string.Format("[mem] Result ({0}. Milliseconds: {1}):", i + 1, sw.ElapsedMilliseconds));
-					Console.WriteLine("-------------------------------");
-					Console.WriteLine(result);
+					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
 				}
+
+				Console.WriteLine();
+				Console.WriteLine("Render result:");
+				Console.WriteLine("==============");
+				Console.WriteLine(result);
 			}
 			catch (TemplateParseException ex)
 			{
