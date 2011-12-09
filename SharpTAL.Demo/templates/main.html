@@ -83,6 +83,15 @@ id="z">
 		<i tal:content="string:Friend name: ${f.Name}. Age: ${f.Age}" />
     </div>
 	
+	<h1>Hello, ${"world"}!</h1>
+	<table>
+		<tr tal:repeat='row new string[] { "apple", "banana", "pineapple" }'>
+			<td tal:repeat='col new string[] { "juice", "muffin", "pie" }'>
+				${System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase((string)row)} ${col}
+			</td>
+		</tr>
+	</table>
+	
 	<!-- Enumarate specialFriends -->
     <div tal:repeat='f specialFriend'>
 		<!-- Use Macro -->
