@@ -48,7 +48,7 @@ namespace SharpTAL.SharpTALTests.METALTests
 		[Test]
 		public void TestImportRecursiveDefaultNs()
 		{
-			RunTest(@"<html><div metal:import=""METALTests/Imports/Imports 1.html""><i metal:use-macro='macros[""Macro2""]'>Now</i></div></html>",
+			RunTest(@"<html><div><metal:tag import=""METALTests/Imports/Imports 1.html"" use-macro='macros[""Macro2""]'>Now</metal:tag></div></html>",
 				@"<html><div>Macro2</div></html>",
 				"Recursive import macros to default namespace failed.");
 		}
@@ -72,7 +72,7 @@ namespace SharpTAL.SharpTALTests.METALTests
 		[Test]
 		public void TestMultipleImportMultipleCustomNs()
 		{
-			RunTest(@"<html><div metal:import=""imp1:METALTests/Imports/Imports 1.html;imp2:METALTests/Imports/Imports 2.html""><i metal:use-macro='imp2.macros[""Macro2""]'>Now</i></div></html>",
+			RunTest(@"<html><div><i metal:import=""imp1:METALTests/Imports/Imports 1.html;imp2:METALTests/Imports/Imports 2.html"" metal:use-macro='imp2.macros[""Macro2""]'>Now</i></div></html>",
 				@"<html><div>Macro2</div></html>",
 				"Multiple import macros to multiple custom namespace failed.");
 		}

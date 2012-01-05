@@ -84,9 +84,9 @@ namespace SharpTAL.SharpTALTests.TALTests
 		}
 
 		[Test]
-		public void TestDefineSetLocalMultiple()
+		public void TestDefineNonLocal()
 		{
-			RunTest(@"<html><p tal:define='def1 ""a""; set def1 ""b""; set def1 test'><p tal:content=""def1""></p></p></html>"
+			RunTest(@"<html><p tal:define='def1 ""a""'><tal:def define='nonlocal def1 test'></tal:def><p tal:content=""def1""></p></p></html>"
 				, "<html><p><p>testing</p></p></html>", "Local did not set");
 		}
 
@@ -123,13 +123,6 @@ namespace SharpTAL.SharpTALTests.TALTests
 		{
 			RunTest(@"<html><div tal:define=""firstVar test;secondVar firstVar""><p tal:content=""test"">Testing</p><p tal:content=""secondVar""></p></div></html>"
 				, "<html><div><p>testing</p><p>testing</p></div></html>", "Multiple local defines with references to earlier define failed.");
-		}
-
-		[Test]
-		public void TestDefineInOmitScope()
-		{
-			RunTest(@"<html><div tal:define=""firstVar test""><tal:omit-scope tal:define=""secondVar firstVar""/><p tal:content=""test"">Testing</p><p tal:content=""secondVar""></p></div></html>"
-				, "<html><div><p>testing</p><p>testing</p></div></html>", "Define in tal:omit-scope failed.");
 		}
 	}
 }

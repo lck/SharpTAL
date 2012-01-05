@@ -62,7 +62,7 @@ namespace SharpTAL.SharpTALTests.METALTests
 		[Test]
 		public void TestRecursiveMacroWithParams()
 		{
-			RunTest(@"<tal:tag metal:define-macro=""one"" metal:define-param=""int count 0""><i tal:replace=""string:Count=${count};"">100</i><tal:tag tal:define='set count count - 1' tal:condition='count &gt; 0'><tal:tag metal:use-macro='macros[""one""]' metal:fill-param='count count'/></tal:tag></tal:tag>",
+			RunTest(@"<tal:tag metal:define-macro=""one"" metal:define-param=""int count 0""><i tal:replace=""string:Count=${count};"">100</i><tal:tag tal:define='nonlocal count count - 1' tal:condition='count &gt; 0'><tal:tag metal:use-macro='macros[""one""]' metal:fill-param='count count'/></tal:tag></tal:tag>",
 				@"<body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='count 5'/> here</body>",
 				@"Count=5;Count=4;Count=3;Count=2;Count=1;",
 				"Recursive macro with params failed.");

@@ -38,8 +38,6 @@ namespace SharpTAL
 {
 	class Utils
 	{
-		internal static readonly Regex _re_needs_escape = new Regex(@"[&<>""\']");
-
 		public static Assembly ReadAssembly(string asmPath)
 		{
 			FileStream asmStream = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
@@ -155,51 +153,6 @@ namespace SharpTAL
 				sOutput.Append(arrInput[i].ToString("X2"));
 			}
 			return sOutput.ToString();
-		}
-
-		/// <summary>
-		/// Escape HTML entities in attribute value
-		/// </summary>
-		public static string EscapeAttrValue(Attr attr)
-		{
-			string str = attr.Value;
-
-			if (string.IsNullOrEmpty(str))
-				return str;
-
-			if (!_re_needs_escape.IsMatch(str))
-				return str;
-
-			if (str.IndexOf('&') >= 0)
-				str = str.Replace("&", "&amp;");
-
-			if (str.IndexOf('>') >= 0)
-				str = str.Replace("<", "&lt;");
-
-			if (str.IndexOf('>') >= 0)
-				str = str.Replace(">", "&gt;");
-
-			if (!string.IsNullOrEmpty(attr.Quote) && str.IndexOf(attr.Quote) >= 0)
-				str = str.Replace(attr.Quote, attr.QuoteEntity);
-
-			return str;
-		}
-
-		public static string Unescape(string str)
-		{
-			if (string.IsNullOrEmpty(str))
-				return str;
-
-			int cp = HTMLEntityDefs.Name2Code["lt"];
-			str = str.Replace("&lt;", ((char)cp).ToString());
-
-			cp = HTMLEntityDefs.Name2Code["gt"];
-			str = str.Replace("&gt;", ((char)cp).ToString());
-
-			cp = HTMLEntityDefs.Name2Code["quot"];
-			str = str.Replace("&quot;", ((char)cp).ToString());
-
-			return str;
 		}
 
 		public static string Char2Entity(string chr)

@@ -26,12 +26,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
 namespace SharpTAL
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Reflection;
+	using SharpTAL.TemplateProgram;
+
 	public class TemplateInfo
     {
 		/// <summary>
@@ -69,14 +70,14 @@ namespace SharpTAL
 		/// <summary>
 		/// Main template program compiled from TemplateBody.
         /// </summary>
-        public TemplateProgram MainProgram;
+        public Program MainProgram;
 
 		/// <summary>
 		/// Dictionary of TemplatePrograms compiled from templates imported by "metal:import" command.
 		/// The key contains the full path to the template file.
 		/// The value contains the compiled program.
         /// </summary>
-        public Dictionary<string, TemplateProgram> ImportedPrograms;
+        public Dictionary<string, Program> ImportedPrograms;
 
         /// <summary>
 		/// Dictionary of paths to imported programs hashed by namespace created by "metal:import" command.

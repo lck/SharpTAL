@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// Command.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,18 +26,28 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+namespace SharpTAL.TemplateProgram
+{
+	using System;
+	using System.Collections.Generic;
+	using SharpTAL.TemplateParser;
 
-[assembly: AssemblyTitle("SharpTAL")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+	public class Command
+	{
+		public Tag Tag { get; protected set; }
+		public CommandType CommandType { get; protected set; }
+		public List<object> Parameters { get; set; }
+		public IProgram ParentProgram { get; set; }
+
+		public Command(Tag tag, CommandType commandType, params object[] parameters)
+		{
+			if (tag != null)
+				Tag = new Tag(tag);
+			
+			CommandType = commandType;
+			
+			if (parameters != null)
+				Parameters = new List<object>(parameters);
+		}
+	}
+}

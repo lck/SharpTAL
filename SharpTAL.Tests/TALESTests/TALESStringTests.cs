@@ -178,16 +178,6 @@ namespace SharpTAL.SharpTALTests.TALESTests
 		}
 
 		[Test]
-		public void TestInlineExpressions()
-		{
-			RunTest(@"<html>${string:Hello "" { ${string.Format(""{0}"", @""
-World"") + ""!""} }, \${escaped} 9 / 3 = ${9 / 3}}}</html>",
-			   @"<html>Hello "" { 
-World! }, \${escaped} 9 / 3 = 3}</html>",
-			   "Inline expression failed!");
-		}
-
-		[Test]
 		[ExpectedException(typeof(CompileSourceException))]
 		public void TestPartialMissing()
 		{

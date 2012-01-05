@@ -26,12 +26,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.CodeDom.Compiler;
-
 namespace SharpTAL
 {
-    public class TemplateParseException : Exception
+	using System;
+	using System.CodeDom.Compiler;
+	using SharpTAL.TemplateParser;
+	
+	public class TemplateParseException : Exception
     {
         protected Tag m_Tag;
         protected string m_ErrorDescription;

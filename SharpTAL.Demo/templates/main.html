@@ -85,11 +85,11 @@ id="z">
 	
 	<h1>Hello, ${"world"}!</h1>
 	<table>
-		<tr tal:repeat='row new string[] { "apple", "banana", "pineapple" }'>
-			<td tal:repeat='col new string[] { "juice", "muffin", "pie" }'>
-				${System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase((string)row)} ${col}
+        <tr tal:repeat='row new string[] { "red", "green", "blue" }'>
+			<td tal:repeat='col new string[] { "rectangle", "triangle", "circle" }'>
+				${((string)row).ToUpper()} ${col}
 			</td>
-		</tr>
+        </tr>
 	</table>
 	
 	<!-- Enumarate specialFriends -->
@@ -97,14 +97,10 @@ id="z">
 		<!-- Use Macro -->
 		<tal:tag metal:use-macro='macros["inlineMacro"]'>
 		
-		<!-- Define variables without scope -->
-		<tal:omit-scope tal:define="FriendName f.Name" />
-		<tal:omit-scope tal:define="FriendAge f.Age" />
-		
 		<!-- Use Macro with Slot -->
 		<tal:tag metal:import="templates/macros.html"/>
 		<tal:tag metal:use-macro='macros["macroWithSlot"]'>
-			<i metal:fill-slot="slot">${FriendName} $\${{ $${FriendAge} }}</i>
+			<i metal:fill-slot="slot">${f.Name} $\${{ $${f.Age} }}</i>
 		</tal:tag>
     </div>
     

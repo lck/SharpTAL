@@ -26,17 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Xml;
-using System.Diagnostics;
-
 namespace SharpTAL.Demo
 {
+	using System;
+	using System.Linq;
+	using System.Collections.Generic;
+	using System.Text;
+	using System.IO;
+	using System.Reflection;
+	using System.Xml;
+	using System.Diagnostics;
+	using SharpTAL.TemplateProgram;
+
 	public static class DemoExtensions
 	{
 		public static string XmlToString(this XmlDocument xml)
@@ -68,17 +69,17 @@ namespace SharpTAL.Demo
 
 			// Globals
 			Dictionary<string, object> globals = new Dictionary<string, object>()
-			{
-				{
-					"friends", new List<Friend>()
-					{
-						new Friend() { Name="Samantha", Age=33 },
-						new Friend() { Name="Kim", Age=35 },
-						new Friend() { Name="Sandra", Age=22 },
-						new Friend() { Name="Natalie", Age=20 }
-					}
-				}
-			};
+            {
+                {
+                    "friends", new List<Friend>()
+                    {
+                        new Friend() { Name="Samantha", Age=33 },
+                        new Friend() { Name="Kim", Age=35 },
+                        new Friend() { Name="Sandra", Age=22 },
+                        new Friend() { Name="Natalie", Age=20 }
+                    }
+                }
+            };
 			XmlDocument xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml(Resources.Macros);
 			globals.Add("xmlDoc", xmlDoc);
@@ -92,12 +93,12 @@ namespace SharpTAL.Demo
 
 			try
 			{
-				// Macro program compiler speed tests
-				Console.WriteLine("Macro program compilation speed tests:");
-				Console.WriteLine("======================================");
+				// Template program generator speed tests
+				Console.WriteLine("Template program generator speed tests:");
+				Console.WriteLine("=======================================");
 				Stopwatch sw = new Stopwatch();
 				sw.Start();
-				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				ProgramGenerator programGenerator = new ProgramGenerator();
 				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
@@ -108,7 +109,7 @@ namespace SharpTAL.Demo
 						GlobalsTypes = globalsTypes,
 						ReferencedAssemblies = refAssemblies
 					};
-					compiler.CompileTemplate(ref ti);
+					programGenerator.GenerateTemplateProgram(ref ti);
 					sw.Stop();
 					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
 				}

@@ -26,12 +26,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-
 namespace SharpTAL
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Reflection;
+	using SharpTAL.TemplateProgram;
+
 	public class MemoryTemplateCache : AbstractTemplateCache
 	{
 		Dictionary<string, TemplateInfo> templateInfoCache;
@@ -51,15 +52,15 @@ namespace SharpTAL
 		{
 			lock (templateInfoCacheLock)
 			{
-				// Compile template body and generate the TemplateKey
-				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				// Generate template program from template body and generate the TemplateKey
+				ProgramGenerator programGenerator = new ProgramGenerator();
 				TemplateInfo ti = new TemplateInfo
 				{
 					TemplateBody = templateBody,
 					GlobalsTypes = globalsTypes,
 					ReferencedAssemblies = referencedAssemblies
 				};
-				compiler.CompileTemplate(ref ti);
+				programGenerator.GenerateTemplateProgram(ref ti);
 
 				// Compute the template key
 				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
@@ -70,9 +71,9 @@ namespace SharpTAL
 					return templateInfoCache[ti.TemplateKey];
 				}
 
-				// Generate source
-				SourceGenerator sourceGenerator = new SourceGenerator();
-				ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
+				// Generate code
+				ITemplateCodeGenerator codeGenerator = new CodeGenerator();
+				ti.GeneratedSourceCode = codeGenerator.GenerateCode(ti);
 
 				// Generate assembly
 				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();

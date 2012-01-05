@@ -36,7 +36,7 @@ using Microsoft.CSharp;
 
 namespace SharpTAL
 {
-    class AssemblyGenerator
+    public class AssemblyGenerator
     {
         public Assembly GenerateAssembly(TemplateInfo ti, bool generateInMemory, string assemblyPath, string keyFileName)
         {

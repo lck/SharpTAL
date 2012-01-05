@@ -127,8 +127,30 @@ This software is made available under `Apache Licence Version 2.0 <http://www.ap
 Changes
 -------
 
-2.0a1 (next release)
-~~~~~~~~~~~~~~~~~~~~
+2.0a2 (2012-01-05)
+~~~~~~~~~~~~~~~~~~
+
+Features:
+
+- New "meta:interpolation" command to control expression interpolation setting. [Roman Lacko]
+  To disable expression interpolation: meta:interpolation="false"
+  To enable expression interpolation: meta:interpolation="true"
+
+Internal:
+
+- More code refactoring. [Roman Lacko]
+
+Backwards Incompatibilities:
+
+- Rename "tal:define:set" variable context definition to "tal:define:nonlocal" to declare that the listed identifiers refers to previously bound variables in the nearest enclosing scope. [Roman Lacko]
+- Removed "<tal:omit-scope>". It was non standart and introduces bad design in template. [Roman Lacko]
+
+Bugs fixed:
+
+- Tags in the custom tal/metal namespace were not ommited, if the custom namespace was declared on that tag. [Roman Lacko]
+
+2.0a1 (2011-12-20)
+~~~~~~~~~~~~~~~~~~
 
 Features:
 

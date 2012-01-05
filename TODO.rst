@@ -5,9 +5,6 @@ TODO
 - Make "default" expression (local) variable, so it can be used in expressions like "default + xyz".
     This makes sence only in attributes
 
-- Make string expression interpolation using ${...} operator configurable
-    via meta attribute meta:interpolation="true|false"
-
 - Implement support for ASP.NET MVC View Engine
 
 - Extend metal:import command (using TALES syntax) so it would be possible to specify type of the template loader.

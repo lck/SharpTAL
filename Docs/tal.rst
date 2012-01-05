@@ -257,7 +257,7 @@ Syntax
 
     argument             ::= attribute_statement [';' attribute_statement]*
     attribute_statement  ::= [context] variable_name expression
-    context              ::= global | local | set
+    context              ::= global | local | nonlocal
     variable_name        ::= Name
 
 Description
@@ -267,9 +267,6 @@ The ``tal:define`` statement defines variables.
 
 When you define a local variable in a statement element,
 you can use that variable in that element and the elements it contains.
-
-You can define a local variable in a special statement without local scope ``<tal:omit-scope />``.
-Variables defined in ``<tal:omit-scope />``, can be used in parent element and the elements it contains.
 
 If the expression associated with a variable evaluates to ``null``,
 then that variable has the value ``null``, and may be used as such
@@ -292,21 +289,13 @@ Defining two local variables, where the second depends on the first::
 
         <tal:tag tal:define="mytitle context.title; tlen mytitle.Length">
 
-Set allready defined local variable::
+Declare that the listed identifiers refers to previously bound variables in the nearest enclosing scope::
 
-        <tal:tag tal:define="set mytitle context.title">
+        <tal:tag tal:define="nonlocal mytitle context.title">
 
 Use functions that return void::
 
         <tal:tag tal:define='tmp 0;;Console.WriteLine("One!");;Console.WriteLine("Two!");;'>
-
-Defining and using a local variables in special element without local scope::
-
-        <div>
-          <tal:omit-scope tal:define='Name "Sandra"' />
-          <tal:omit-scope tal:define='Age 23' />
-          <i tal:content="string:Hello, my name is ${Name}. I'm ${Age} years old."></i>
-        </div>
 
 ``tal:omit-tag``: Remove an element, leaving its contents
 ---------------------------------------------------------

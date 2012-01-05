@@ -119,8 +119,16 @@ namespace SharpTAL
 		{
 			if (templateInfo == null)
 			{
-				Compile();
-				return;
+				if (globalsTypes == null)
+				{
+					Recompile(globals);
+					return;
+				}
+				else
+				{
+					Compile();
+					return;
+				}
 			}
 			if (globals.Count != globalsTypes.Count)
 			{

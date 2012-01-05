@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// TemplateError.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,18 +26,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
-[assembly: AssemblyTitle("SharpTAL")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+namespace SharpTAL.TemplateParser
+{
+	public class TemplateError : Exception
+	{
+		string msg;
+		Token token;
+		string filename;
+
+		public TemplateError(string msg, Token token)
+		{
+			this.msg = msg;
+			this.token = token;
+			this.filename = token.Filename;
+		}
+
+		public override string Message
+		{
+			get
+			{
+				string text = string.Format("{0}\n\n", msg);
+				text += string.Format("   - String:   \"{0}\"", token);
+
+				if (filename != null)
+				{
+					text += "\n";
+					text += string.Format("   - Filename: {0}", filename);
+				}
+
+				Location loc = token.Location;
+				text += "\n";
+				text += string.Format("   - Location: ({0}:{1})", loc.Line, loc.Position);
+
+				return text;
+			}
+		}
+
+		public int Offset
+		{
+			get
+			{
+				return token.Position;
+			}
+		}
+	}
+}

@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// Tag.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,18 +26,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+namespace SharpTAL.TemplateParser
+{
+	using System;
+	using System.Linq;
+	using System.Collections.Generic;
+	using System.Text.RegularExpressions;
 
-[assembly: AssemblyTitle("SharpTAL")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+	public class Tag
+	{
+		public string Name { get; set; }
+		public string Suffix { get; set; }
+		public bool Singleton { get; set; }
+		public List<TagAttribute> Attributes { get; set; }
+		public int LineNumber { get; set; }
+		public int LinePosition { get; set; }
+		public string SourcePath { get; set; }
+
+		public Tag()
+		{
+		}
+
+		public Tag(Tag tag)
+		{
+			Name = tag.Name;
+			Suffix = tag.Suffix;
+			Singleton = tag.Singleton;
+			if (tag.Attributes != null)
+				Attributes = new List<TagAttribute>(tag.Attributes);
+			SourcePath = tag.SourcePath;
+			LineNumber = tag.LineNumber;
+			LinePosition = tag.LinePosition;
+		}
+
+		public string Format()
+		{
+			string result = "<";
+			result += Name;
+			if (Attributes != null)
+			{
+				foreach (var att in Attributes)
+				{
+					result += string.Format(" {0}{1}{2}{3}{2}", att.Name, att.Eq, att.Quote, att.EscapedValue);
+				}
+			}
+			result += Suffix;
+			return result;
+		}
+
+		public override string ToString()
+		{
+			return Format();
+		}
+	}
+}

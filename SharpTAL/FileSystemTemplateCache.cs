@@ -26,14 +26,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Text.RegularExpressions;
-
 namespace SharpTAL
 {
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Reflection;
+	using System.Text.RegularExpressions;
+	using SharpTAL.TemplateProgram;
+
 	public class FileSystemTemplateCache : AbstractTemplateCache
 	{
 		const string DEFAULT_FILENAME_PATTER = @"Template_{key}.dll";
@@ -95,15 +96,15 @@ namespace SharpTAL
 					templateInfoCache = LoadTemplatesInfo(templateCacheFolder);
 				}
 
-				// Compile template body and generate the TemplateKey
-				TemplateProgramCompiler compiler = new TemplateProgramCompiler();
+				// Generate template program from template body and generate the TemplateKey
+				ProgramGenerator programGenerator = new ProgramGenerator();
 				TemplateInfo ti = new TemplateInfo
 				{
 					TemplateBody = templateBody,
 					GlobalsTypes = globalsTypes,
 					ReferencedAssemblies = referencedAssemblies
 				};
-				compiler.CompileTemplate(ref ti);
+				programGenerator.GenerateTemplateProgram(ref ti);
 
 				// Compute the template key
 				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
@@ -118,9 +119,9 @@ namespace SharpTAL
 				string assemblyFileName = fileNamePattern.Replace("{key}", ti.TemplateKey);
 				string assemblyPath = Path.Combine(templateCacheFolder, assemblyFileName);
 
-				// Generate source
-				SourceGenerator sourceGenerator = new SourceGenerator();
-				ti.GeneratedSourceCode = sourceGenerator.GenerateSource(ti);
+				// Generate code
+				ITemplateCodeGenerator codeGenerator = new CodeGenerator();
+				ti.GeneratedSourceCode = codeGenerator.GenerateCode(ti);
 
 				// Generate assembly
 				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();

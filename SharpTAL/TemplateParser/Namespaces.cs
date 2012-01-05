@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// Namespaces.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,18 +26,21 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
-[assembly: AssemblyTitle("SharpTAL")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+namespace SharpTAL.TemplateParser
+{
+	public static class Namespaces
+	{
+		public static readonly string XML_NS = "http://www.w3.org/XML/1998/namespace";
+		public static readonly string XMLNS_NS = "http://www.w3.org/2000/xmlns/";
+		public static readonly string XHTML_NS = "http://www.w3.org/1999/xhtml";
+		public static readonly string META_NS = "http://xml.zope.org/namespaces/meta";
+		public static readonly string TAL_NS = "http://xml.zope.org/namespaces/tal";
+		public static readonly string METAL_NS = "http://xml.zope.org/namespaces/metal";
+	}
+}

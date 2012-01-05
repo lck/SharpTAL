@@ -1,5 +1,5 @@
 ﻿//
-// AssemblyInfo.cs
+// IProgram.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,18 +26,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
-[assembly: AssemblyTitle("SharpTAL")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Roman Lacko")]
-[assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+namespace SharpTAL.TemplateProgram
+{
+	public interface IProgram
+	{
+		/// <summary>
+		/// Name of macro
+		/// </summary>
+		string Name { get; }
+
+		/// <summary>
+		/// Source template path
+		/// </summary>
+		string TemplatePath { get; }
+
+		/// <summary>
+		/// Source template body
+		/// </summary>
+		string TemplateBody { get; }
+
+		/// <summary>
+		/// Source template body hash
+		/// </summary>
+		string TemplateBodyHash { get; }
+
+		/// <summary>
+		/// End tags locations table
+		/// </summary>
+		Dictionary<int, int> EndTagLocationTable { get; }
+
+		/// <summary>
+		/// Commands of the entite template
+		/// </summary>
+		List<Command> TemplateCommands { get; }
+		
+		/// <summary>
+		/// Commands of this program
+		/// </summary>
+		IEnumerable<Command> ProgramCommands { get; }
+
+		/// <summary>
+		/// Index of the first program command
+		/// </summary>
+		int Start { get; }
+
+		/// <summary>
+		/// Index of the last program command
+		/// </summary>
+		int End { get; }
+		
+		/// <summary>
+		/// Program macros
+		/// </summary>
+		Dictionary<string, IProgram> Macros { get; }
+	}
+}
