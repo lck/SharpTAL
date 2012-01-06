@@ -124,6 +124,13 @@ License
 
 This software is made available under `Apache Licence Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
 
+Planned features
+----------------
+
+- Integration with .NET MVC as ViewEngine
+- IronPython support in template expressions
+- i18 support
+
 Changes
 -------
 
