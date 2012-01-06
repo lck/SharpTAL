@@ -2,6 +2,8 @@
 TODO
 ====
 
+- CodeGenerator: implement metal:macros as true class methods
+
 - Make "default" expression (local) variable, so it can be used in expressions like "default + xyz".
     This makes sence only in attributes
 
