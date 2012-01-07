@@ -36,7 +36,7 @@ namespace SharpTAL.TemplateProgram
 	{
 		public Tag Tag { get; protected set; }
 		public CommandType CommandType { get; protected set; }
-		public List<object> Parameters { get; set; }
+		public List<object> Parameters { get; protected set; }
 		public IProgram ParentProgram { get; set; }
 
 		public Command(Tag tag, CommandType commandType, params object[] parameters)
