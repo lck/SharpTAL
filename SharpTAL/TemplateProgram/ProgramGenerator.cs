@@ -54,28 +54,20 @@ namespace SharpTAL.TemplateProgram
 
 	public class ProgramGenerator : AbstractTemplateParser
 	{
-		class TagProperties
+		class TagStackItem
 		{
-			public TagProperties()
+			public TagStackItem(Tag tag)
 			{
+				Tag = tag;
 				EndTagCommandLocation = null;
 				PopFunctionList = null;
-				Command = null;
-				OriginalAttributes = null;
 				UseMacroCommandLocation = -1;
 			}
 
+			public Tag Tag { get; set; }
 			public int? EndTagCommandLocation { get; set; }
 			public List<Action> PopFunctionList { get; set; }
-			public Command Command { get; set; }
-			public Dictionary<string, TagAttribute> OriginalAttributes { get; set; }
 			public int UseMacroCommandLocation { get; set; }
-		}
-
-		class TagStackItem
-		{
-			public Tag Tag { get; set; }
-			public TagProperties Properties { get; set; }
 		}
 
 		/// <summary>
@@ -110,12 +102,14 @@ namespace SharpTAL.TemplateProgram
 
 		// Per-template-body compiling state
 		HashSet<string> importMacroCommands = null;
-		List<Command> commandList;
+		List<Command> programCommands;
 		Dictionary<int, int> endTagsCommandMap;
 		Dictionary<string, IProgram> macroMap;
 		List<TagStackItem> tagStack;
 		int endTagCommandLocationCounter;
 		Tag currentStartTag;
+
+		// TODO: upratat tagstack, currentstarttag a mozno urobit nieco ako AbstractProgGenerator
 
 		public ProgramGenerator()
 		{
@@ -212,7 +206,7 @@ namespace SharpTAL.TemplateProgram
 				return program;
 
 			// Per-template-body compiling state
-			commandList = new List<Command>();
+			programCommands = new List<Command>();
 			endTagsCommandMap = new Dictionary<int, int>();
 			macroMap = new Dictionary<string, IProgram>();
 			tagStack = new List<TagStackItem>();
@@ -223,7 +217,7 @@ namespace SharpTAL.TemplateProgram
 			ParseTemplate(templateBody, templatePath);
 
 			// Create template program instance
-			program = new Program(templateBody, templatePath, bodyHash, commandList, endTagsCommandMap, macroMap, importMacroCommands);
+			program = new Program(templateBody, templatePath, bodyHash, programCommands, endTagsCommandMap, macroMap, importMacroCommands);
 
 			// Put template program to cache
 			lock (templateProgramCacheLock)
@@ -249,7 +243,6 @@ namespace SharpTAL.TemplateProgram
 			// Look for TAL/METAL attributes
 			SortedDictionary<CommandType, List<TagAttribute>> commands = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
 			List<TagAttribute> cleanAttributes = new List<TagAttribute>();
-			TagProperties tagProperties = new TagProperties();
 			List<Action> popFunctionList = new List<Action>();
 			bool isTALElementNameSpace = false;
 			string prefixToAdd = "";
@@ -395,12 +388,11 @@ namespace SharpTAL.TemplateProgram
 					cleanAttributes.Add(att);
 				}
 			}
-			tagProperties.PopFunctionList = popFunctionList;
 
 			if (cleanAttributes.Count > 0)
 			{
-				// Insert normal HTML/XML attributes BEFORE other TAL/METAL attributes of type TAL_ATTRIBUTES
-				// as fake TAL_ATTRIBUTES to enable string expressions processing.
+				// Insert normal HTML/XML attributes BEFORE other TAL/METAL TAL_ATTRIBUTES commands
+				// as fake TAL_ATTRIBUTES commands to enable string expressions interpolation on normal HTML/XML attributes.
 				if (!commands.ContainsKey(CommandType.TAL_ATTRIBUTES))
 					commands.Add(CommandType.TAL_ATTRIBUTES, new List<TagAttribute>());
 				commands[CommandType.TAL_ATTRIBUTES].InsertRange(0, cleanAttributes);
@@ -408,42 +400,49 @@ namespace SharpTAL.TemplateProgram
 
 			// Create a symbol for the end of the tag - we don't know what the offset is yet
 			endTagCommandLocationCounter++;
-			tagProperties.EndTagCommandLocation = endTagCommandLocationCounter;
 
-			bool firstTag = true;
+			TagStackItem tagStackItem = null;
 			foreach (CommandType cmdType in commands.Keys)
 			{
 				// Create command from attributes
-				Command cmnd = commandHandler[cmdType](commands[cmdType]);
-				if (cmnd != null)
+				Command cmd = commandHandler[cmdType](commands[cmdType]);
+				if (cmd != null)
 				{
-					if (firstTag)
+					if (tagStackItem == null)
 					{
-						// The first one needs to add the tag
-						firstTag = false;
-						tagProperties.Command = cmnd;
-						AddTag(tag, cleanAttributes, tagProperties);
+						// The first command needs to add the tag to the tag stack
+						tagStackItem = AddTagToStack(tag, cleanAttributes);
+
+						// Save metal:use-macro command position
+						if (cmd.CommandType == CommandType.METAL_USE_MACRO)
+							tagStackItem.UseMacroCommandLocation = programCommands.Count + 1;
+
+						// Append command to create new scope for the tag
+						Command startScopeCmd = new Command(currentStartTag, CommandType.CMD_START_SCOPE);
+						AddCommand(startScopeCmd);
 					}
-					else
-					{
-						// All others just append
-						AddCommand(cmnd);
-					}
+
+					// All others just append
+					AddCommand(cmd);
 				}
 			}
 
-			Command cmd = new Command(currentStartTag, CommandType.CMD_START_TAG);
+			if (tagStackItem == null)
+			{
+				tagStackItem = AddTagToStack(tag, cleanAttributes);
 
-			if (firstTag)
-			{
-				tagProperties.Command = cmd;
-				AddTag(tag, cleanAttributes, tagProperties);
+				// Append command to create new scope for the tag
+				Command startScopeCmd = new Command(currentStartTag, CommandType.CMD_START_SCOPE);
+				AddCommand(startScopeCmd);
 			}
-			else
-			{
-				// Add the start tag command in as a child of the last TAL command
-				AddCommand(cmd);
-			}
+
+			// Save pop functions and end tag command location for this tag
+			tagStackItem.PopFunctionList = popFunctionList;
+			tagStackItem.EndTagCommandLocation = endTagCommandLocationCounter;
+
+			// Finally, append start tag command
+			Command startTagCmd = new Command(currentStartTag, CommandType.CMD_START_TAG);
+			AddCommand(startTagCmd);
 		}
 
 		protected override void HandleEndTag(Tag tag)
@@ -454,10 +453,9 @@ namespace SharpTAL.TemplateProgram
 				tagStack.RemoveAt(tagStack.Count - 1);
 
 				Tag oldTag = tagStackItem.Tag;
-				TagProperties tagProperties = tagStackItem.Properties;
 
-				int? endTagCommandLocation = tagProperties.EndTagCommandLocation;
-				List<Action> popFunctionList = tagProperties.PopFunctionList;
+				int? endTagCommandLocation = tagStackItem.EndTagCommandLocation;
+				List<Action> popFunctionList = tagStackItem.PopFunctionList;
 
 				if (popFunctionList != null)
 				{
@@ -472,7 +470,7 @@ namespace SharpTAL.TemplateProgram
 					{
 						// We have a command (it's a TAL tag)
 						// Note where the end tag command location should point (i.e. the next command)
-						endTagsCommandMap[(int)endTagCommandLocation] = commandList.Count;
+						endTagsCommandMap[(int)endTagCommandLocation] = programCommands.Count;
 
 						// We need a "close scope and tag" command
 						Command cmd = new Command(tag, CommandType.CMD_ENDTAG_ENDSCOPE);
@@ -530,63 +528,31 @@ namespace SharpTAL.TemplateProgram
 
 		#endregion
 
-		void AddTag(Tag tag, List<TagAttribute> cleanAttributes, TagProperties tagProperties)
+		TagStackItem AddTagToStack(Tag tag, List<TagAttribute> cleanAttributes)
 		{
-			// Used to add a tag to the stack.  Various properties can be passed in the dictionary
-			// as being information required by the tag.
-			// Currently supported properties are:
-			//  'command'                - The (command,args) tuple associated with this command
-			//  'endTagCommandLocation'    - The symbol associated with the end tag for this element
-			//  'popFunctionList'        - A list of functions to execute when this tag is popped
-
+			// Set tag attributes to contain only normal HTML/XML attributes (TAL/METAL attributes are removed)
 			tag.Attributes = cleanAttributes;
 
-			// Add the tag to the tagStack (list of tuples (tag, properties, useMacroLocation))
-
-			Command command = tagProperties.Command;
-
-			TagStackItem tagStackItem = new TagStackItem { Tag = tag, Properties = tagProperties };
-			if (command != null)
-			{
-				if (command.CommandType == CommandType.METAL_USE_MACRO)
-					tagStackItem.Properties.UseMacroCommandLocation = commandList.Count + 1;
-				else
-					tagStackItem.Properties.UseMacroCommandLocation = -1;
-			}
-			else
-				tagStackItem.Properties.UseMacroCommandLocation = -1;
+			// Add tag to tag stack
+			TagStackItem tagStackItem = new TagStackItem(tag);
 			tagStack.Add(tagStackItem);
-
-			if (command != null)
-			{
-				// All tags that have a TAL attribute on them start with a 'start scope'
-				Command cmdStartScope = new Command(currentStartTag, CommandType.CMD_START_SCOPE);
-				AddCommand(cmdStartScope);
-				// Now we add the TAL command
-				AddCommand(command);
-			}
-			else
-			{
-				// It's just a straight output, so create an output command and append it
-				Command cmd = new Command(currentStartTag, CommandType.CMD_OUTPUT, tag.Format());
-				AddCommand(cmd);
-			}
+			return tagStackItem;
 		}
 
 		void AddCommand(Command command)
 		{
 			if (command.CommandType == CommandType.CMD_OUTPUT &&
-				commandList.Count > 0 &&
-				commandList[commandList.Count - 1].CommandType == CommandType.CMD_OUTPUT)
+				programCommands.Count > 0 &&
+				programCommands[programCommands.Count - 1].CommandType == CommandType.CMD_OUTPUT)
 			{
 				// We can combine output commands
-				Command cmd = commandList[commandList.Count - 1];
+				Command cmd = programCommands[programCommands.Count - 1];
 				foreach (object att in command.Parameters)
 					cmd.Parameters.Add(att);
 			}
 			else
 			{
-				commandList.Add(command);
+				programCommands.Add(command);
 			}
 		}
 
@@ -897,7 +863,6 @@ namespace SharpTAL.TemplateProgram
 			return ci;
 		}
 
-		// METAL compilation commands go here
 		Command Handle_METAL_DEFINE_MACRO(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
@@ -923,7 +888,7 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			// The macro starts at the next command.
-			IProgram macro = new ProgramMacro(macroName, commandList.Count, endTagCommandLocationCounter);
+			IProgram macro = new ProgramMacro(macroName, programCommands.Count, endTagCommandLocationCounter);
 			macroMap.Add(macroName, macro);
 
 			return null;
@@ -994,7 +959,7 @@ namespace SharpTAL.TemplateProgram
 			int location = tagStack.Count - 1;
 			while (ourMacroLocation == -1)
 			{
-				int macroLocation = tagStack[location].Properties.UseMacroCommandLocation;
+				int macroLocation = tagStack[location].UseMacroCommandLocation;
 				if (macroLocation != -1)
 				{
 					ourMacroLocation = macroLocation;
@@ -1011,7 +976,7 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			// Get the use-macro command we are going to adjust
-			Command cmnd = commandList[ourMacroLocation];
+			Command cmnd = programCommands[ourMacroLocation];
 			string macroName = (string)cmnd.Parameters[0];
 			Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)cmnd.Parameters[1];
 			List<TALDefineInfo> paramMap = (List<TALDefineInfo>)cmnd.Parameters[2];
@@ -1024,12 +989,12 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			// The slot starts at the next command.
-			ProgramSlot slot = new ProgramSlot(argument, commandList.Count, endTagCommandLocationCounter);
+			ProgramSlot slot = new ProgramSlot(argument, programCommands.Count, endTagCommandLocationCounter);
 			slotMap.Add(argument, slot);
 
 			// Update the command
 			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
-			commandList[ourMacroLocation] = ci;
+			programCommands[ourMacroLocation] = ci;
 			return null;
 		}
 
@@ -1115,7 +1080,7 @@ namespace SharpTAL.TemplateProgram
 			int stackIndex = tagStack.Count - 1;
 			while (ourMacroLocation == -1)
 			{
-				int macroLocation = tagStack[stackIndex].Properties.UseMacroCommandLocation;
+				int macroLocation = tagStack[stackIndex].UseMacroCommandLocation;
 				if (macroLocation != -1)
 				{
 					ourMacroLocation = macroLocation;
@@ -1132,7 +1097,7 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			// Get the use-macro command we are going to adjust
-			Command cmnd = commandList[ourMacroLocation];
+			Command cmnd = programCommands[ourMacroLocation];
 			string macroName = (string)cmnd.Parameters[0];
 			Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)cmnd.Parameters[1];
 			List<TALDefineInfo> paramMap = (List<TALDefineInfo>)cmnd.Parameters[2];
@@ -1143,7 +1108,7 @@ namespace SharpTAL.TemplateProgram
 
 			// Update the command
 			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
-			commandList[ourMacroLocation] = ci;
+			programCommands[ourMacroLocation] = ci;
 			return null;
 		}
 
