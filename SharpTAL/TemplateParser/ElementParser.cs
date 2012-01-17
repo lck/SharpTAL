@@ -43,6 +43,8 @@ namespace SharpTAL.TemplateParser
 	/// </summary>
 	public class ElementParser
 	{
+		static readonly string XML_NS = "http://www.w3.org/XML/1998/namespace";
+		
 		static readonly Regex match_tag_prefix_and_name = new Regex(
 			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \r\n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
 		static readonly Regex match_single_attribute = new Regex(
@@ -234,7 +236,7 @@ namespace SharpTAL.TemplateParser
 			if ((node["name"] as Token).ToString().Contains(':'))
 				prefix = (node["name"] as Token).ToString().Split(':')[0];
 
-			string defaultNs = prefix != null && ns.ContainsKey(prefix) ? ns[prefix] : Namespaces.XML_NS;
+			string defaultNs = prefix != null && ns.ContainsKey(prefix) ? ns[prefix] : XML_NS;
 			node["namespace"] = defaultNs;
 			node["ns_attrs"] = unpack_attributes(node["attrs"] as List<Dictionary<string, object>>, ns, defaultNs);
 

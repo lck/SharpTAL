@@ -32,7 +32,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace SharpTAL.TemplateParser
+namespace SharpTAL.TemplateProgram
 {
 	public static class Namespaces
 	{

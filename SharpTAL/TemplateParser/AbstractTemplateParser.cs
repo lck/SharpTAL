@@ -34,7 +34,7 @@ namespace SharpTAL.TemplateParser
 	using System.Collections.Specialized;
 
 	/// <summary>
-	/// ZPT (Zope Page Templates) parser.
+	/// Abstract XML/HTML parser
 	/// </summary>
 	public abstract class AbstractTemplateParser
 	{
@@ -44,16 +44,11 @@ namespace SharpTAL.TemplateParser
 		protected abstract void HandleComment(string data);
 		protected abstract void HandleDefault(string data);
 
-		public void ParseTemplate(string templateBody, string templatePath)
+		public void ParseTemplate(string templateBody, string templatePath, Dictionary<string, string> defaultNamespaces)
 		{
 			IEnumerable<Token> tokens = Tokenizer.TokenizeXml(templateBody, templatePath);
 
-			ElementParser parser = new ElementParser(tokens, new Dictionary<string, string> {
-				{ "xmlns", Namespaces.XMLNS_NS },
-				{ "xml", Namespaces.XML_NS },
-				{ "meta", Namespaces.META_NS},
-				{ "tal", Namespaces.TAL_NS },
-				{ "metal", Namespaces.METAL_NS } });
+			ElementParser parser = new ElementParser(tokens, defaultNamespaces);
 
 			foreach (var e in parser.Parse())
 				HandleElement(e);
@@ -103,11 +98,11 @@ namespace SharpTAL.TemplateParser
 					tag.Singleton = false;
 					HandleStartTag(tag);
 				}
-				
+
 				// Children
 				foreach (var item in e.Children)
 					HandleElement(item);
-				
+
 				// End tag
 				if (e.EndTagTokens.Count > 0)
 				{

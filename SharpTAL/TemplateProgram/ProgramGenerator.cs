@@ -52,6 +52,8 @@ namespace SharpTAL.TemplateProgram
 		public string Expression { get; set; }
 	}
 
+	// TODO: implement PageTemplateParser as AbstractTemplateParser
+
 	public class ProgramGenerator : AbstractTemplateParser
 	{
 		class TagStackItem
@@ -87,6 +89,13 @@ namespace SharpTAL.TemplateProgram
 		static readonly Regex METAL_IMPORT_REGEX = new Regex("(?<!;);(?!;)");
 		static readonly Regex METAL_NAME_REGEX = new Regex("[a-zA-Z_][a-zA-Z0-9_]*");
 
+		static readonly Dictionary<string, string> defaultNamespaces = new Dictionary<string, string> {
+				{ "xmlns", Namespaces.XMLNS_NS },
+				{ "xml", Namespaces.XML_NS },
+				{ "meta", Namespaces.META_NS},
+				{ "tal", Namespaces.TAL_NS },
+				{ "metal", Namespaces.METAL_NS } };
+
 		Dictionary<CommandType, Func<List<TagAttribute>, Command>> commandHandler;
 
 		// Per-template compiling state (including inline templates compiling)
@@ -108,8 +117,6 @@ namespace SharpTAL.TemplateProgram
 		List<TagStackItem> tagStack;
 		int endTagCommandLocationCounter;
 		Tag currentStartTag;
-
-		// TODO: upratat tagstack, currentstarttag a mozno urobit nieco ako AbstractProgGenerator
 
 		public ProgramGenerator()
 		{
@@ -214,7 +221,7 @@ namespace SharpTAL.TemplateProgram
 			currentStartTag = null;
 
 			// Parse template
-			ParseTemplate(templateBody, templatePath);
+			ParseTemplate(templateBody, templatePath, defaultNamespaces);
 
 			// Create template program instance
 			program = new Program(templateBody, templatePath, bodyHash, programCommands, endTagsCommandMap, macroMap, importMacroCommands);
