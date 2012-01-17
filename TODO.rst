@@ -4,8 +4,9 @@ TODO
 
 - CodeGenerator: implement metal:macros as true class methods
 
-- Make "default" expression (local) variable, so it can be used in expressions like "default + xyz".
-    This makes sence only in attributes
+- Make the Template class to be "wrapper" around Render() methods generated from xml/html template.
+
+- Make "default" expression (local) variable, so it can be used in expressions like "default + xyz" (This makes sence only in attributes?)
 
 - Implement support for ASP.NET MVC View Engine
 
