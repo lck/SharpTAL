@@ -87,7 +87,7 @@ namespace SharpTAL.TemplateProgram
 
 		public override string ToString()
 		{
-			return string.Format("TemplateProgramMacro {0}. Commands {1} to {2}", Name, Start, End);
+			return string.Format("ProgramMacro {0}. Commands {1} to {2}", Name, Start, End);
 		}
 	}
 }

@@ -1,5 +1,5 @@
 ﻿//
-// ProgramGenerator.cs
+// PageTemplateParser.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -52,9 +52,10 @@ namespace SharpTAL.TemplateProgram
 		public string Expression { get; set; }
 	}
 
-	// TODO: implement PageTemplateParser as AbstractTemplateParser
-
-	public class ProgramGenerator : AbstractTemplateParser
+	/// <summary>
+	/// ZPT (Zope Page Template) parser
+	/// </summary>
+	public class PageTemplateParser : AbstractTemplateParser
 	{
 		class TagStackItem
 		{
@@ -96,7 +97,7 @@ namespace SharpTAL.TemplateProgram
 				{ "tal", Namespaces.TAL_NS },
 				{ "metal", Namespaces.METAL_NS } };
 
-		Dictionary<CommandType, Func<List<TagAttribute>, Command>> commandHandler;
+		Dictionary<CommandType, Func<List<TagAttribute>, Command>> talAttributeHandlers;
 
 		// Per-template compiling state (including inline templates compiling)
 		string meta_namespace_prefix;
@@ -118,24 +119,24 @@ namespace SharpTAL.TemplateProgram
 		int endTagCommandLocationCounter;
 		Tag currentStartTag;
 
-		public ProgramGenerator()
+		public PageTemplateParser()
 		{
-			commandHandler = new Dictionary<CommandType, Func<List<TagAttribute>, Command>>();
-			commandHandler.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
-			commandHandler.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
-			commandHandler.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
-			commandHandler.Add(CommandType.METAL_FILL_SLOT, Handle_METAL_FILL_SLOT);
-			commandHandler.Add(CommandType.METAL_DEFINE_MACRO, Handle_METAL_DEFINE_MACRO);
-			commandHandler.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
-			commandHandler.Add(CommandType.METAL_FILL_PARAM, Handle_METAL_FILL_PARAM);
-			commandHandler.Add(CommandType.METAL_IMPORT, Handle_METAL_IMPORT);
-			commandHandler.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
-			commandHandler.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
-			commandHandler.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
-			commandHandler.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
-			commandHandler.Add(CommandType.TAL_REPLACE, Handle_TAL_REPLACE);
-			commandHandler.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
-			commandHandler.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
+			talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, Command>>();
+			talAttributeHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
+			talAttributeHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
+			talAttributeHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
+			talAttributeHandlers.Add(CommandType.METAL_FILL_SLOT, Handle_METAL_FILL_SLOT);
+			talAttributeHandlers.Add(CommandType.METAL_DEFINE_MACRO, Handle_METAL_DEFINE_MACRO);
+			talAttributeHandlers.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
+			talAttributeHandlers.Add(CommandType.METAL_FILL_PARAM, Handle_METAL_FILL_PARAM);
+			talAttributeHandlers.Add(CommandType.METAL_IMPORT, Handle_METAL_IMPORT);
+			talAttributeHandlers.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
+			talAttributeHandlers.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
+			talAttributeHandlers.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
+			talAttributeHandlers.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
+			talAttributeHandlers.Add(CommandType.TAL_REPLACE, Handle_TAL_REPLACE);
+			talAttributeHandlers.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
+			talAttributeHandlers.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
 		}
 
 		public void GenerateTemplateProgram(ref TemplateInfo ti)
@@ -247,8 +248,9 @@ namespace SharpTAL.TemplateProgram
 			foreach (TagAttribute att in currentStartTag.Attributes)
 				att.Value = att.UnescapedValue;
 
-			// Look for TAL/METAL attributes
-			SortedDictionary<CommandType, List<TagAttribute>> commands = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
+			// Sorted dictionary of TAL attributes grouped by attribute type. The dictionary is sorted by the attribute type.
+			SortedDictionary<CommandType, List<TagAttribute>> talAttributesDictionary = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
+			// Clean HTML/XML attributes
 			List<TagAttribute> cleanAttributes = new List<TagAttribute>();
 			List<Action> popFunctionList = new List<Action>();
 			bool isTALElementNameSpace = false;
@@ -339,55 +341,55 @@ namespace SharpTAL.TemplateProgram
 				{
 					// We should treat this an implicit omit-tag
 					// Will go to default, i.e. yes
-					commands[CommandType.TAL_OMITTAG] = new List<TagAttribute>() { new TALTagAttribute { Value = "", CommandType = CommandType.TAL_OMITTAG } };
+					talAttributesDictionary[CommandType.TAL_OMITTAG] = new List<TagAttribute>() { new TALTagAttribute { Value = "", CommandType = CommandType.TAL_OMITTAG } };
 				}
 			}
 
-			// Resolve TAL/METAL commands from attributes
+			// Look for TAL/METAL attributes
 			foreach (var att in currentStartTag.Attributes)
 			{
 				if (att.Name.Length > 4 && att.Name.Substring(0, 5) == "xmlns")
 					// We have a namespace declaration.
 					continue;
 
-				string commandName = "";
+				string talCommandName = "";
 
 				if (isTALElementNameSpace && att.Name.IndexOf(':') < 0)
 					// This means that the attribute name does not have a namespace, so use the prefix for this tag.
-					commandName = prefixToAdd + att.Name;
+					talCommandName = prefixToAdd + att.Name;
 				else
-					commandName = att.Name;
+					talCommandName = att.Name;
 
-				if (tal_attribute_map.ContainsKey(commandName))
+				if (tal_attribute_map.ContainsKey(talCommandName))
 				{
 					// It's a TAL attribute
-					CommandType cmdType = tal_attribute_map[commandName];
+					CommandType cmdType = tal_attribute_map[talCommandName];
 					if (cmdType == CommandType.TAL_OMITTAG && isTALElementNameSpace)
 					{
 						// Supressing omit-tag command present on TAL or METAL element
 					}
 					else
 					{
-						if (!commands.ContainsKey(cmdType))
-							commands.Add(cmdType, new List<TagAttribute>());
-						commands[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+						if (!talAttributesDictionary.ContainsKey(cmdType))
+							talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
+						talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
 					}
 				}
-				else if (metal_attribute_map.ContainsKey(commandName))
+				else if (metal_attribute_map.ContainsKey(talCommandName))
 				{
 					// It's a METAL attribute
-					CommandType cmdType = metal_attribute_map[commandName];
-					if (!commands.ContainsKey(cmdType))
-						commands.Add(cmdType, new List<TagAttribute>());
-					commands[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+					CommandType cmdType = metal_attribute_map[talCommandName];
+					if (!talAttributesDictionary.ContainsKey(cmdType))
+						talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
+					talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
 				}
-				else if (meta_attribute_map.ContainsKey(commandName))
+				else if (meta_attribute_map.ContainsKey(talCommandName))
 				{
 					// It's a META attribute
-					CommandType cmdType = meta_attribute_map[commandName];
-					if (!commands.ContainsKey(cmdType))
-						commands.Add(cmdType, new List<TagAttribute>());
-					commands[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+					CommandType cmdType = meta_attribute_map[talCommandName];
+					if (!talAttributesDictionary.ContainsKey(cmdType))
+						talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
+					talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
 				}
 				else
 				{
@@ -400,19 +402,19 @@ namespace SharpTAL.TemplateProgram
 			{
 				// Insert normal HTML/XML attributes BEFORE other TAL/METAL TAL_ATTRIBUTES commands
 				// as fake TAL_ATTRIBUTES commands to enable string expressions interpolation on normal HTML/XML attributes.
-				if (!commands.ContainsKey(CommandType.TAL_ATTRIBUTES))
-					commands.Add(CommandType.TAL_ATTRIBUTES, new List<TagAttribute>());
-				commands[CommandType.TAL_ATTRIBUTES].InsertRange(0, cleanAttributes);
+				if (!talAttributesDictionary.ContainsKey(CommandType.TAL_ATTRIBUTES))
+					talAttributesDictionary.Add(CommandType.TAL_ATTRIBUTES, new List<TagAttribute>());
+				talAttributesDictionary[CommandType.TAL_ATTRIBUTES].InsertRange(0, cleanAttributes);
 			}
 
 			// Create a symbol for the end of the tag - we don't know what the offset is yet
 			endTagCommandLocationCounter++;
 
 			TagStackItem tagStackItem = null;
-			foreach (CommandType cmdType in commands.Keys)
+			foreach (CommandType cmdType in talAttributesDictionary.Keys)
 			{
-				// Create command from attributes
-				Command cmd = commandHandler[cmdType](commands[cmdType]);
+				// Create program command from tal attributes
+				Command cmd = talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]);
 				if (cmd != null)
 				{
 					if (tagStackItem == null)
@@ -1194,4 +1196,57 @@ namespace SharpTAL.TemplateProgram
 			return null;
 		}
 	}
+
+	// <TODO>
+	// Test program interpretation without assembly generation.
+	// This will support only dynamic expression types like path: and python: and maybe dquery: (dynamicquery) (no csharp: because this requires assembly generation)
+	//public abstract class AbstractProgramInterpreter
+	//{
+	//    protected Dictionary<CommandType, Action<Command>> commandHandlers;
+	//    public AbstractProgramInterpreter()
+	//    {
+	//        commandHandlers = new Dictionary<CommandType, Action<Command>>();
+	//        commandHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
+	//        commandHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
+	//        commandHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
+	//        commandHandlers.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
+	//        commandHandlers.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
+	//        commandHandlers.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
+	//        commandHandlers.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
+	//        commandHandlers.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
+	//        commandHandlers.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
+	//        commandHandlers.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
+	//        commandHandlers.Add(CommandType.CMD_START_SCOPE, Handle_CMD_START_SCOPE);
+	//        commandHandlers.Add(CommandType.CMD_OUTPUT, Handle_CMD_OUTPUT);
+	//        commandHandlers.Add(CommandType.CMD_START_TAG, Handle_CMD_START_TAG);
+	//        commandHandlers.Add(CommandType.CMD_ENDTAG_ENDSCOPE, Handle_CMD_ENDTAG_ENDSCOPE);
+	//        commandHandlers.Add(CommandType.CMD_NOOP, Handle_CMD_NOOP);
+	//    }
+	//    public void Run(IEnumerable<Command> commands)
+	//    {
+	//        foreach (Command cmd in commands)
+	//            commandHandlers[cmd.CommandType](cmd);
+	//    }
+	//    protected abstract void Handle_META_INTERPOLATION(Command cmd);
+	//    protected abstract void Handle_METAL_USE_MACRO(Command cmd);
+	//    protected abstract void Handle_METAL_DEFINE_SLOT(Command cmd);
+	//    protected abstract void Handle_METAL_FILL_SLOT(Command cmd);
+	//    protected abstract void Handle_METAL_DEFINE_MACRO(Command cmd);
+	//    protected abstract void Handle_METAL_DEFINE_PARAM(Command cmd);
+	//    protected abstract void Handle_METAL_FILL_PARAM(Command cmd);
+	//    protected abstract void Handle_METAL_IMPORT(Command cmd);
+	//    protected abstract void Handle_TAL_DEFINE(Command cmd);
+	//    protected abstract void Handle_TAL_CONDITION(Command cmd);
+	//    protected abstract void Handle_TAL_REPEAT(Command cmd);
+	//    protected abstract void Handle_TAL_CONTENT(Command cmd);
+	//    protected abstract void Handle_TAL_REPLACE(Command cmd);
+	//    protected abstract void Handle_TAL_ATTRIBUTES(Command cmd);
+	//    protected abstract void Handle_TAL_OMITTAG(Command cmd);
+	//    protected abstract void Handle_CMD_START_SCOPE(Command cmd);
+	//    protected abstract void Handle_CMD_OUTPUT(Command cmd);
+	//    protected abstract void Handle_CMD_START_TAG(Command cmd);
+	//    protected abstract void Handle_CMD_ENDTAG_ENDSCOPE(Command cmd);
+	//    protected abstract void Handle_CMD_NOOP(Command cmd);
+	//}
+	// </TODO>
 }

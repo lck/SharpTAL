@@ -97,14 +97,14 @@ namespace SharpTAL
 				}
 
 				// Generate template program from template body and generate the TemplateKey
-				ProgramGenerator programGenerator = new ProgramGenerator();
+				PageTemplateParser pageTemplateParser = new PageTemplateParser();
 				TemplateInfo ti = new TemplateInfo
 				{
 					TemplateBody = templateBody,
 					GlobalsTypes = globalsTypes,
 					ReferencedAssemblies = referencedAssemblies
 				};
-				programGenerator.GenerateTemplateProgram(ref ti);
+				pageTemplateParser.GenerateTemplateProgram(ref ti);
 
 				// Compute the template key
 				ti.TemplateKey = Utils.ComputeTemplateKey(ti);

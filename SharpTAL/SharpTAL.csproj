@@ -106,7 +106,7 @@
     <Compile Include="Errors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HTMLEntityDefs.cs" />
-    <Compile Include="TemplateProgram\ProgramGenerator.cs" />
+    <Compile Include="TemplateProgram\PageTemplateParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

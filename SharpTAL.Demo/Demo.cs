@@ -98,7 +98,7 @@ namespace SharpTAL.Demo
 				Console.WriteLine("=======================================");
 				Stopwatch sw = new Stopwatch();
 				sw.Start();
-				ProgramGenerator programGenerator = new ProgramGenerator();
+				PageTemplateParser pageTemplateParser = new PageTemplateParser();
 				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
@@ -109,7 +109,7 @@ namespace SharpTAL.Demo
 						GlobalsTypes = globalsTypes,
 						ReferencedAssemblies = refAssemblies
 					};
-					programGenerator.GenerateTemplateProgram(ref ti);
+					pageTemplateParser.GenerateTemplateProgram(ref ti);
 					sw.Stop();
 					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
 				}
