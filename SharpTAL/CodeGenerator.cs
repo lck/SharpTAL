@@ -1089,7 +1089,8 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected void Handle_META_INTERPOLATION(Command command)
 		{
-			currentScope.Interpolation = (bool)command.Parameters[0];
+			METAInterpolation interpolationCmd = (METAInterpolation)command;
+			currentScope.Interpolation = interpolationCmd.Enabled;
 		}
 
 		protected void Handle_METAL_USE_MACRO(Command command)

@@ -632,10 +632,10 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			if (argument == "true")
-				return new List<Command> { new Command(currentStartTag, CommandType.META_INTERPOLATION, true) };
+				return new List<Command> { new METAInterpolation(currentStartTag, true) };
 
 			if (argument == "false")
-				return new List<Command> { new Command(currentStartTag, CommandType.META_INTERPOLATION, false) };
+				return new List<Command> { new METAInterpolation(currentStartTag, false) };
 
 			throw new TemplateParseException(currentStartTag,
 				string.Format("Invalid command value '{0}'. Command meta:interpolation must be of the form: meta:interpolation='true|false'", argument));

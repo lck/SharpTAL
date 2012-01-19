@@ -1,5 +1,5 @@
 ﻿//
-// TALDefine.cs
+// METAInterpolation.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -32,25 +32,14 @@ namespace SharpTAL.TemplateProgram.Commands
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class TALDefine : Command
+	public class METAInterpolation : Command
 	{
-		public enum VariableScope
-		{
-			Local = 1,
-			NonLocal = 2,
-			Global = 3
-		}
+		public bool Enabled { get; protected set; }
 
-		public VariableScope Scope { get; protected set; }
-		public string Name { get; protected set; }
-		public string Expression { get; protected set; }
-
-		public TALDefine(Tag tag, VariableScope scope, string name, string expression)
-			: base(tag, CommandType.TAL_DEFINE)
+		public METAInterpolation(Tag tag, bool enabled)
+			: base(tag, CommandType.META_INTERPOLATION)
 		{
-			Scope = scope;
-			Name = name;
-			Expression = expression;
+			Enabled = enabled;
 		}
 	}
 }

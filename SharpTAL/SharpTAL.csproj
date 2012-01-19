@@ -77,6 +77,7 @@
     <Compile Include="TemplateParser\AbstractTemplateParser.cs" />
     <Compile Include="TemplateParser\TagAttribute.cs" />
     <Compile Include="TemplateParser\Tag.cs" />
+    <Compile Include="TemplateProgram\Commands\METAInterpolation.cs" />
     <Compile Include="TemplateProgram\Commands\TALDefine.cs" />
     <Compile Include="TemplateProgram\CommandTypeComparer.cs" />
     <Compile Include="TemplateProgram\Command.cs" />
