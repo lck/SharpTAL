@@ -39,6 +39,7 @@ namespace SharpTAL
 	using ICSharpCode.NRefactory;
 	using SharpTAL.TemplateParser;
 	using SharpTAL.TemplateProgram;
+	using SharpTAL.TemplateProgram.Commands;
 
 	public class CodeGenerator : ITemplateCodeGenerator
 	{
@@ -657,42 +658,37 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected void Handle_TAL_DEFINE(Command command)
 		{
-			// args: [(DefineAction (global, local, set), variableName, variablePath),...]
-			//        Define variables in either the local or global context
-			List<TALDefineInfo> args = (List<TALDefineInfo>)command.Parameters[0];
+			TALDefine defineCmd = (TALDefine)command;
 
-			WriteCmdInfo(command);
+			WriteCmdInfo(defineCmd);
 
-			foreach (TALDefineInfo di in args)
+			string expression = FormatExpression(defineCmd.Expression);
+			if (defineCmd.Scope == TALDefine.VariableScope.Local)
 			{
-				string expression = FormatExpression(di.Expression);
-				if (di.Action == TALDefineAction.Local)
+				// Create new local variable
+				string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
+				WriteToBody(body);
+			}
+			else if (defineCmd.Scope == TALDefine.VariableScope.NonLocal)
+			{
+				// Set existing variable
+				string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
+				WriteToBody(body);
+			}
+			else
+			{
+				if (globalNames.Contains(defineCmd.Name))
 				{
-					// Create new local variable
-					string body = string.Format(@"var {0} = {1};", di.Name, expression);
-					WriteToBody(body);
-				}
-				else if (di.Action == TALDefineAction.NonLocal)
-				{
-					// Set existing variable
-					string body = string.Format(@"{0} = {1};", di.Name, expression);
+					// Set existing global variable
+					string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
 					WriteToBody(body);
 				}
 				else
 				{
-					if (globalNames.Contains(di.Name))
-					{
-						// Set existing global variable
-						string body = string.Format(@"{0} = {1};", di.Name, expression);
-						WriteToBody(body);
-					}
-					else
-					{
-						// Create new global variable
-						string body = string.Format(@"var {0} = {1};", di.Name, expression);
-						globalNames.Add(di.Name);
-						WriteToGlobals(body);
-					}
+					// Create new global variable
+					string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
+					globalNames.Add(defineCmd.Name);
+					WriteToGlobals(body);
 				}
 			}
 		}

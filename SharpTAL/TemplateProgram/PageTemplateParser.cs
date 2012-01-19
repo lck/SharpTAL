@@ -36,6 +36,7 @@ namespace SharpTAL.TemplateProgram
 	using System.Reflection;
 	using System.Text.RegularExpressions;
 	using SharpTAL.TemplateParser;
+	using SharpTAL.TemplateProgram.Commands;
 
 	public enum TALDefineAction
 	{
@@ -97,7 +98,7 @@ namespace SharpTAL.TemplateProgram
 				{ "tal", Namespaces.TAL_NS },
 				{ "metal", Namespaces.METAL_NS } };
 
-		Dictionary<CommandType, Func<List<TagAttribute>, Command>> talAttributeHandlers;
+		Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>> talAttributeHandlers;
 
 		// Per-template compiling state (including inline templates compiling)
 		string meta_namespace_prefix;
@@ -121,7 +122,7 @@ namespace SharpTAL.TemplateProgram
 
 		public PageTemplateParser()
 		{
-			talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, Command>>();
+			talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>>();
 			talAttributeHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
 			talAttributeHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
 			talAttributeHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
@@ -413,9 +414,8 @@ namespace SharpTAL.TemplateProgram
 			TagStackItem tagStackItem = null;
 			foreach (CommandType cmdType in talAttributesDictionary.Keys)
 			{
-				// Create program command from tal attributes
-				Command cmd = talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]);
-				if (cmd != null)
+				// Resolve program commands from tal attributes
+				foreach (Command cmd in talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]))
 				{
 					if (tagStackItem == null)
 					{
@@ -619,7 +619,7 @@ namespace SharpTAL.TemplateProgram
 			SetMETALPrefix(newPrefix);
 		}
 
-		Command Handle_META_INTERPOLATION(List<TagAttribute> attributes)
+		List<Command> Handle_META_INTERPOLATION(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -632,32 +632,30 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			if (argument == "true")
-				return new Command(currentStartTag, CommandType.META_INTERPOLATION, true);
+				return new List<Command> { new Command(currentStartTag, CommandType.META_INTERPOLATION, true) };
 
 			if (argument == "false")
-				return new Command(currentStartTag, CommandType.META_INTERPOLATION, false);
+				return new List<Command> { new Command(currentStartTag, CommandType.META_INTERPOLATION, false) };
 
 			throw new TemplateParseException(currentStartTag,
 				string.Format("Invalid command value '{0}'. Command meta:interpolation must be of the form: meta:interpolation='true|false'", argument));
 		}
 
-		Command Handle_TAL_DEFINE(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_DEFINE(List<TagAttribute> attributes)
 		{
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			// Compile a define command, resulting argument is:
-			// [(DefineAction (global, local, set), variableName, variablePath),...]
-			// Break up the list of defines first
-			List<TALDefineInfo> commandArgs = new List<TALDefineInfo>();
 			// We only want to match semi-colons that are not escaped
+			List<Command> commands = new List<Command>();
 			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
+
 				// Break each defineStmt into pieces "[local|global] varName expression"
 				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
-				TALDefineAction defAction = TALDefineAction.Local;
+				TALDefine.VariableScope varScope = TALDefine.VariableScope.Local;
 				string varName;
 				string expression;
 				if (stmtBits.Count < 2)
@@ -671,7 +669,7 @@ namespace SharpTAL.TemplateProgram
 				{
 					if (stmtBits[0] == "global")
 					{
-						defAction = TALDefineAction.Global;
+						varScope = TALDefine.VariableScope.Global;
 						varName = stmtBits[1];
 						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 					}
@@ -682,7 +680,7 @@ namespace SharpTAL.TemplateProgram
 					}
 					else if (stmtBits[0] == "nonlocal")
 					{
-						defAction = TALDefineAction.NonLocal;
+						varScope = TALDefine.VariableScope.NonLocal;
 						varName = stmtBits[1];
 						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 					}
@@ -700,18 +698,13 @@ namespace SharpTAL.TemplateProgram
 					expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
 				}
 
-				TALDefineInfo di = new TALDefineInfo();
-				di.Action = defAction;
-				di.Name = varName;
-				di.Expression = expression;
-				commandArgs.Add(di);
+				commands.Add(new TALDefine(currentStartTag, varScope, varName, expression));
 			}
 
-			Command ci = new Command(currentStartTag, CommandType.TAL_DEFINE, commandArgs);
-			return ci;
+			return commands;
 		}
 
-		Command Handle_TAL_CONDITION(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_CONDITION(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -727,10 +720,10 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			Command ci = new Command(currentStartTag, CommandType.TAL_CONDITION, argument, endTagCommandLocationCounter);
-			return ci;
+			return new List<Command> { ci };
 		}
 
-		Command Handle_TAL_REPEAT(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_REPEAT(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -749,15 +742,15 @@ namespace SharpTAL.TemplateProgram
 			string expression = string.Join(" ", attProps.GetRange(1, attProps.Count - 1).ToArray());
 
 			Command ci = new Command(currentStartTag, CommandType.TAL_REPEAT, varName, expression, endTagCommandLocationCounter);
-			return ci;
+			return new List<Command> { ci };
 		}
 
-		Command Handle_TAL_CONTENT(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes)
 		{
 			return Handle_TAL_CONTENT(attributes, 0);
 		}
 
-		Command Handle_TAL_CONTENT(List<TagAttribute> attributes, int replaceFlag)
+		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes, int replaceFlag)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -798,15 +791,15 @@ namespace SharpTAL.TemplateProgram
 				express = argument;
 
 			Command ci = new Command(currentStartTag, CommandType.TAL_CONTENT, replaceFlag, structureFlag, express, endTagCommandLocationCounter);
-			return ci;
+			return new List<Command> { ci };
 		}
 
-		Command Handle_TAL_REPLACE(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_REPLACE(List<TagAttribute> attributes)
 		{
 			return Handle_TAL_CONTENT(attributes, 1);
 		}
 
-		Command Handle_TAL_ATTRIBUTES(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_ATTRIBUTES(List<TagAttribute> attributes)
 		{
 			// Compile tal:attributes into attribute command
 
@@ -850,10 +843,10 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 			Command cmd = new Command(currentStartTag, CommandType.TAL_ATTRIBUTES, attrList);
-			return cmd;
+			return new List<Command> { cmd };
 		}
 
-		Command Handle_TAL_OMITTAG(List<TagAttribute> attributes)
+		List<Command> Handle_TAL_OMITTAG(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -869,10 +862,10 @@ namespace SharpTAL.TemplateProgram
 				expression = argument;
 
 			Command ci = new Command(currentStartTag, CommandType.TAL_OMITTAG, expression);
-			return ci;
+			return new List<Command> { ci };
 		}
 
-		Command Handle_METAL_DEFINE_MACRO(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_DEFINE_MACRO(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string macroName = attributes[attributes.Count - 1].Value;
@@ -900,10 +893,10 @@ namespace SharpTAL.TemplateProgram
 			IProgram macro = new ProgramMacro(macroName, programCommands.Count, endTagCommandLocationCounter);
 			macroMap.Add(macroName, macro);
 
-			return null;
+			return new List<Command>();
 		}
 
-		Command Handle_METAL_USE_MACRO(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_USE_MACRO(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -916,10 +909,10 @@ namespace SharpTAL.TemplateProgram
 				throw new TemplateParseException(currentStartTag, msg);
 			}
 			Command cmd = new Command(currentStartTag, CommandType.METAL_USE_MACRO, argument, new Dictionary<string, ProgramSlot>(), new List<TALDefineInfo>(), endTagCommandLocationCounter);
-			return cmd;
+			return new List<Command> { cmd };
 		}
 
-		Command Handle_METAL_DEFINE_SLOT(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_DEFINE_SLOT(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -941,10 +934,10 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			Command cmd = new Command(currentStartTag, CommandType.METAL_DEFINE_SLOT, argument, endTagCommandLocationCounter);
-			return cmd;
+			return new List<Command> { cmd };
 		}
 
-		Command Handle_METAL_FILL_SLOT(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_FILL_SLOT(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
@@ -1004,10 +997,10 @@ namespace SharpTAL.TemplateProgram
 			// Update the command
 			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
 			programCommands[ourMacroLocation] = ci;
-			return null;
+			return new List<Command>();
 		}
 
-		Command Handle_METAL_DEFINE_PARAM(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_DEFINE_PARAM(List<TagAttribute> attributes)
 		{
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
@@ -1046,10 +1039,10 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			Command cmd = new Command(currentStartTag, CommandType.METAL_DEFINE_PARAM, commandArgs);
-			return cmd;
+			return new List<Command> { cmd };
 		}
 
-		Command Handle_METAL_FILL_PARAM(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_FILL_PARAM(List<TagAttribute> attributes)
 		{
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
@@ -1118,10 +1111,10 @@ namespace SharpTAL.TemplateProgram
 			// Update the command
 			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
 			programCommands[ourMacroLocation] = ci;
-			return null;
+			return new List<Command>();
 		}
 
-		Command Handle_METAL_IMPORT(List<TagAttribute> attributes)
+		List<Command> Handle_METAL_IMPORT(List<TagAttribute> attributes)
 		{
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
@@ -1193,7 +1186,7 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 
-			return null;
+			return new List<Command>();
 		}
 	}
 
