@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// CMDEntTagEndScope.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class CMDEntTagEndScope : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
-
-		public Command(Tag tag, CommandType commandType)
+		public CMDEntTagEndScope(Tag tag)
+			: base(tag, CommandType.CMD_ENDTAG_ENDSCOPE)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
 		}
 	}
 }

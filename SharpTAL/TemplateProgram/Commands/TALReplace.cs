@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// TALReplace.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class TALReplace : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public string Expression { get; protected set; }
+		public bool Structure { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType)
+		public TALReplace(Tag tag, string expression, bool structure)
+			: base(tag, CommandType.TAL_REPLACE)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
+			Structure = structure;
+			Expression = expression;
 		}
 	}
 }

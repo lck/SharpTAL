@@ -77,6 +77,17 @@
     <Compile Include="TemplateParser\AbstractTemplateParser.cs" />
     <Compile Include="TemplateParser\TagAttribute.cs" />
     <Compile Include="TemplateParser\Tag.cs" />
+    <Compile Include="TemplateProgram\Commands\CMDStartScope.cs" />
+    <Compile Include="TemplateProgram\Commands\CMDOutput.cs" />
+    <Compile Include="TemplateProgram\Commands\CMDStartTag.cs" />
+    <Compile Include="TemplateProgram\Commands\CMDEntTagEndScope.cs" />
+    <Compile Include="TemplateProgram\Commands\METALDefineSlot.cs" />
+    <Compile Include="TemplateProgram\Commands\TALCondition.cs" />
+    <Compile Include="TemplateProgram\Commands\TALRepeat.cs" />
+    <Compile Include="TemplateProgram\Commands\TALContent.cs" />
+    <Compile Include="TemplateProgram\Commands\TALReplace.cs" />
+    <Compile Include="TemplateProgram\Commands\TALAttributes.cs" />
+    <Compile Include="TemplateProgram\Commands\TALOmitTag.cs" />
     <Compile Include="TemplateProgram\Commands\METALUseMacro.cs" />
     <Compile Include="TemplateProgram\Commands\METALDefineParam.cs" />
     <Compile Include="TemplateProgram\Commands\METAInterpolation.cs" />

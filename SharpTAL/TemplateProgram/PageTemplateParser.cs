@@ -401,25 +401,27 @@ namespace SharpTAL.TemplateProgram
 			foreach (CommandType cmdType in talAttributesDictionary.Keys)
 			{
 				// Resolve program commands from tal attributes
-				foreach (Command cmd in talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]))
-				{
-					if (tagStackItem == null)
+				var commands = talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]);
+				if (commands != null)
+					foreach (Command cmd in commands)
 					{
-						// The first command needs to add the tag to the tag stack
-						tagStackItem = AddTagToStack(tag, cleanAttributes);
+						if (tagStackItem == null)
+						{
+							// The first command needs to add the tag to the tag stack
+							tagStackItem = AddTagToStack(tag, cleanAttributes);
 
-						// Save metal:use-macro command position
-						if (cmd.CommandType == CommandType.METAL_USE_MACRO)
-							tagStackItem.UseMacroCommandLocation = programCommands.Count + 1;
+							// Save metal:use-macro command position
+							if (cmd.CommandType == CommandType.METAL_USE_MACRO)
+								tagStackItem.UseMacroCommandLocation = programCommands.Count + 1;
 
-						// Append command to create new scope for the tag
-						Command startScopeCmd = new Command(currentStartTag, CommandType.CMD_START_SCOPE);
-						AddCommand(startScopeCmd);
+							// Append command to create new scope for the tag
+							Command startScopeCmd = new CMDStartScope(currentStartTag);
+							programCommands.Add(startScopeCmd);
+						}
+
+						// All others just append
+						programCommands.Add(cmd);
 					}
-
-					// All others just append
-					AddCommand(cmd);
-				}
 			}
 
 			if (tagStackItem == null)
@@ -427,8 +429,7 @@ namespace SharpTAL.TemplateProgram
 				tagStackItem = AddTagToStack(tag, cleanAttributes);
 
 				// Append command to create new scope for the tag
-				Command startScopeCmd = new Command(currentStartTag, CommandType.CMD_START_SCOPE);
-				AddCommand(startScopeCmd);
+				programCommands.Add(new CMDStartScope(currentStartTag));
 			}
 
 			// Save pop functions and end tag command location for this tag
@@ -436,8 +437,7 @@ namespace SharpTAL.TemplateProgram
 			tagStackItem.EndTagCommandLocation = endTagCommandLocationCounter;
 
 			// Finally, append start tag command
-			Command startTagCmd = new Command(currentStartTag, CommandType.CMD_START_TAG);
-			AddCommand(startTagCmd);
+			programCommands.Add(new CMDStartTag(currentStartTag));
 		}
 
 		protected override void HandleEndTag(Tag tag)
@@ -468,16 +468,13 @@ namespace SharpTAL.TemplateProgram
 						endTagsCommandMap[(int)endTagCommandLocation] = programCommands.Count;
 
 						// We need a "close scope and tag" command
-						Command cmd = new Command(tag, CommandType.CMD_ENDTAG_ENDSCOPE);
-						AddCommand(cmd);
+						programCommands.Add(new CMDEntTagEndScope(tag));
 						return;
 					}
 					else if (!tag.Singleton)
 					{
 						// We are popping off an un-interesting tag, just add the close as text
-						// We need a "close scope and tag" command
-						Command cmd = new Command(tag, CommandType.CMD_OUTPUT, "</" + tag.Name + ">");
-						AddCommand(cmd);
+						programCommands.Add(new CMDOutput(tag, "</" + tag.Name + ">"));
 						return;
 					}
 					else
@@ -507,8 +504,7 @@ namespace SharpTAL.TemplateProgram
 		protected override void HandleData(string data)
 		{
 			// Just add it as an output
-			Command cmd = new Command(currentStartTag, CommandType.CMD_OUTPUT, data);
-			AddCommand(cmd);
+			programCommands.Add(new CMDOutput(currentStartTag, data));
 		}
 
 		protected override void HandleComment(string data)
@@ -532,23 +528,6 @@ namespace SharpTAL.TemplateProgram
 			TagStackItem tagStackItem = new TagStackItem(tag);
 			tagStack.Add(tagStackItem);
 			return tagStackItem;
-		}
-
-		void AddCommand(Command command)
-		{
-			if (command.CommandType == CommandType.CMD_OUTPUT &&
-				programCommands.Count > 0 &&
-				programCommands[programCommands.Count - 1].CommandType == CommandType.CMD_OUTPUT)
-			{
-				// We can combine output commands
-				Command cmd = programCommands[programCommands.Count - 1];
-				foreach (object att in command.Parameters)
-					cmd.Parameters.Add(att);
-			}
-			else
-			{
-				programCommands.Add(command);
-			}
 		}
 
 		void SetMETAPrefix(string prefix)
@@ -627,231 +606,6 @@ namespace SharpTAL.TemplateProgram
 				string.Format("Invalid command value '{0}'. Command meta:interpolation must be of the form: meta:interpolation='true|false'", argument));
 		}
 
-		List<Command> Handle_TAL_DEFINE(List<TagAttribute> attributes)
-		{
-			// Join attributes for commands that support multiple attributes
-			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
-
-			List<Command> commands = new List<Command>();
-
-			// We only want to match semi-colons that are not escaped
-			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
-			{
-				//  remove any leading space and un-escape any semi-colons
-				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
-
-				// Break each defineStmt into pieces "[local|global] varName expression"
-				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
-				TALDefine.VariableScope varScope = TALDefine.VariableScope.Local;
-				string varName;
-				string expression;
-				if (stmtBits.Count < 2)
-				{
-					// Error, badly formed define command
-					string msg = string.Format("Badly formed define command '{0}'.  Define commands must be of the form: '[local|nonlocal|global] varName expression[;[local|nonlocal|global] varName expression]'", argument);
-					throw new TemplateParseException(currentStartTag, msg);
-				}
-				// Assume to start with that >2 elements means a local|global flag
-				if (stmtBits.Count > 2)
-				{
-					if (stmtBits[0] == "global")
-					{
-						varScope = TALDefine.VariableScope.Global;
-						varName = stmtBits[1];
-						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
-					}
-					else if (stmtBits[0] == "local")
-					{
-						varName = stmtBits[1];
-						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
-					}
-					else if (stmtBits[0] == "nonlocal")
-					{
-						varScope = TALDefine.VariableScope.NonLocal;
-						varName = stmtBits[1];
-						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
-					}
-					else
-					{
-						// Must be a space in the expression that caused the >3 thing
-						varName = stmtBits[0];
-						expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
-					}
-				}
-				else
-				{
-					// Only two bits
-					varName = stmtBits[0];
-					expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
-				}
-
-				commands.Add(new TALDefine(currentStartTag, varScope, varName, expression));
-			}
-
-			return commands;
-		}
-
-		List<Command> Handle_TAL_CONDITION(List<TagAttribute> attributes)
-		{
-			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
-
-			// Compile a condition command, resulting argument is:
-			// path, endTagCommandLocation
-			// Sanity check
-			if (argument.Length == 0)
-			{
-				// No argument passed
-				string msg = "No argument passed!  condition commands must be of the form: 'path'";
-				throw new TemplateParseException(currentStartTag, msg);
-			}
-
-			Command ci = new Command(currentStartTag, CommandType.TAL_CONDITION, argument, endTagCommandLocationCounter);
-			return new List<Command> { ci };
-		}
-
-		List<Command> Handle_TAL_REPEAT(List<TagAttribute> attributes)
-		{
-			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
-
-			// Compile a repeat command, resulting argument is:
-			// (varname, expression, endTagCommandLocation)
-			List<string> attProps = new List<string>(argument.Split(new char[] { ' ' }));
-			if (attProps.Count < 2)
-			{
-				// Error, badly formed repeat command
-				string msg = string.Format("Badly formed repeat command '{0}'.  Repeat commands must be of the form: 'localVariable path'", argument);
-				throw new TemplateParseException(currentStartTag, msg);
-			}
-
-			string varName = attProps[0];
-			string expression = string.Join(" ", attProps.GetRange(1, attProps.Count - 1).ToArray());
-
-			Command ci = new Command(currentStartTag, CommandType.TAL_REPEAT, varName, expression, endTagCommandLocationCounter);
-			return new List<Command> { ci };
-		}
-
-		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes)
-		{
-			return Handle_TAL_CONTENT(attributes, 0);
-		}
-
-		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes, int replaceFlag)
-		{
-			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
-
-			// Compile a content command, resulting argument is
-			// (replaceFlag, structureFlag, expression, endTagCommandLocation)
-
-			// Sanity check
-			if (argument.Length == 0)
-			{
-				// No argument passed
-				string msg = "No argument passed!  content/replace commands must be of the form: 'path'";
-				throw new TemplateParseException(currentStartTag, msg);
-			}
-
-			int structureFlag = 0;
-			string[] attProps = argument.Split(new char[] { ' ' });
-			string express = "";
-			if (attProps.Length > 1)
-			{
-				if (attProps[0] == "structure")
-				{
-					structureFlag = 1;
-					express = string.Join(" ", attProps, 1, attProps.Length - 1);
-				}
-				else if (attProps[1] == "text")
-				{
-					structureFlag = 0;
-					express = string.Join(" ", attProps, 1, attProps.Length - 1);
-				}
-				else
-				{
-					// It's not a type selection after all - assume it's part of the path
-					express = argument;
-				}
-			}
-			else
-				express = argument;
-
-			Command ci = new Command(currentStartTag, CommandType.TAL_CONTENT, replaceFlag, structureFlag, express, endTagCommandLocationCounter);
-			return new List<Command> { ci };
-		}
-
-		List<Command> Handle_TAL_REPLACE(List<TagAttribute> attributes)
-		{
-			return Handle_TAL_CONTENT(attributes, 1);
-		}
-
-		List<Command> Handle_TAL_ATTRIBUTES(List<TagAttribute> attributes)
-		{
-			// Compile tal:attributes into attribute command
-
-			List<TagAttribute> attrList = new List<TagAttribute>();
-			foreach (TagAttribute att in attributes)
-			{
-				if (att is TALTagAttribute)
-				{
-					// This is TAL command attribute
-					// Break up the attribute args to list of TALTagAttributes
-					// We only want to match semi-colons that are not escaped
-					foreach (string attStmt in TAL_ATTRIBUTES_REGEX.Split(att.Value))
-					{
-						// Remove any leading space and un-escape any semi-colons
-						// Break each attributeStmt into name and expression
-						List<string> stmtBits = new List<string>(attStmt.TrimStart().Replace(";;", ";").Split(' '));
-						if (stmtBits.Count < 2)
-						{
-							// Error, badly formed attributes command
-							string msg = string.Format(
-								"Badly formed attributes command '{0}'. Attributes commands must be of the form: 'name expression[;name expression]'",
-								att.Value);
-							throw new TemplateParseException(currentStartTag, msg);
-						}
-						TALTagAttribute talTagAttr = new TALTagAttribute
-						{
-							CommandType = ((TALTagAttribute)att).CommandType,
-							Name = stmtBits[0].Trim(' ', '\r', '\n'),
-							Value = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray()),
-							Eq = @"=",
-							Quote = @"""",
-							QuoteEntity = Utils.Char2Entity(@"""")
-						};
-						attrList.Add(talTagAttr);
-					}
-				}
-				else
-				{
-					// This is clean html/xml tag attribute (no TAL/METAL command)
-					attrList.Add(att);
-				}
-			}
-			Command cmd = new Command(currentStartTag, CommandType.TAL_ATTRIBUTES, attrList);
-			return new List<Command> { cmd };
-		}
-
-		List<Command> Handle_TAL_OMITTAG(List<TagAttribute> attributes)
-		{
-			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
-
-			// Compile a condition command, resulting argument is:
-			// path
-			// If no argument is given then set the path to default
-
-			string expression = "";
-			if (argument.Length == 0)
-				expression = DEFAULT_VALUE_EXPRESSION;
-			else
-				expression = argument;
-
-			Command ci = new Command(currentStartTag, CommandType.TAL_OMITTAG, expression);
-			return new List<Command> { ci };
-		}
-
 		List<Command> Handle_METAL_DEFINE_MACRO(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
@@ -880,7 +634,7 @@ namespace SharpTAL.TemplateProgram
 			IProgram macro = new ProgramMacro(macroName, programCommands.Count, endTagCommandLocationCounter);
 			macroMap.Add(macroName, macro);
 
-			return new List<Command>();
+			return null;
 		}
 
 		List<Command> Handle_METAL_USE_MACRO(List<TagAttribute> attributes)
@@ -896,37 +650,31 @@ namespace SharpTAL.TemplateProgram
 				throw new TemplateParseException(currentStartTag, msg);
 			}
 
-			METALUseMacro cmd = new METALUseMacro(currentStartTag,
-				argument,
-				new Dictionary<string, ProgramSlot>(),
-				new List<METALDefineParam>());
-
-			return new List<Command> { cmd };
+			return new List<Command> { new METALUseMacro(currentStartTag, argument, new Dictionary<string, ProgramSlot>(), new List<METALDefineParam>()) };
 		}
 
 		List<Command> Handle_METAL_DEFINE_SLOT(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
+			string slotName = attributes[attributes.Count - 1].Value;
 
-			// Compile a define-slot command, resulting argument is:
-			// Argument: macroName, endTagCommandLocation
+			// Compile a define-slot command.
 
-			if (argument.Length == 0)
+			if (slotName.Length == 0)
 			{
 				// No argument passed
 				string msg = "No argument passed!  define-slot commands must be of the form: 'name'";
 				throw new TemplateParseException(currentStartTag, msg);
 			}
+
 			// Check that the name of the slot is valid
-			if (METAL_NAME_REGEX.Match(argument).Length != argument.Length)
+			if (METAL_NAME_REGEX.Match(slotName).Length != slotName.Length)
 			{
-				string msg = string.Format("Slot name {0} is invalid.", argument);
+				string msg = string.Format("Slot name {0} is invalid.", slotName);
 				throw new TemplateParseException(currentStartTag, msg);
 			}
 
-			Command cmd = new Command(currentStartTag, CommandType.METAL_DEFINE_SLOT, argument, endTagCommandLocationCounter);
-			return new List<Command> { cmd };
+			return new List<Command> { new METALDefineSlot(currentStartTag, slotName) };
 		}
 
 		List<Command> Handle_METAL_FILL_SLOT(List<TagAttribute> attributes)
@@ -980,7 +728,7 @@ namespace SharpTAL.TemplateProgram
 			ProgramSlot slot = new ProgramSlot(slotName, slotCommandStart, endTagCommandLocationCounter);
 			useMacroCmd.Slots.Add(slotName, slot);
 
-			return new List<Command>();
+			return null;
 		}
 
 		List<Command> Handle_METAL_DEFINE_PARAM(List<TagAttribute> attributes)
@@ -1071,7 +819,7 @@ namespace SharpTAL.TemplateProgram
 			METALUseMacro useMacroCmd = (METALUseMacro)programCommands[ourMacroLocation];
 			useMacroCmd.Parameters.AddRange(fillParamsCommands);
 
-			return new List<Command>();
+			return null;
 		}
 
 		List<Command> Handle_METAL_IMPORT(List<TagAttribute> attributes)
@@ -1146,7 +894,231 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 
-			return new List<Command>();
+			return null;
+		}
+
+		List<Command> Handle_TAL_DEFINE(List<TagAttribute> attributes)
+		{
+			// Join attributes for commands that support multiple attributes
+			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
+
+			List<Command> commands = new List<Command>();
+
+			// We only want to match semi-colons that are not escaped
+			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
+			{
+				//  remove any leading space and un-escape any semi-colons
+				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
+
+				// Break each defineStmt into pieces "[local|global] varName expression"
+				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
+				TALDefine.VariableScope varScope = TALDefine.VariableScope.Local;
+				string varName;
+				string expression;
+				if (stmtBits.Count < 2)
+				{
+					// Error, badly formed define command
+					string msg = string.Format("Badly formed define command '{0}'.  Define commands must be of the form: '[local|nonlocal|global] varName expression[;[local|nonlocal|global] varName expression]'", argument);
+					throw new TemplateParseException(currentStartTag, msg);
+				}
+				// Assume to start with that >2 elements means a local|global flag
+				if (stmtBits.Count > 2)
+				{
+					if (stmtBits[0] == "global")
+					{
+						varScope = TALDefine.VariableScope.Global;
+						varName = stmtBits[1];
+						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
+					}
+					else if (stmtBits[0] == "local")
+					{
+						varScope = TALDefine.VariableScope.Local;
+						varName = stmtBits[1];
+						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
+					}
+					else if (stmtBits[0] == "nonlocal")
+					{
+						varScope = TALDefine.VariableScope.NonLocal;
+						varName = stmtBits[1];
+						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
+					}
+					else
+					{
+						// Must be a space in the expression that caused the >3 thing
+						varName = stmtBits[0];
+						expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
+					}
+				}
+				else
+				{
+					// Only two bits
+					varName = stmtBits[0];
+					expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
+				}
+
+				commands.Add(new TALDefine(currentStartTag, varScope, varName, expression));
+			}
+
+			return commands;
+		}
+
+		List<Command> Handle_TAL_CONDITION(List<TagAttribute> attributes)
+		{
+			// Only last declared attribute is valid
+			string expression = attributes[attributes.Count - 1].Value;
+
+			// Sanity check
+			if (expression.Length == 0)
+			{
+				// No argument passed
+				string msg = "No argument passed!  condition commands must be of the form: 'path'";
+				throw new TemplateParseException(currentStartTag, msg);
+			}
+
+			return new List<Command> { new TALCondition(currentStartTag, expression) };
+		}
+
+		List<Command> Handle_TAL_REPEAT(List<TagAttribute> attributes)
+		{
+			// Only last declared attribute is valid
+			string argument = attributes[attributes.Count - 1].Value;
+
+			List<string> attProps = new List<string>(argument.Split(new char[] { ' ' }));
+
+			// Sanity check
+			if (attProps.Count < 2)
+			{
+				// Error, badly formed repeat command
+				string msg = string.Format("Badly formed repeat command '{0}'.  Repeat commands must be of the form: 'variable path'", argument);
+				throw new TemplateParseException(currentStartTag, msg);
+			}
+
+			string varName = attProps[0];
+			string expression = string.Join(" ", attProps.GetRange(1, attProps.Count - 1).ToArray());
+
+			return new List<Command> { new TALRepeat(currentStartTag, varName, expression) };
+		}
+
+		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes)
+		{
+			return Handle_TAL_CONTENT(attributes, false);
+		}
+
+		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes, bool replace)
+		{
+			// Only last declared attribute is valid
+			string argument = attributes[attributes.Count - 1].Value;
+
+			// Compile a content or replace command
+
+			// Sanity check
+			if (argument.Length == 0)
+			{
+				// No argument passed
+				string msg = "No argument passed!  content/replace commands must be of the form: 'path'";
+				throw new TemplateParseException(currentStartTag, msg);
+			}
+
+			bool structure = false;
+			string expression = "";
+
+			string[] attProps = argument.Split(new char[] { ' ' });
+			if (attProps.Length > 1)
+			{
+				if (attProps[0] == "structure")
+				{
+					structure = true;
+					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
+				}
+				else if (attProps[1] == "text")
+				{
+					structure = false;
+					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
+				}
+				else
+				{
+					// It's not a type selection after all - assume it's part of the path
+					expression = argument;
+				}
+			}
+			else
+				expression = argument;
+
+			if (replace)
+				return new List<Command> { new TALReplace(currentStartTag, expression, structure) };
+			else
+				return new List<Command> { new TALContent(currentStartTag, expression, structure) };
+		}
+
+		List<Command> Handle_TAL_REPLACE(List<TagAttribute> attributes)
+		{
+			return Handle_TAL_CONTENT(attributes, true);
+		}
+
+		List<Command> Handle_TAL_ATTRIBUTES(List<TagAttribute> attributes)
+		{
+			// Compile tal:attributes into attribute command
+
+			List<TagAttribute> attrList = new List<TagAttribute>();
+			foreach (TagAttribute att in attributes)
+			{
+				if (att is TALTagAttribute)
+				{
+					// This is TAL command attribute
+					// Break up the attribute args to list of TALTagAttributes
+					// We only want to match semi-colons that are not escaped
+					foreach (string attStmt in TAL_ATTRIBUTES_REGEX.Split(att.Value))
+					{
+						// Remove any leading space and un-escape any semi-colons
+						// Break each attributeStmt into name and expression
+						List<string> stmtBits = new List<string>(attStmt.TrimStart().Replace(";;", ";").Split(' '));
+						if (stmtBits.Count < 2)
+						{
+							// Error, badly formed attributes command
+							string msg = string.Format(
+								"Badly formed attributes command '{0}'. Attributes commands must be of the form: 'name expression[;name expression]'",
+								att.Value);
+							throw new TemplateParseException(currentStartTag, msg);
+						}
+						TALTagAttribute talTagAttr = new TALTagAttribute
+						{
+							CommandType = ((TALTagAttribute)att).CommandType,
+							Name = stmtBits[0].Trim(' ', '\r', '\n'),
+							Value = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray()),
+							Eq = @"=",
+							Quote = @"""",
+							QuoteEntity = Utils.Char2Entity(@"""")
+						};
+						attrList.Add(talTagAttr);
+					}
+				}
+				else
+				{
+					// This is clean html/xml tag attribute (no TAL/METAL command)
+					attrList.Add(att);
+				}
+			}
+
+			TALAttributes cmd = new TALAttributes(currentStartTag, attrList);
+
+			return new List<Command> { cmd };
+		}
+
+		List<Command> Handle_TAL_OMITTAG(List<TagAttribute> attributes)
+		{
+			// Only last declared attribute is valid
+			string argument = attributes[attributes.Count - 1].Value;
+
+			// Compile a condition command.
+			// If no argument is given then set the path to default
+
+			string expression = "";
+			if (argument.Length == 0)
+				expression = DEFAULT_VALUE_EXPRESSION;
+			else
+				expression = argument;
+
+			return new List<Command> { new TALOmitTag(currentStartTag, expression) };
 		}
 	}
 

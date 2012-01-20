@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// CMDOutput.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class CMDOutput : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public string Data { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType)
+		public CMDOutput(Tag tag, string data)
+			: base(tag, CommandType.CMD_OUTPUT)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
+			Data = data;
 		}
 	}
 }

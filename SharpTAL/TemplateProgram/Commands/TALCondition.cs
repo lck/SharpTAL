@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// TALCondition.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class TALCondition : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public string Expression { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType)
+		public TALCondition(Tag tag, string expression)
+			: base(tag, CommandType.TAL_CONDITION)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
+			Expression = expression;
 		}
 	}
 }

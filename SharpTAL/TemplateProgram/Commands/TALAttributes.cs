@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// TALAttributes.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class TALAttributes : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public List<TagAttribute> Attributes { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType)
+		public TALAttributes(Tag tag, List<TagAttribute> attributes)
+			: base(tag, CommandType.TAL_ATTRIBUTES)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
+			Attributes = attributes;
 		}
 	}
 }

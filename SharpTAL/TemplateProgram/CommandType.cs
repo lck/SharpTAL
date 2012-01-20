@@ -81,6 +81,5 @@ namespace SharpTAL.TemplateProgram
 		CMD_OUTPUT = 10009,
 		CMD_START_TAG = 10010,
 		CMD_ENDTAG_ENDSCOPE = 10011,
-		CMD_NOOP = 10012
 	}
 }

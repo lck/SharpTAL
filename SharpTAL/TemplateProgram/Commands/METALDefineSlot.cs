@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// METALDefineSlot.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,23 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class METALDefineSlot : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public string SlotName { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType)
+		public METALDefineSlot(Tag tag, string slotName)
+			: base(tag, CommandType.METAL_DEFINE_SLOT)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
+			SlotName = slotName;
 		}
 	}
 }
