@@ -37,6 +37,7 @@ namespace SharpTAL.Demo
 	using System.Xml;
 	using System.Diagnostics;
 	using SharpTAL.TemplateProgram;
+	using SharpTAL.TemplateCache;
 
 	public static class DemoExtensions
 	{

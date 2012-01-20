@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-
-using NUnit.Framework;
-
-namespace SharpTAL.SharpTALTests.TALTests
+﻿namespace SharpTAL.SharpTALTests.TALTests
 {
+	using System;
+	using System.Text;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.IO;
+	using System.Reflection;
+
+	using NUnit.Framework;
+
+	using SharpTAL.TemplateCache;
+
 	[TestFixture]
 	public class TALOmitTagTests
 	{
-		public static SharpTAL.ITemplateCache cache;
+		public static ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		[TestFixtureSetUp]

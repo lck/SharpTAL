@@ -72,7 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyGenerator.cs" />
-    <Compile Include="AbstractTemplateCache.cs" />
+    <Compile Include="TemplateCache\AbstractTemplateCache.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="TemplateParser\AbstractTemplateParser.cs" />
     <Compile Include="TemplateParser\TagAttribute.cs" />
@@ -97,14 +97,14 @@
     <Compile Include="TemplateParser\TemplateError.cs" />
     <Compile Include="TemplateParser\Location.cs" />
     <Compile Include="CodeGenerator.cs" />
-    <Compile Include="MemoryTemplateCache.cs" />
+    <Compile Include="TemplateCache\MemoryTemplateCache.cs" />
     <Compile Include="TemplateInfo.cs" />
     <Compile Include="TemplateParser\Token.cs" />
     <Compile Include="TemplateParser\Tokenizer.cs" />
     <Compile Include="TemplateProgram\TALTagAttribute.cs" />
     <Compile Include="Utils.cs" />
-    <Compile Include="FileSystemTemplateCache.cs" />
-    <Compile Include="ITemplateCache.cs" />
+    <Compile Include="TemplateCache\FileSystemTemplateCache.cs" />
+    <Compile Include="TemplateCache\ITemplateCache.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HTMLEntityDefs.cs" />

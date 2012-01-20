@@ -26,14 +26,16 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.IO;
-using System.Globalization;
-
 namespace SharpTAL
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Reflection;
+	using System.IO;
+	using System.Globalization;
+	using SharpTAL.TemplateProgram;
+	using SharpTAL.TemplateCache;
+	
 	public class Template
 	{
 		private static ITemplateCache defaultTemplateCache = new MemoryTemplateCache();

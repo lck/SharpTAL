@@ -1,18 +1,20 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Reflection;
-
-using NUnit.Framework;
-
-namespace SharpTAL.SharpTALTests.CacheTests
+﻿namespace SharpTAL.SharpTALTests.CacheTests
 {
+	using System;
+	using System.Text;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.IO;
+	using System.Reflection;
+
+	using NUnit.Framework;
+
+	using SharpTAL.TemplateCache;
+
 	[TestFixture]
 	public class FileSystemTemplateCacheTests
 	{
-		public static SharpTAL.FileSystemTemplateCache cache;
+		public static FileSystemTemplateCache cache;
 		public static Dictionary<string, object> globals;
 		public static List<Assembly> refAssemblies;
 
