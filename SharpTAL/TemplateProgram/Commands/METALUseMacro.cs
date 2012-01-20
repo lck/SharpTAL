@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// METALUseMacro.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,29 +26,24 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace SharpTAL.TemplateProgram
+namespace SharpTAL.TemplateProgram.Commands
 {
 	using System;
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command
+	public class METALUseMacro : Command
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		// TODO: Parameters will be removed after crating class for all commands
-		public List<object> Parameters { get; protected set; }
-		public IProgram ParentProgram { get; set; }
+		public string Expression { get; protected set; }
+		public Dictionary<string, ProgramSlot> Slots { get; protected set; }
+		public List<METALDefineParam> Parameters { get; protected set; }
 
-		public Command(Tag tag, CommandType commandType, params object[] parameters)
+		public METALUseMacro(Tag tag, string expression, Dictionary<string, ProgramSlot> slots, List<METALDefineParam> parameters)
+			: base(tag, CommandType.METAL_USE_MACRO)
 		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			
-			CommandType = commandType;
-			
-			if (parameters != null)
-				Parameters = new List<object>(parameters);
+			Expression = expression;
+			Slots = slots;
+			Parameters = parameters;
 		}
 	}
 }

@@ -26,16 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-
 namespace SharpTAL.TemplateProgram
 {
+	using System;
+	using System.Linq;
+	using System.Collections.Generic;
+
+	using SharpTAL.TemplateProgram.Commands;
+
 	public class Program : IProgram
 	{
 		protected List<Command> templateCommands;
-		
+
 		public string Name { get { return string.Empty; } }
 		public string TemplatePath { get; protected set; }
 		public string TemplateBody { get; protected set; }
@@ -44,7 +46,7 @@ namespace SharpTAL.TemplateProgram
 		public Dictionary<int, int> EndTagLocationTable { get; protected set; }
 		public int Start { get; protected set; }
 		public int End { get; protected set; }
-		
+
 		public List<Command> TemplateCommands
 		{
 			get
@@ -56,7 +58,7 @@ namespace SharpTAL.TemplateProgram
 				templateCommands = value;
 			}
 		}
-		
+
 		public IEnumerable<Command> ProgramCommands
 		{
 			get
@@ -103,10 +105,9 @@ namespace SharpTAL.TemplateProgram
 				}
 
 				// Set the parent of each slot
-				foreach (Command useMacroCmd in TemplateCommands.Where(c => c.CommandType == CommandType.METAL_USE_MACRO))
+				foreach (METALUseMacro useMacroCmd in TemplateCommands.Where(c => c.CommandType == CommandType.METAL_USE_MACRO))
 				{
-					Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)useMacroCmd.Parameters[1];
-					foreach (ProgramSlot slot in slotMap.Values)
+					foreach (ProgramSlot slot in useMacroCmd.Slots.Values)
 						slot.ParentProgram = this;
 				}
 			}

@@ -1095,12 +1095,14 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected void Handle_METAL_USE_MACRO(Command command)
 		{
-			// args: (macroExpression, slotMap, paramsMap, endTagCommandLocation)
-			//        Evaluates the expression, if it resolves to a SubTemplate it then places
-			//        the slotMap into currentSlots and then jumps to the end tag
-			string macroExpression = (string)command.Parameters[0];
-			Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)command.Parameters[1];
-			List<TALDefineInfo> paramMap = (List<TALDefineInfo>)command.Parameters[2];
+			// Evaluates the expression, if it resolves to a SubTemplate it then places
+			// the slotMap into currentSlots and then jumps to the end tag
+
+			METALUseMacro useMacroCmd = (METALUseMacro)command;
+
+			string macroExpression = useMacroCmd.Expression;
+			Dictionary<string, ProgramSlot> slots = useMacroCmd.Slots;
+			List<METALDefineParam> parameters = useMacroCmd.Parameters;
 
 			string scopeID = currentScope.ID;
 
@@ -1121,15 +1123,15 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"__slotMap = new Dictionary<string, MacroDelegate>();");
 
 			// Set macro params
-			foreach (TALDefineInfo di in paramMap)
+			foreach (METALDefineParam param in parameters)
 			{
-				WriteToBody(@"__paramMap[""{0}""] = {1};", di.Name, FormatExpression(di.Expression));
+				WriteToBody(@"__paramMap[""{0}""] = {1};", param.Name, FormatExpression(param.Expression));
 			}
 
 			// Expand slots (SubTemplates)
-			foreach (string slotName in slotMap.Keys)
+			foreach (string slotName in slots.Keys)
 			{
-				ProgramSlot slot = slotMap[slotName];
+				ProgramSlot slot = slots[slotName];
 
 				string slotID = Guid.NewGuid().ToString().Replace("-", "");
 

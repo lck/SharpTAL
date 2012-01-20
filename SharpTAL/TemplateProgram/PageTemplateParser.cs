@@ -35,23 +35,9 @@ namespace SharpTAL.TemplateProgram
 	using System.IO;
 	using System.Reflection;
 	using System.Text.RegularExpressions;
+
 	using SharpTAL.TemplateParser;
 	using SharpTAL.TemplateProgram.Commands;
-
-	public enum TALDefineAction
-	{
-		Local = 1,
-		NonLocal = 2,
-		Global = 3
-	}
-
-	public class TALDefineInfo
-	{
-		public TALDefineAction Action { get; set; }
-		public string Type { get; set; }
-		public string Name { get; set; }
-		public string Expression { get; set; }
-	}
 
 	/// <summary>
 	/// ZPT (Zope Page Template) parser
@@ -647,7 +633,7 @@ namespace SharpTAL.TemplateProgram
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
 			List<Command> commands = new List<Command>();
-			
+
 			// We only want to match semi-colons that are not escaped
 			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
 			{
@@ -909,7 +895,12 @@ namespace SharpTAL.TemplateProgram
 				string msg = "No argument passed!  use-macro commands must be of the form: 'use-macro: path'";
 				throw new TemplateParseException(currentStartTag, msg);
 			}
-			Command cmd = new Command(currentStartTag, CommandType.METAL_USE_MACRO, argument, new Dictionary<string, ProgramSlot>(), new List<TALDefineInfo>(), endTagCommandLocationCounter);
+
+			METALUseMacro cmd = new METALUseMacro(currentStartTag,
+				argument,
+				new Dictionary<string, ProgramSlot>(),
+				new List<METALDefineParam>());
+
 			return new List<Command> { cmd };
 		}
 
@@ -941,9 +932,9 @@ namespace SharpTAL.TemplateProgram
 		List<Command> Handle_METAL_FILL_SLOT(List<TagAttribute> attributes)
 		{
 			// Only last declared attribute is valid
-			string argument = attributes[attributes.Count - 1].Value;
+			string slotName = attributes[attributes.Count - 1].Value;
 
-			if (argument.Length == 0)
+			if (slotName.Length == 0)
 			{
 				// No argument passed
 				string msg = "No argument passed!  fill-slot commands must be of the form: 'fill-slot: name'";
@@ -951,9 +942,9 @@ namespace SharpTAL.TemplateProgram
 			}
 
 			// Check that the name of the slot is valid
-			if (METAL_NAME_REGEX.Match(argument).Length != argument.Length)
+			if (METAL_NAME_REGEX.Match(slotName).Length != slotName.Length)
 			{
-				string msg = string.Format("Slot name {0} is invalid.", argument);
+				string msg = string.Format("Slot name {0} is invalid.", slotName);
 				throw new TemplateParseException(currentStartTag, msg);
 			}
 
@@ -978,26 +969,17 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 
-			// Get the use-macro command we are going to adjust
-			Command cmnd = programCommands[ourMacroLocation];
-			string macroName = (string)cmnd.Parameters[0];
-			Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)cmnd.Parameters[1];
-			List<TALDefineInfo> paramMap = (List<TALDefineInfo>)cmnd.Parameters[2];
-			int endSymbol = (int)cmnd.Parameters[3];
-
-			if (slotMap.ContainsKey(argument))
+			// Update the metal:use-macro command slot definitions
+			METALUseMacro useMacroCmd = (METALUseMacro)programCommands[ourMacroLocation];
+			if (useMacroCmd.Slots.ContainsKey(slotName))
 			{
-				string msg = string.Format("Slot {0} has already been filled!", argument);
+				string msg = string.Format("Slot {0} has already been filled!", slotName);
 				throw new TemplateParseException(currentStartTag, msg);
 			}
+			int slotCommandStart = programCommands.Count; // The slot starts at the next command.
+			ProgramSlot slot = new ProgramSlot(slotName, slotCommandStart, endTagCommandLocationCounter);
+			useMacroCmd.Slots.Add(slotName, slot);
 
-			// The slot starts at the next command.
-			ProgramSlot slot = new ProgramSlot(argument, programCommands.Count, endTagCommandLocationCounter);
-			slotMap.Add(argument, slot);
-
-			// Update the command
-			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
-			programCommands[ourMacroLocation] = ci;
 			return new List<Command>();
 		}
 
@@ -1007,13 +989,13 @@ namespace SharpTAL.TemplateProgram
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
 			List<Command> commands = new List<Command>();
-			
+
 			// We only want to match semi-colons that are not escaped
 			foreach (string defStmt in METAL_DEFINE_PARAM_REGEX.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
-				
+
 				// Break each defineStmt into pieces "[local|global] varName expression"
 				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
 				string varType;
@@ -1040,16 +1022,14 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			// Compile a fill-param command, resulting argument is:
-			// Argument: [(paramName, paramPath),...]
+			List<METALDefineParam> fillParamsCommands = new List<METALDefineParam>();
 
-			// Break up the list of defines first
-			List<TALDefineInfo> commandArgs = new List<TALDefineInfo>();
 			// We only want to match semi-colons that are not escaped
 			foreach (string defStmt in METAL_FILL_PARAM_REGEX.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
+
 				// Break each defineStmt into pieces "[local|global] varName expression"
 				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
 				string varName;
@@ -1063,14 +1043,10 @@ namespace SharpTAL.TemplateProgram
 				varName = stmtBits[0];
 				expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
 
-				TALDefineInfo di = new TALDefineInfo();
-				di.Action = TALDefineAction.Local;
-				di.Name = varName;
-				di.Expression = expression;
-				commandArgs.Add(di);
+				fillParamsCommands.Add(new METALDefineParam(currentStartTag, "", varName, expression));
 			}
 
-			// Determine what use-macro statement this belongs to by working through the list backwards
+			// Determine what metal:use-macro statement this belongs to by working through the list backwards
 			int ourMacroLocation = -1;
 			int stackIndex = tagStack.Count - 1;
 			while (ourMacroLocation == -1)
@@ -1091,19 +1067,10 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 
-			// Get the use-macro command we are going to adjust
-			Command cmnd = programCommands[ourMacroLocation];
-			string macroName = (string)cmnd.Parameters[0];
-			Dictionary<string, ProgramSlot> slotMap = (Dictionary<string, ProgramSlot>)cmnd.Parameters[1];
-			List<TALDefineInfo> paramMap = (List<TALDefineInfo>)cmnd.Parameters[2];
-			int endSymbol = (int)cmnd.Parameters[3];
+			// Update the metal:use-macro command param definitions
+			METALUseMacro useMacroCmd = (METALUseMacro)programCommands[ourMacroLocation];
+			useMacroCmd.Parameters.AddRange(fillParamsCommands);
 
-			// Append param definitions to list
-			paramMap.AddRange(commandArgs);
-
-			// Update the command
-			Command ci = new Command(cmnd.Tag, cmnd.CommandType, macroName, slotMap, paramMap, endSymbol);
-			programCommands[ourMacroLocation] = ci;
 			return new List<Command>();
 		}
 
