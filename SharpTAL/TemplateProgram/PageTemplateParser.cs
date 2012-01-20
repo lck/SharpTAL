@@ -646,8 +646,9 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			// We only want to match semi-colons that are not escaped
 			List<Command> commands = new List<Command>();
+			
+			// We only want to match semi-colons that are not escaped
 			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
@@ -1005,16 +1006,14 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			// Compile a define-param command, resulting argument is:
-			// Argument: [(paramType, paramName, paramPath),...]
-
-			// Break up the list of defines first
-			List<TALDefineInfo> commandArgs = new List<TALDefineInfo>();
+			List<Command> commands = new List<Command>();
+			
 			// We only want to match semi-colons that are not escaped
 			foreach (string defStmt in METAL_DEFINE_PARAM_REGEX.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
+				
 				// Break each defineStmt into pieces "[local|global] varName expression"
 				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
 				string varType;
@@ -1030,16 +1029,10 @@ namespace SharpTAL.TemplateProgram
 				varName = stmtBits[1];
 				expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 
-				TALDefineInfo di = new TALDefineInfo();
-				di.Action = TALDefineAction.Local;
-				di.Type = varType;
-				di.Name = varName;
-				di.Expression = expression;
-				commandArgs.Add(di);
+				commands.Add(new METALDefineParam(currentStartTag, varType, varName, expression));
 			}
 
-			Command cmd = new Command(currentStartTag, CommandType.METAL_DEFINE_PARAM, commandArgs);
-			return new List<Command> { cmd };
+			return commands;
 		}
 
 		List<Command> Handle_METAL_FILL_PARAM(List<TagAttribute> attributes)

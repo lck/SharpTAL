@@ -1185,22 +1185,19 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected void Handle_METAL_DEFINE_PARAM(Command command)
 		{
-			// args: [(paramName, paramExpr),...]
-			// Define params in local context of the macro
-			List<TALDefineInfo> args = (List<TALDefineInfo>)command.Parameters[0];
+			METALDefineParam defineParamCmd = (METALDefineParam)command;
 
-			WriteCmdInfo(command);
+			WriteCmdInfo(defineParamCmd);
 
-			foreach (TALDefineInfo di in args)
-			{
-				// Create param variable
-				WriteToBody(@"{0} {1} = {2};", di.Type, di.Name, FormatExpression(di.Expression));
-				WriteToBody(@"if (__currentParams.ContainsKey(""{0}""))", di.Name);
-				WriteToBody(@"{{");
-				WriteToBody("     // This param is filled");
-				WriteToBody(@"    {0} = ({1})__currentParams[""{0}""];", di.Name, di.Type);
-				WriteToBody(@"}}");
-			}
+			string expression = FormatExpression(defineParamCmd.Expression);
+
+			// Create param variable
+			WriteToBody(@"{0} {1} = {2};", defineParamCmd.Type, defineParamCmd.Name, expression);
+			WriteToBody(@"if (__currentParams.ContainsKey(""{0}""))", defineParamCmd.Name);
+			WriteToBody(@"{{");
+			WriteToBody("     // This param is filled");
+			WriteToBody(@"    {0} = ({1})__currentParams[""{0}""];", defineParamCmd.Name, defineParamCmd.Type);
+			WriteToBody(@"}}");
 		}
 
 		private void WriteCmdInfo(Command command)
