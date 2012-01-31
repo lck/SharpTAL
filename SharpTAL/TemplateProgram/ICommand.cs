@@ -1,5 +1,5 @@
 ﻿//
-// Command.cs
+// ICommand.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -32,17 +32,10 @@ namespace SharpTAL.TemplateProgram
 	using System.Collections.Generic;
 	using SharpTAL.TemplateParser;
 
-	public class Command : ICommand
+	public interface ICommand
 	{
-		public Tag Tag { get; protected set; }
-		public CommandType CommandType { get; protected set; }
-		public IProgram ParentProgram { get; set; }
-
-		public Command(Tag tag, CommandType commandType)
-		{
-			if (tag != null)
-				Tag = new Tag(tag);
-			CommandType = commandType;
-		}
+		Tag Tag { get; }
+		CommandType CommandType { get; }
+		IProgram ParentProgram { get; set; }
 	}
 }

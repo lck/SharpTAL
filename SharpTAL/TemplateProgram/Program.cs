@@ -36,7 +36,7 @@ namespace SharpTAL.TemplateProgram
 
 	public class Program : IProgram
 	{
-		protected List<Command> templateCommands;
+		protected List<ICommand> templateCommands;
 
 		public string Name { get { return string.Empty; } }
 		public string TemplatePath { get; protected set; }
@@ -47,7 +47,7 @@ namespace SharpTAL.TemplateProgram
 		public int Start { get; protected set; }
 		public int End { get; protected set; }
 
-		public List<Command> TemplateCommands
+		public List<ICommand> TemplateCommands
 		{
 			get
 			{
@@ -59,7 +59,7 @@ namespace SharpTAL.TemplateProgram
 			}
 		}
 
-		public IEnumerable<Command> ProgramCommands
+		public IEnumerable<ICommand> ProgramCommands
 		{
 			get
 			{
@@ -78,7 +78,7 @@ namespace SharpTAL.TemplateProgram
 			End = 0;
 		}
 
-		public Program(string templateBody, string templatePath, string templateHash, List<Command> templateCommands, Dictionary<int, int> endTagLocationTable, Dictionary<string, IProgram> macros, HashSet<string> importMacroCommands)
+		public Program(string templateBody, string templatePath, string templateHash, List<ICommand> templateCommands, Dictionary<int, int> endTagLocationTable, Dictionary<string, IProgram> macros, HashSet<string> importMacroCommands)
 		{
 			TemplateBody = templateBody;
 			TemplatePath = templatePath;
@@ -94,7 +94,7 @@ namespace SharpTAL.TemplateProgram
 				End = templateCommands.Count;
 
 				// Set the parent of each command
-				foreach (Command cmd in TemplateCommands)
+				foreach (ICommand cmd in TemplateCommands)
 					cmd.ParentProgram = this;
 
 				// Set the parent of each macro

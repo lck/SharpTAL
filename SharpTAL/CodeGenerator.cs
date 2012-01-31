@@ -41,7 +41,7 @@ namespace SharpTAL
 	using SharpTAL.TemplateProgram;
 	using SharpTAL.TemplateProgram.Commands;
 
-	public class CodeGenerator : ITemplateCodeGenerator
+	public class CodeGenerator : AbstractProgramInterpreter, ITemplateCodeGenerator
 	{
 		protected static readonly string FileBodyTemplate =
 			@"${usings}
@@ -418,7 +418,6 @@ namespace Templates
 		protected string rendererBodyTabs;
 		protected Scope currentScope;
 		protected Stack<Scope> scopeStack;
-		protected Dictionary<CommandType, Action<Command>> commandHandler;
 
 		public CodeGenerator()
 		{
@@ -429,23 +428,6 @@ namespace Templates
 			rendererBody = new StringBuilder();
 			rendererBodyTabs = "                ";
 			scopeStack = new Stack<Scope>();
-
-			commandHandler = new Dictionary<CommandType, Action<Command>>();
-			commandHandler.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
-			commandHandler.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
-			commandHandler.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
-			commandHandler.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
-			commandHandler.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
-			commandHandler.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
-			commandHandler.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
-			commandHandler.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
-			commandHandler.Add(CommandType.TAL_REPLACE, Handle_TAL_REPLACE);
-			commandHandler.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
-			commandHandler.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
-			commandHandler.Add(CommandType.CMD_START_SCOPE, Handle_CMD_START_SCOPE);
-			commandHandler.Add(CommandType.CMD_OUTPUT, Handle_CMD_OUTPUT);
-			commandHandler.Add(CommandType.CMD_START_TAG, Handle_CMD_START_TAG);
-			commandHandler.Add(CommandType.CMD_ENDTAG_ENDSCOPE, Handle_CMD_ENDTAG_ENDSCOPE);
 		}
 
 		public string GenerateCode(TemplateInfo ti)
@@ -502,8 +484,7 @@ namespace Templates
 			WriteToBody(@"");
 			WriteToBody(@"__CleanProgram();");
 			WriteToBody(@"");
-			foreach (Command cmd in ti.MainProgram.ProgramCommands)
-				commandHandler[cmd.CommandType](cmd);
+			HandleCommands(ti.MainProgram.ProgramCommands);
 
 			//----------------------------
 			// Resolve required namespaces
@@ -620,12 +601,10 @@ Global variable with namespace name allready exists.", programNamespace));
 					WriteToBody(@"__CleanProgram();");
 
 					// Process METAL_DEFINE_PARAM commands
-					foreach (Command cmd in macro.ProgramCommands.Where(c => c.CommandType == CommandType.METAL_DEFINE_PARAM))
-						commandHandler[cmd.CommandType](cmd);
+					HandleCommands(macro.ProgramCommands.Where(c => c.CommandType == CommandType.METAL_DEFINE_PARAM));
 
 					// Process macro commands and ignore METAL_DEFINE_PARAM commands
-					foreach (Command cmd in macro.ProgramCommands.Where(c => c.CommandType != CommandType.METAL_DEFINE_PARAM))
-						commandHandler[cmd.CommandType](cmd);
+					HandleCommands(macro.ProgramCommands.Where(c => c.CommandType != CommandType.METAL_DEFINE_PARAM));
 
 					// Finalize macro delegate
 					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
@@ -656,575 +635,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			}
 		}
 
-		protected void Handle_META_INTERPOLATION(Command command)
-		{
-			METAInterpolation interpolationCmd = (METAInterpolation)command;
-			currentScope.Interpolation = interpolationCmd.Enabled;
-		}
-
-		protected void Handle_METAL_USE_MACRO(Command command)
-		{
-			// Evaluates the expression, if it resolves to a SubTemplate it then places
-			// the slotMap into currentSlots and then jumps to the end tag
-
-			METALUseMacro useMacroCmd = (METALUseMacro)command;
-
-			string macroExpression = useMacroCmd.Expression;
-			Dictionary<string, ProgramSlot> slots = useMacroCmd.Slots;
-			List<METALDefineParam> parameters = useMacroCmd.Parameters;
-
-			string scopeID = currentScope.ID;
-
-			// Start SubScope
-			string subScopeID = Guid.NewGuid().ToString().Replace("-", "");
-			currentScope.SubScope.Push(new SubScope() { ID = subScopeID });
-
-			WriteCmdInfo(command);
-
-			string expression = FormatExpression(macroExpression);
-			WriteToBody(@"object use_macro_delegate_{0} = {1};", subScopeID, expression);
-			WriteToBody(@"if (use_macro_delegate_{0} != null && use_macro_delegate_{0} is MacroDelegate)", subScopeID);
-			WriteToBody(@"{{");
-			rendererBodyTabs += "    ";
-			WriteToBody(@"__outputTag = 0;");
-			WriteToBody(@"__tagContent = use_macro_delegate_{0};", subScopeID);
-			WriteToBody(@"__tagContentType = 1;");
-			WriteToBody(@"__slotMap = new Dictionary<string, MacroDelegate>();");
-
-			// Set macro params
-			foreach (METALDefineParam param in parameters)
-			{
-				WriteToBody(@"__paramMap[""{0}""] = {1};", param.Name, FormatExpression(param.Expression));
-			}
-
-			// Expand slots (SubTemplates)
-			foreach (string slotName in slots.Keys)
-			{
-				ProgramSlot slot = slots[slotName];
-
-				string slotID = Guid.NewGuid().ToString().Replace("-", "");
-
-				// Create slot delegate
-				WriteToBody(@"");
-				WriteToBody(@"//====================");
-				WriteToBody(@"// Slot: ""{0}""", slotName);
-				WriteToBody(@"//====================");
-				WriteToBody(@"MacroDelegate slot_{0}_delegate_{1} = delegate()", slotName, slotID);
-				WriteToBody(@"{{");
-				rendererBodyTabs += "    ";
-
-				// Process slot commands
-				foreach (Command cmd in slot.ProgramCommands)
-					commandHandler[cmd.CommandType](cmd);
-
-				// Finalize slot delegate
-				rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
-				WriteToBody(@"}};");
-				WriteToBody(@"__slotMap[""{0}""] = slot_{0}_delegate_{1};", slotName, slotID);
-				WriteToBody(@"");
-			}
-
-			// Go to end tag
-			WriteToBody(@"");
-			WriteToBody(@"// NOTE: WE JUMP STRAIGHT TO THE END TAG, NO OTHER TAL/METAL COMMANDS ARE EVALUATED");
-			WriteToBody(@"goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
-		}
-
-		protected void Handle_METAL_DEFINE_SLOT(Command command)
-		{
-			// If the slotName is filled then that is used, otherwise the original content is used.
-			METALDefineSlot defineSlotCmd = (METALDefineSlot)command;
-
-			string slotName = defineSlotCmd.SlotName;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			WriteToBody(@"if (__currentSlots.ContainsKey(""{0}""))", slotName);
-			WriteToBody(@"{{");
-			WriteToBody("     // This slot is filled, so replace us with that content");
-			WriteToBody(@"    __outputTag = 0;");
-			WriteToBody(@"    __tagContent = __currentSlots[""{0}""];", slotName);
-			WriteToBody(@"    __tagContentType = 1;");
-			WriteToBody(@"    ");
-			WriteToBody(@"    // Output none of our content or the existing content");
-			WriteToBody(@"    // NOTE: NO FURTHER TAL/METAL COMMANDS ARE EVALUATED");
-			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_METAL_DEFINE_PARAM(Command command)
-		{
-			METALDefineParam defineParamCmd = (METALDefineParam)command;
-
-			WriteCmdInfo(defineParamCmd);
-
-			string expression = FormatExpression(defineParamCmd.Expression);
-
-			// Create param variable
-			WriteToBody(@"{0} {1} = {2};", defineParamCmd.Type, defineParamCmd.Name, expression);
-			WriteToBody(@"if (__currentParams.ContainsKey(""{0}""))", defineParamCmd.Name);
-			WriteToBody(@"{{");
-			WriteToBody("     // This param is filled");
-			WriteToBody(@"    {0} = ({1})__currentParams[""{0}""];", defineParamCmd.Name, defineParamCmd.Type);
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_TAL_DEFINE(Command command)
-		{
-			TALDefine defineCmd = (TALDefine)command;
-
-			WriteCmdInfo(defineCmd);
-
-			string expression = FormatExpression(defineCmd.Expression);
-			if (defineCmd.Scope == TALDefine.VariableScope.Local)
-			{
-				// Create new local variable
-				string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
-				WriteToBody(body);
-			}
-			else if (defineCmd.Scope == TALDefine.VariableScope.NonLocal)
-			{
-				// Set existing variable
-				string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
-				WriteToBody(body);
-			}
-			else
-			{
-				if (globalNames.Contains(defineCmd.Name))
-				{
-					// Set existing global variable
-					string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
-					WriteToBody(body);
-				}
-				else
-				{
-					// Create new global variable
-					string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
-					globalNames.Add(defineCmd.Name);
-					WriteToGlobals(body);
-				}
-			}
-		}
-
-		protected void Handle_TAL_CONDITION(Command command)
-		{
-			// Conditionally continues with execution of all content contained by it.
-			TALCondition conditionCmd = (TALCondition)command;
-
-			string expression = conditionCmd.Expression;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			// Start SubScope
-			expression = FormatExpression(expression);
-			WriteToBody(@"if (IsFalseResult({0}))", expression);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Nothing to output - evaluated to false.");
-			WriteToBody(@"    __outputTag = 0;");
-			WriteToBody(@"    __tagContent = null;");
-			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_TAL_REPEAT(Command command)
-		{
-			// Repeats anything in the cmndList
-			TALRepeat repeatCmd = (TALRepeat)command;
-
-			string varName = repeatCmd.Name;
-			string expression = repeatCmd.Expression;
-
-			// Start Repeat SubScope
-			string repeatSubScopeID = Guid.NewGuid().ToString().Replace("-", "");
-			currentScope.SubScope.Push(new RepeatScope() { ID = repeatSubScopeID, VarName = varName });
-
-			WriteCmdInfo(command);
-
-			expression = FormatExpression(expression);
-
-			WriteToBody(@"// Backup the current attributes for this tag");
-			WriteToBody(@"Dictionary<string, Attr> __currentAttributesCopy_{0} = new Dictionary<string, Attr>(__currentAttributes);", repeatSubScopeID);
-			WriteToBody(@"");
-			WriteToBody(@"var repeat_expression_{0} = {1};", repeatSubScopeID, expression);
-			WriteToBody(@"var enumerable_{0}_{1} = repeat_expression_{1};", varName, repeatSubScopeID);
-			WriteToBody(@"var enumerator_{0}_{1} = enumerable_{0}_{1}.GetEnumerator();", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_isdefault_{0}_{1} = false;", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_isfirst_{0}_{1} = true;", varName, repeatSubScopeID);
-			WriteToBody(@"if (IsDefaultValue(repeat_expression_{0}))", repeatSubScopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Stop after first enumeration, so only default content is rendered");
-			WriteToBody(@"    enumerator_status_{0}_{1} = false;", varName, repeatSubScopeID);
-			WriteToBody(@"    enumerator_isdefault_{0}_{1} = true;", varName, repeatSubScopeID);
-			WriteToBody(@"}}");
-			WriteToBody(@"else");
-			WriteToBody(@"{{");
-			WriteToBody(@"    repeat[""{0}""] = new RepeatVariable(enumerable_{0}_{1});", varName, repeatSubScopeID);
-			WriteToBody(@"}}");
-			WriteToBody(@"do");
-			WriteToBody(@"{{");
-			WriteToBody(@"    __outputTag = 1;");
-			WriteToBody(@"    __tagContent = null;");
-			WriteToBody(@"    __tagContentType = 0;");
-			WriteToBody(@"    __moveToEndTag = false;");
-			WriteToBody(@"    ");
-			WriteToBody(@"    // Skip repeat, if there is nothing to enumerate");
-			WriteToBody(@"    if (enumerator_status_{0}_{1} == false &&", varName, repeatSubScopeID);
-			WriteToBody(@"        enumerator_isfirst_{0}_{1} == true &&", varName, repeatSubScopeID);
-			WriteToBody(@"        enumerator_isdefault_{0}_{1} == false)", varName, repeatSubScopeID);
-			WriteToBody(@"    {{");
-			WriteToBody(@"        goto END_REPEAT_{0};", repeatSubScopeID);
-			WriteToBody(@"    }}");
-			WriteToBody(@"    enumerator_isfirst_{0}_{1} = false;", varName, repeatSubScopeID);
-			WriteToBody(@"    ");
-			WriteToBody(@"    var {0} = enumerator_{0}_{1}.Current;", varName, repeatSubScopeID);
-			WriteToBody(@"    if (!enumerator_isdefault_{0}_{1})", varName, repeatSubScopeID);
-			WriteToBody(@"    {{");
-			WriteToBody(@"        enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
-			WriteToBody(@"        repeat[""{0}""].UpdateStatus(enumerator_status_{0}_{1});", varName, repeatSubScopeID);
-			WriteToBody(@"    }}");
-
-			rendererBodyTabs += "    ";
-		}
-
-		protected void Handle_TAL_CONTENT(Command command)
-		{
-			TALContent contentCmd = (TALContent)command;
-
-			string expression = contentCmd.Expression;
-			bool structure = contentCmd.Structure;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			expression = FormatExpression(expression);
-			WriteToBody(@"object content_expression_result_{0} = {1};", scopeID, expression);
-			WriteToBody(@"");
-			WriteToBody(@"if (content_expression_result_{0} == null)", scopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Output none of our content or the existing content, but potentially the tags");
-			WriteToBody(@"    __moveToEndTag = true;", scopeID);
-			WriteToBody(@"}}");
-			WriteToBody(@"else if (!IsDefaultValue(content_expression_result_{0}))", scopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // We have content, so let's suppress the natural content and output this!");
-			WriteToBody(@"    __tagContent = {0};", expression);
-			WriteToBody(@"    __tagContentType = {0};", structure ? 1 : 0);
-			WriteToBody(@"    __moveToEndTag = true;");
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_TAL_REPLACE(Command command)
-		{
-			TALReplace replaceCmd = (TALReplace)command;
-
-			string expression = replaceCmd.Expression;
-			bool structure = replaceCmd.Structure;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			expression = FormatExpression(expression);
-			WriteToBody(@"object content_expression_result_{0} = {1};", scopeID, expression);
-			WriteToBody(@"");
-			WriteToBody(@"if (content_expression_result_{0} == null)", scopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Only output tags if this is a content not a replace");
-			WriteToBody(@"    __outputTag = 0;");
-			WriteToBody(@"    // Output none of our content or the existing content, but potentially the tags");
-			WriteToBody(@"    __moveToEndTag = true;", scopeID);
-			WriteToBody(@"}}");
-			WriteToBody(@"else if (!IsDefaultValue(content_expression_result_{0}))", scopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Replace content - do not output tags");
-			WriteToBody(@"    __outputTag = 0;");
-			WriteToBody(@"    __tagContent = {0};", expression);
-			WriteToBody(@"    __tagContentType = {0};", structure ? 1 : 0);
-			WriteToBody(@"    __moveToEndTag = true;");
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_CMD_OUTPUT(Command command)
-		{
-			CMDOutput outputCmd = (CMDOutput)command;
-
-			string data = outputCmd.Data;
-
-			WriteCmdInfo(command);
-
-			if (currentScope != null && currentScope.Interpolation)
-			{
-				string expression = FormatStringExpression(data);
-				WriteToBody(@"output.Write({0});", expression);
-			}
-			else
-				WriteToBody(@"output.Write(@""{0}"");", data.Replace(@"""", @""""""));
-		}
-
-		protected void Handle_TAL_OMITTAG(Command command)
-		{
-			// Conditionally turn off tag output
-			TALOmitTag omitTagCmd = (TALOmitTag)command;
-
-			string expression = omitTagCmd.Expression;
-
-			WriteCmdInfo(command);
-
-			expression = FormatExpression(expression);
-			WriteToBody(@"if (!IsFalseResult({0}))", expression);
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Turn tag output off");
-			WriteToBody(@"    __outputTag = 0;");
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_CMD_START_SCOPE(Command command)
-		{
-			// Pushes the current state onto the stack, and sets up the new state
-			CMDStartScope startScopeCmd = (CMDStartScope)command;
-
-			WriteCmdInfo(command);
-
-			scopeStack.Push(currentScope);
-			currentScope = new Scope()
-			{
-				ID = Guid.NewGuid().ToString().Replace("-", ""),
-				Interpolation = true,
-				SubScope = new Stack<SubScope>()
-			};
-			WriteToBody("");
-			WriteToBody("// Start scope: {0}", currentScope.ID);
-			WriteToBody("{{");
-			rendererBodyTabs += "    ";
-
-			string scopeID = currentScope.ID;
-
-			WriteToBody("");
-			WriteToBody(@"Dictionary<string, Attr> __currentAttributes_{0} = new Dictionary<string, Attr>();", scopeID);
-			WriteToBody(@"");
-			WriteToBody(@"List<object> push_scope_{0} = new List<object>()", scopeID);
-			WriteToBody(@"{{");
-			WriteToBody(@"    __moveToEndTag,");
-			WriteToBody(@"    __outputTag,");
-			WriteToBody(@"    __currentAttributes,");
-			WriteToBody(@"    __tagContent,");
-			WriteToBody(@"    __tagContentType");
-			WriteToBody(@"}};");
-			WriteToBody(@"");
-			WriteToBody(@"__scopeStack.Push(push_scope_{0});", scopeID);
-			WriteToBody(@"");
-			WriteToBody(@"__moveToEndTag = false;");
-			WriteToBody(@"__outputTag = 1;");
-			WriteToBody(@"__currentAttributes = __currentAttributes_{0};", scopeID);
-			WriteToBody(@"__tagContent = null;");
-			WriteToBody(@"__tagContentType = 1;");
-		}
-
-		string SafeVariableName(string str)
-		{
-			string name = "";
-			for (int i = 0; i < str.Length; i++)
-			{
-				if (char.IsLetterOrDigit(str, i))
-					name += str[i];
-				else
-					name += '_';
-			}
-			return name;
-		}
-
-		protected void Handle_TAL_ATTRIBUTES(Command command)
-		{
-			TALAttributes attributesCmd = (TALAttributes)command;
-
-			List<TagAttribute> attributes = attributesCmd.Attributes;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			HashSet<string> attVarNames = new HashSet<string>();
-			foreach (TagAttribute att in attributes)
-			{
-				WriteToBody("// Attribute: {0}", att.Name);
-				string attVarName = SafeVariableName(att.Name);
-				if (!attVarNames.Contains(attVarName))
-				{
-					attVarNames.Add(attVarName);
-					WriteToBody(@"object attribute_{0}_{1} = null;", attVarName, scopeID);
-				}
-				if (string.IsNullOrEmpty(att.Value))
-				{
-					WriteToBody(@"if (!__currentAttributes.ContainsKey(""{0}""))", att.Name);
-					WriteToBody(@"    __currentAttributes.Add(""{0}"", new Attr {{ Name = @""{0}"", Value = @"""", Eq = @""{1}"", Quote = @""{2}"", QuoteEntity = @""{3}"" }});",
-						att.Name, att.Eq, att.Quote.Replace(@"""", @""""""), att.QuoteEntity);
-				}
-				else
-				{
-					string expression = "";
-					if (att is TALTagAttribute)
-						// This is TAL command attribute
-						expression = FormatExpression(att.Value);
-					else
-					{
-						// This is clean attribute (no TAL command)
-						if (currentScope.Interpolation)
-							// Interpolate attribute value
-							expression = FormatStringExpression(att.Value);
-						else
-							// Get attribute value as raw string
-							expression = string.Format(@"@""{0}""", att.Value.Replace(@"""", @""""""));
-					}
-					WriteToBody(@"try");
-					WriteToBody(@"{{");
-					WriteToBody(@"    attribute_{0}_{1} = {2};", attVarName, scopeID, expression);
-					WriteToBody(@"}}");
-					WriteToBody(@"catch (Exception ex)");
-					WriteToBody(@"{{");
-					WriteToBody(@"    attribute_{0}_{1} = null;", attVarName, scopeID);
-					WriteToBody(@"}}");
-					WriteToBody(@"if (attribute_{0}_{1} == null)", attVarName, scopeID);
-					WriteToBody(@"    __currentAttributes.Remove(""{0}"");", att.Name);
-					WriteToBody(@"else if (!IsDefaultValue(attribute_{0}_{1}))", attVarName, scopeID);
-					WriteToBody(@"{{");
-					WriteToBody(@"    if (!__currentAttributes.ContainsKey(""{0}""))", att.Name);
-					WriteToBody(@"        __currentAttributes.Add(""{0}"", new Attr {{ Name = @""{0}"", Value = @"""", Eq = @""{1}"", Quote = @""{2}"", QuoteEntity = @""{3}"" }});",
-						att.Name, att.Eq, att.Quote.Replace(@"""", @""""""), att.QuoteEntity);
-					WriteToBody(@"    __currentAttributes[""{0}""].Value = FormatResult(attribute_{1}_{2}, culture);", att.Name, attVarName, scopeID);
-					WriteToBody(@"}}");
-				}
-			}
-		}
-
-		protected void Handle_CMD_START_TAG(Command command)
-		{
-			CMDStartTag startTagCmd = (CMDStartTag)command;
-
-			string tagName = startTagCmd.Tag.Name;
-			string tagSuffix = startTagCmd.Tag.Suffix;
-
-			string scopeID = currentScope.ID;
-
-			WriteCmdInfo(command);
-
-			WriteToBody(@"if (__outputTag == 1)");
-			WriteToBody(@"{{");
-			WriteToBody(@"    output.Write(@""<"");");
-			WriteToBody(@"    output.Write(@""{0}"");", tagName);
-			WriteToBody(@"    foreach (var att in __currentAttributes.Values)");
-			WriteToBody(@"    {{");
-			WriteToBody(@"        output.Write(@"" {{0}}{{1}}{{2}}{{3}}{{2}}"", att.Name, att.Eq, att.Quote, EscapeAttrValue(att.Value, att.Quote, att.QuoteEntity));");
-			WriteToBody(@"    }}");
-			WriteToBody(@"    output.Write(@""{0}"");", tagSuffix);
-			WriteToBody(@"}}");
-			WriteToBody(@"");
-			WriteToBody(@"if (__moveToEndTag == true)");
-			WriteToBody(@"{{");
-			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
-			WriteToBody(@"}}");
-		}
-
-		protected void Handle_CMD_ENDTAG_ENDSCOPE(Command command)
-		{
-			CMDEntTagEndScope entTagEndScopeCmd = (CMDEntTagEndScope)command;
-
-			string tagName = entTagEndScopeCmd.Tag.Name;
-			bool singletonTag = entTagEndScopeCmd.Tag.Singleton;
-
-			WriteCmdInfo(command);
-
-			string scopeID = currentScope.ID;
-
-			WriteToBody("TAL_ENDTAG_ENDSCOPE_{0}:", scopeID);
-			WriteToBody("");
-			WriteToBody("// End tag: <{0}>", tagName);
-
-			WriteToBody(@"if (__tagContent != null)");
-			WriteToBody(@"{{");
-			WriteToBody(@"    if (__tagContentType == 1)");
-			WriteToBody(@"    {{");
-			WriteToBody(@"        if (__tagContent is MacroDelegate)");
-			WriteToBody(@"        {{");
-			WriteToBody(@"            // Save our state!");
-			WriteToBody(@"            __PushProgram();");
-			WriteToBody(@"            // Execute macro or slot delegate");
-			WriteToBody(@"            ((MacroDelegate)__tagContent)();");
-			WriteToBody(@"            // Restore state");
-			WriteToBody(@"            __PopProgram();");
-			WriteToBody(@"            // End of the macro expansion (if any) so clear the slots and params");
-			WriteToBody(@"            __slotMap = new Dictionary<string, MacroDelegate>();");
-			WriteToBody(@"            __paramMap = new Dictionary<string, object>();");
-			WriteToBody(@"        }}");
-			WriteToBody(@"        else");
-			WriteToBody(@"        {{");
-			WriteToBody(@"            output.Write((string)__tagContent);");
-			WriteToBody(@"        }}");
-			WriteToBody(@"    }}");
-			WriteToBody(@"    else");
-			WriteToBody(@"    {{");
-			WriteToBody(@"        output.Write(Escape(FormatResult(__tagContent, culture)));");
-			WriteToBody(@"    }}");
-			WriteToBody(@"}}");
-
-			WriteToBody(@"if (__outputTag == 1)");
-			WriteToBody(@"{{");
-			WriteToBody(@"    // Do NOT output end tag if a singleton with no content");
-			WriteToBody(@"    if (({0} == 1 && __tagContent == null) == false)", singletonTag ? 1 : 0);
-			WriteToBody(@"    {{");
-			WriteToBody(@"        output.Write(@""</{0}>"");", tagName);
-			WriteToBody(@"    }}");
-			WriteToBody(@"}}");
-
-			while (currentScope.SubScope.Count > 0)
-			{
-				SubScope subScope = currentScope.SubScope.Pop();
-				if (subScope is RepeatScope)
-				{
-					WriteToBody("");
-					WriteToBody("// End sub-scope repeat: {0}", subScope.ID);
-					WriteToBody(@"");
-					WriteToBody(@"// Restore the current attributes");
-					WriteToBody(@"__currentAttributes = new Dictionary<string, Attr>(__currentAttributesCopy_{1});", scopeID, subScope.ID);
-					WriteToBody(@"");
-					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
-					WriteToBody("}}");
-					WriteToBody(@"while (enumerator_status_{0}_{1} == true);", ((RepeatScope)subScope).VarName, subScope.ID);
-					WriteToBody(@"END_REPEAT_{0}:", subScope.ID);
-					WriteToBody(@"repeat[""{0}""] = null;", ((RepeatScope)subScope).VarName);
-				}
-				else
-				{
-					WriteToBody("");
-					WriteToBody("// End sub-scope: {0}", subScope.ID);
-					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
-					WriteToBody("}}");
-				}
-			}
-
-			WriteToBody("");
-
-			WriteToBody(@"List<object> pop_scope_{0} = __scopeStack.Pop();", scopeID);
-			WriteToBody(@"__moveToEndTag = (bool)pop_scope_{0}[0];", scopeID);
-			WriteToBody(@"__outputTag = (int)pop_scope_{0}[1];", scopeID);
-			WriteToBody(@"__currentAttributes = (Dictionary<string, Attr>)pop_scope_{0}[2];", scopeID);
-			WriteToBody(@"__tagContent = (object)pop_scope_{0}[3];", scopeID);
-			WriteToBody(@"__tagContentType = (int)pop_scope_{0}[4];", scopeID);
-
-			WriteToBody("");
-			WriteToBody("// End scope: {0}", scopeID);
-			rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
-			WriteToBody("}}");
-
-			currentScope = scopeStack.Pop();
-		}
-
-		private void WriteCmdInfo(Command command)
+		private void WriteCmdInfo(ICommand command)
 		{
 			WriteToBody("");
 			WriteToBody("__currentCmdInfo = new CommandInfo();");
@@ -1384,5 +795,596 @@ Global variable with namespace name allready exists.", programNamespace));
 			}
 			return typeName;
 		}
+
+		string SafeVariableName(string str)
+		{
+			string name = "";
+			for (int i = 0; i < str.Length; i++)
+			{
+				if (char.IsLetterOrDigit(str, i))
+					name += str[i];
+				else
+					name += '_';
+			}
+			return name;
+		}
+
+		#region AbstractProgramInterpreter implementation
+
+		protected override void Handle_META_INTERPOLATION(ICommand command)
+		{
+			METAInterpolation interpolationCmd = (METAInterpolation)command;
+			currentScope.Interpolation = interpolationCmd.Enabled;
+		}
+
+		protected override void Handle_METAL_USE_MACRO(ICommand command)
+		{
+			// Evaluates the expression, if it resolves to a SubTemplate it then places
+			// the slotMap into currentSlots and then jumps to the end tag
+
+			METALUseMacro useMacroCmd = (METALUseMacro)command;
+
+			string macroExpression = useMacroCmd.Expression;
+			Dictionary<string, ProgramSlot> slots = useMacroCmd.Slots;
+			List<METALDefineParam> parameters = useMacroCmd.Parameters;
+
+			string scopeID = currentScope.ID;
+
+			// Start SubScope
+			string subScopeID = Guid.NewGuid().ToString().Replace("-", "");
+			currentScope.SubScope.Push(new SubScope() { ID = subScopeID });
+
+			WriteCmdInfo(command);
+
+			string expression = FormatExpression(macroExpression);
+			WriteToBody(@"object use_macro_delegate_{0} = {1};", subScopeID, expression);
+			WriteToBody(@"if (use_macro_delegate_{0} != null && use_macro_delegate_{0} is MacroDelegate)", subScopeID);
+			WriteToBody(@"{{");
+			rendererBodyTabs += "    ";
+			WriteToBody(@"__outputTag = 0;");
+			WriteToBody(@"__tagContent = use_macro_delegate_{0};", subScopeID);
+			WriteToBody(@"__tagContentType = 1;");
+			WriteToBody(@"__slotMap = new Dictionary<string, MacroDelegate>();");
+
+			// Set macro params
+			foreach (METALDefineParam param in parameters)
+			{
+				WriteToBody(@"__paramMap[""{0}""] = {1};", param.Name, FormatExpression(param.Expression));
+			}
+
+			// Expand slots (SubTemplates)
+			foreach (string slotName in slots.Keys)
+			{
+				ProgramSlot slot = slots[slotName];
+
+				string slotID = Guid.NewGuid().ToString().Replace("-", "");
+
+				// Create slot delegate
+				WriteToBody(@"");
+				WriteToBody(@"//====================");
+				WriteToBody(@"// Slot: ""{0}""", slotName);
+				WriteToBody(@"//====================");
+				WriteToBody(@"MacroDelegate slot_{0}_delegate_{1} = delegate()", slotName, slotID);
+				WriteToBody(@"{{");
+				rendererBodyTabs += "    ";
+
+				// Process slot commands
+				HandleCommands(slot.ProgramCommands);
+
+				// Finalize slot delegate
+				rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
+				WriteToBody(@"}};");
+				WriteToBody(@"__slotMap[""{0}""] = slot_{0}_delegate_{1};", slotName, slotID);
+				WriteToBody(@"");
+			}
+
+			// Go to end tag
+			WriteToBody(@"");
+			WriteToBody(@"// NOTE: WE JUMP STRAIGHT TO THE END TAG, NO OTHER TAL/METAL COMMANDS ARE EVALUATED");
+			WriteToBody(@"goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
+		}
+
+		protected override void Handle_METAL_DEFINE_SLOT(ICommand command)
+		{
+			// If the slotName is filled then that is used, otherwise the original content is used.
+			METALDefineSlot defineSlotCmd = (METALDefineSlot)command;
+
+			string slotName = defineSlotCmd.SlotName;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			WriteToBody(@"if (__currentSlots.ContainsKey(""{0}""))", slotName);
+			WriteToBody(@"{{");
+			WriteToBody("     // This slot is filled, so replace us with that content");
+			WriteToBody(@"    __outputTag = 0;");
+			WriteToBody(@"    __tagContent = __currentSlots[""{0}""];", slotName);
+			WriteToBody(@"    __tagContentType = 1;");
+			WriteToBody(@"    ");
+			WriteToBody(@"    // Output none of our content or the existing content");
+			WriteToBody(@"    // NOTE: NO FURTHER TAL/METAL COMMANDS ARE EVALUATED");
+			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_METAL_DEFINE_PARAM(ICommand command)
+		{
+			METALDefineParam defineParamCmd = (METALDefineParam)command;
+
+			WriteCmdInfo(defineParamCmd);
+
+			string expression = FormatExpression(defineParamCmd.Expression);
+
+			// Create param variable
+			WriteToBody(@"{0} {1} = {2};", defineParamCmd.Type, defineParamCmd.Name, expression);
+			WriteToBody(@"if (__currentParams.ContainsKey(""{0}""))", defineParamCmd.Name);
+			WriteToBody(@"{{");
+			WriteToBody("     // This param is filled");
+			WriteToBody(@"    {0} = ({1})__currentParams[""{0}""];", defineParamCmd.Name, defineParamCmd.Type);
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_TAL_DEFINE(ICommand command)
+		{
+			TALDefine defineCmd = (TALDefine)command;
+
+			WriteCmdInfo(defineCmd);
+
+			string expression = FormatExpression(defineCmd.Expression);
+			if (defineCmd.Scope == TALDefine.VariableScope.Local)
+			{
+				// Create new local variable
+				string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
+				WriteToBody(body);
+			}
+			else if (defineCmd.Scope == TALDefine.VariableScope.NonLocal)
+			{
+				// Set existing variable
+				string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
+				WriteToBody(body);
+			}
+			else
+			{
+				if (globalNames.Contains(defineCmd.Name))
+				{
+					// Set existing global variable
+					string body = string.Format(@"{0} = {1};", defineCmd.Name, expression);
+					WriteToBody(body);
+				}
+				else
+				{
+					// Create new global variable
+					string body = string.Format(@"var {0} = {1};", defineCmd.Name, expression);
+					globalNames.Add(defineCmd.Name);
+					WriteToGlobals(body);
+				}
+			}
+		}
+
+		protected override void Handle_TAL_CONDITION(ICommand command)
+		{
+			// Conditionally continues with execution of all content contained by it.
+			TALCondition conditionCmd = (TALCondition)command;
+
+			string expression = conditionCmd.Expression;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			// Start SubScope
+			expression = FormatExpression(expression);
+			WriteToBody(@"if (IsFalseResult({0}))", expression);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Nothing to output - evaluated to false.");
+			WriteToBody(@"    __outputTag = 0;");
+			WriteToBody(@"    __tagContent = null;");
+			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_TAL_REPEAT(ICommand command)
+		{
+			// Repeats anything in the cmndList
+			TALRepeat repeatCmd = (TALRepeat)command;
+
+			string varName = repeatCmd.Name;
+			string expression = repeatCmd.Expression;
+
+			// Start Repeat SubScope
+			string repeatSubScopeID = Guid.NewGuid().ToString().Replace("-", "");
+			currentScope.SubScope.Push(new RepeatScope() { ID = repeatSubScopeID, VarName = varName });
+
+			WriteCmdInfo(command);
+
+			expression = FormatExpression(expression);
+
+			WriteToBody(@"// Backup the current attributes for this tag");
+			WriteToBody(@"Dictionary<string, Attr> __currentAttributesCopy_{0} = new Dictionary<string, Attr>(__currentAttributes);", repeatSubScopeID);
+			WriteToBody(@"");
+			WriteToBody(@"var repeat_expression_{0} = {1};", repeatSubScopeID, expression);
+			WriteToBody(@"var enumerable_{0}_{1} = repeat_expression_{1};", varName, repeatSubScopeID);
+			WriteToBody(@"var enumerator_{0}_{1} = enumerable_{0}_{1}.GetEnumerator();", varName, repeatSubScopeID);
+			WriteToBody(@"bool enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
+			WriteToBody(@"bool enumerator_isdefault_{0}_{1} = false;", varName, repeatSubScopeID);
+			WriteToBody(@"bool enumerator_isfirst_{0}_{1} = true;", varName, repeatSubScopeID);
+			WriteToBody(@"if (IsDefaultValue(repeat_expression_{0}))", repeatSubScopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Stop after first enumeration, so only default content is rendered");
+			WriteToBody(@"    enumerator_status_{0}_{1} = false;", varName, repeatSubScopeID);
+			WriteToBody(@"    enumerator_isdefault_{0}_{1} = true;", varName, repeatSubScopeID);
+			WriteToBody(@"}}");
+			WriteToBody(@"else");
+			WriteToBody(@"{{");
+			WriteToBody(@"    repeat[""{0}""] = new RepeatVariable(enumerable_{0}_{1});", varName, repeatSubScopeID);
+			WriteToBody(@"}}");
+			WriteToBody(@"do");
+			WriteToBody(@"{{");
+			WriteToBody(@"    __outputTag = 1;");
+			WriteToBody(@"    __tagContent = null;");
+			WriteToBody(@"    __tagContentType = 0;");
+			WriteToBody(@"    __moveToEndTag = false;");
+			WriteToBody(@"    ");
+			WriteToBody(@"    // Skip repeat, if there is nothing to enumerate");
+			WriteToBody(@"    if (enumerator_status_{0}_{1} == false &&", varName, repeatSubScopeID);
+			WriteToBody(@"        enumerator_isfirst_{0}_{1} == true &&", varName, repeatSubScopeID);
+			WriteToBody(@"        enumerator_isdefault_{0}_{1} == false)", varName, repeatSubScopeID);
+			WriteToBody(@"    {{");
+			WriteToBody(@"        goto END_REPEAT_{0};", repeatSubScopeID);
+			WriteToBody(@"    }}");
+			WriteToBody(@"    enumerator_isfirst_{0}_{1} = false;", varName, repeatSubScopeID);
+			WriteToBody(@"    ");
+			WriteToBody(@"    var {0} = enumerator_{0}_{1}.Current;", varName, repeatSubScopeID);
+			WriteToBody(@"    if (!enumerator_isdefault_{0}_{1})", varName, repeatSubScopeID);
+			WriteToBody(@"    {{");
+			WriteToBody(@"        enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
+			WriteToBody(@"        repeat[""{0}""].UpdateStatus(enumerator_status_{0}_{1});", varName, repeatSubScopeID);
+			WriteToBody(@"    }}");
+
+			rendererBodyTabs += "    ";
+		}
+
+		protected override void Handle_TAL_CONTENT(ICommand command)
+		{
+			TALContent contentCmd = (TALContent)command;
+
+			string expression = contentCmd.Expression;
+			bool structure = contentCmd.Structure;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			expression = FormatExpression(expression);
+			WriteToBody(@"object content_expression_result_{0} = {1};", scopeID, expression);
+			WriteToBody(@"");
+			WriteToBody(@"if (content_expression_result_{0} == null)", scopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Output none of our content or the existing content, but potentially the tags");
+			WriteToBody(@"    __moveToEndTag = true;", scopeID);
+			WriteToBody(@"}}");
+			WriteToBody(@"else if (!IsDefaultValue(content_expression_result_{0}))", scopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // We have content, so let's suppress the natural content and output this!");
+			WriteToBody(@"    __tagContent = {0};", expression);
+			WriteToBody(@"    __tagContentType = {0};", structure ? 1 : 0);
+			WriteToBody(@"    __moveToEndTag = true;");
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_TAL_REPLACE(ICommand command)
+		{
+			TALReplace replaceCmd = (TALReplace)command;
+
+			string expression = replaceCmd.Expression;
+			bool structure = replaceCmd.Structure;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			expression = FormatExpression(expression);
+			WriteToBody(@"object content_expression_result_{0} = {1};", scopeID, expression);
+			WriteToBody(@"");
+			WriteToBody(@"if (content_expression_result_{0} == null)", scopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Only output tags if this is a content not a replace");
+			WriteToBody(@"    __outputTag = 0;");
+			WriteToBody(@"    // Output none of our content or the existing content, but potentially the tags");
+			WriteToBody(@"    __moveToEndTag = true;", scopeID);
+			WriteToBody(@"}}");
+			WriteToBody(@"else if (!IsDefaultValue(content_expression_result_{0}))", scopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Replace content - do not output tags");
+			WriteToBody(@"    __outputTag = 0;");
+			WriteToBody(@"    __tagContent = {0};", expression);
+			WriteToBody(@"    __tagContentType = {0};", structure ? 1 : 0);
+			WriteToBody(@"    __moveToEndTag = true;");
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_CMD_OUTPUT(ICommand command)
+		{
+			CMDOutput outputCmd = (CMDOutput)command;
+
+			string data = outputCmd.Data;
+
+			WriteCmdInfo(command);
+
+			if (currentScope != null && currentScope.Interpolation)
+			{
+				string expression = FormatStringExpression(data);
+				WriteToBody(@"output.Write({0});", expression);
+			}
+			else
+				WriteToBody(@"output.Write(@""{0}"");", data.Replace(@"""", @""""""));
+		}
+
+		protected override void Handle_TAL_OMITTAG(ICommand command)
+		{
+			// Conditionally turn off tag output
+			TALOmitTag omitTagCmd = (TALOmitTag)command;
+
+			string expression = omitTagCmd.Expression;
+
+			WriteCmdInfo(command);
+
+			expression = FormatExpression(expression);
+			WriteToBody(@"if (!IsFalseResult({0}))", expression);
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Turn tag output off");
+			WriteToBody(@"    __outputTag = 0;");
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_CMD_START_SCOPE(ICommand command)
+		{
+			// Pushes the current state onto the stack, and sets up the new state
+			CMDStartScope startScopeCmd = (CMDStartScope)command;
+
+			WriteCmdInfo(command);
+
+			scopeStack.Push(currentScope);
+			currentScope = new Scope()
+			{
+				ID = Guid.NewGuid().ToString().Replace("-", ""),
+				Interpolation = true,
+				SubScope = new Stack<SubScope>()
+			};
+			WriteToBody("");
+			WriteToBody("// Start scope: {0}", currentScope.ID);
+			WriteToBody("{{");
+			rendererBodyTabs += "    ";
+
+			string scopeID = currentScope.ID;
+
+			WriteToBody("");
+			WriteToBody(@"Dictionary<string, Attr> __currentAttributes_{0} = new Dictionary<string, Attr>();", scopeID);
+			WriteToBody(@"");
+			WriteToBody(@"List<object> push_scope_{0} = new List<object>()", scopeID);
+			WriteToBody(@"{{");
+			WriteToBody(@"    __moveToEndTag,");
+			WriteToBody(@"    __outputTag,");
+			WriteToBody(@"    __currentAttributes,");
+			WriteToBody(@"    __tagContent,");
+			WriteToBody(@"    __tagContentType");
+			WriteToBody(@"}};");
+			WriteToBody(@"");
+			WriteToBody(@"__scopeStack.Push(push_scope_{0});", scopeID);
+			WriteToBody(@"");
+			WriteToBody(@"__moveToEndTag = false;");
+			WriteToBody(@"__outputTag = 1;");
+			WriteToBody(@"__currentAttributes = __currentAttributes_{0};", scopeID);
+			WriteToBody(@"__tagContent = null;");
+			WriteToBody(@"__tagContentType = 1;");
+		}
+
+		protected override void Handle_TAL_ATTRIBUTES(ICommand command)
+		{
+			TALAttributes attributesCmd = (TALAttributes)command;
+
+			List<TagAttribute> attributes = attributesCmd.Attributes;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			HashSet<string> attVarNames = new HashSet<string>();
+			foreach (TagAttribute att in attributes)
+			{
+				WriteToBody("// Attribute: {0}", att.Name);
+				string attVarName = SafeVariableName(att.Name);
+				if (!attVarNames.Contains(attVarName))
+				{
+					attVarNames.Add(attVarName);
+					WriteToBody(@"object attribute_{0}_{1} = null;", attVarName, scopeID);
+				}
+				if (string.IsNullOrEmpty(att.Value))
+				{
+					WriteToBody(@"if (!__currentAttributes.ContainsKey(""{0}""))", att.Name);
+					WriteToBody(@"    __currentAttributes.Add(""{0}"", new Attr {{ Name = @""{0}"", Value = @"""", Eq = @""{1}"", Quote = @""{2}"", QuoteEntity = @""{3}"" }});",
+						att.Name, att.Eq, att.Quote.Replace(@"""", @""""""), att.QuoteEntity);
+				}
+				else
+				{
+					string expression = "";
+					if (att is TALTagAttribute)
+						// This is TAL command attribute
+						expression = FormatExpression(att.Value);
+					else
+					{
+						// This is clean attribute (no TAL command)
+						if (currentScope.Interpolation)
+							// Interpolate attribute value
+							expression = FormatStringExpression(att.Value);
+						else
+							// Get attribute value as raw string
+							expression = string.Format(@"@""{0}""", att.Value.Replace(@"""", @""""""));
+					}
+					WriteToBody(@"try");
+					WriteToBody(@"{{");
+					WriteToBody(@"    attribute_{0}_{1} = {2};", attVarName, scopeID, expression);
+					WriteToBody(@"}}");
+					WriteToBody(@"catch (Exception ex)");
+					WriteToBody(@"{{");
+					WriteToBody(@"    attribute_{0}_{1} = null;", attVarName, scopeID);
+					WriteToBody(@"}}");
+					WriteToBody(@"if (attribute_{0}_{1} == null)", attVarName, scopeID);
+					WriteToBody(@"    __currentAttributes.Remove(""{0}"");", att.Name);
+					WriteToBody(@"else if (!IsDefaultValue(attribute_{0}_{1}))", attVarName, scopeID);
+					WriteToBody(@"{{");
+					WriteToBody(@"    if (!__currentAttributes.ContainsKey(""{0}""))", att.Name);
+					WriteToBody(@"        __currentAttributes.Add(""{0}"", new Attr {{ Name = @""{0}"", Value = @"""", Eq = @""{1}"", Quote = @""{2}"", QuoteEntity = @""{3}"" }});",
+						att.Name, att.Eq, att.Quote.Replace(@"""", @""""""), att.QuoteEntity);
+					WriteToBody(@"    __currentAttributes[""{0}""].Value = FormatResult(attribute_{1}_{2}, culture);", att.Name, attVarName, scopeID);
+					WriteToBody(@"}}");
+				}
+			}
+		}
+
+		protected override void Handle_CMD_START_TAG(ICommand command)
+		{
+			CMDStartTag startTagCmd = (CMDStartTag)command;
+
+			string tagName = startTagCmd.Tag.Name;
+			string tagSuffix = startTagCmd.Tag.Suffix;
+
+			string scopeID = currentScope.ID;
+
+			WriteCmdInfo(command);
+
+			WriteToBody(@"if (__outputTag == 1)");
+			WriteToBody(@"{{");
+			WriteToBody(@"    output.Write(@""<"");");
+			WriteToBody(@"    output.Write(@""{0}"");", tagName);
+			WriteToBody(@"    foreach (var att in __currentAttributes.Values)");
+			WriteToBody(@"    {{");
+			WriteToBody(@"        output.Write(@"" {{0}}{{1}}{{2}}{{3}}{{2}}"", att.Name, att.Eq, att.Quote, EscapeAttrValue(att.Value, att.Quote, att.QuoteEntity));");
+			WriteToBody(@"    }}");
+			WriteToBody(@"    output.Write(@""{0}"");", tagSuffix);
+			WriteToBody(@"}}");
+			WriteToBody(@"");
+			WriteToBody(@"if (__moveToEndTag == true)");
+			WriteToBody(@"{{");
+			WriteToBody(@"    goto TAL_ENDTAG_ENDSCOPE_{0};", scopeID);
+			WriteToBody(@"}}");
+		}
+
+		protected override void Handle_CMD_ENDTAG_ENDSCOPE(ICommand command)
+		{
+			CMDEntTagEndScope entTagEndScopeCmd = (CMDEntTagEndScope)command;
+
+			string tagName = entTagEndScopeCmd.Tag.Name;
+			bool singletonTag = entTagEndScopeCmd.Tag.Singleton;
+
+			WriteCmdInfo(command);
+
+			string scopeID = currentScope.ID;
+
+			WriteToBody("TAL_ENDTAG_ENDSCOPE_{0}:", scopeID);
+			WriteToBody("");
+			WriteToBody("// End tag: <{0}>", tagName);
+
+			WriteToBody(@"if (__tagContent != null)");
+			WriteToBody(@"{{");
+			WriteToBody(@"    if (__tagContentType == 1)");
+			WriteToBody(@"    {{");
+			WriteToBody(@"        if (__tagContent is MacroDelegate)");
+			WriteToBody(@"        {{");
+			WriteToBody(@"            // Save our state!");
+			WriteToBody(@"            __PushProgram();");
+			WriteToBody(@"            // Execute macro or slot delegate");
+			WriteToBody(@"            ((MacroDelegate)__tagContent)();");
+			WriteToBody(@"            // Restore state");
+			WriteToBody(@"            __PopProgram();");
+			WriteToBody(@"            // End of the macro expansion (if any) so clear the slots and params");
+			WriteToBody(@"            __slotMap = new Dictionary<string, MacroDelegate>();");
+			WriteToBody(@"            __paramMap = new Dictionary<string, object>();");
+			WriteToBody(@"        }}");
+			WriteToBody(@"        else");
+			WriteToBody(@"        {{");
+			WriteToBody(@"            output.Write((string)__tagContent);");
+			WriteToBody(@"        }}");
+			WriteToBody(@"    }}");
+			WriteToBody(@"    else");
+			WriteToBody(@"    {{");
+			WriteToBody(@"        output.Write(Escape(FormatResult(__tagContent, culture)));");
+			WriteToBody(@"    }}");
+			WriteToBody(@"}}");
+
+			WriteToBody(@"if (__outputTag == 1)");
+			WriteToBody(@"{{");
+			WriteToBody(@"    // Do NOT output end tag if a singleton with no content");
+			WriteToBody(@"    if (({0} == 1 && __tagContent == null) == false)", singletonTag ? 1 : 0);
+			WriteToBody(@"    {{");
+			WriteToBody(@"        output.Write(@""</{0}>"");", tagName);
+			WriteToBody(@"    }}");
+			WriteToBody(@"}}");
+
+			while (currentScope.SubScope.Count > 0)
+			{
+				SubScope subScope = currentScope.SubScope.Pop();
+				if (subScope is RepeatScope)
+				{
+					WriteToBody("");
+					WriteToBody("// End sub-scope repeat: {0}", subScope.ID);
+					WriteToBody(@"");
+					WriteToBody(@"// Restore the current attributes");
+					WriteToBody(@"__currentAttributes = new Dictionary<string, Attr>(__currentAttributesCopy_{1});", scopeID, subScope.ID);
+					WriteToBody(@"");
+					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
+					WriteToBody("}}");
+					WriteToBody(@"while (enumerator_status_{0}_{1} == true);", ((RepeatScope)subScope).VarName, subScope.ID);
+					WriteToBody(@"END_REPEAT_{0}:", subScope.ID);
+					WriteToBody(@"repeat[""{0}""] = null;", ((RepeatScope)subScope).VarName);
+				}
+				else
+				{
+					WriteToBody("");
+					WriteToBody("// End sub-scope: {0}", subScope.ID);
+					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
+					WriteToBody("}}");
+				}
+			}
+
+			WriteToBody("");
+
+			WriteToBody(@"List<object> pop_scope_{0} = __scopeStack.Pop();", scopeID);
+			WriteToBody(@"__moveToEndTag = (bool)pop_scope_{0}[0];", scopeID);
+			WriteToBody(@"__outputTag = (int)pop_scope_{0}[1];", scopeID);
+			WriteToBody(@"__currentAttributes = (Dictionary<string, Attr>)pop_scope_{0}[2];", scopeID);
+			WriteToBody(@"__tagContent = (object)pop_scope_{0}[3];", scopeID);
+			WriteToBody(@"__tagContentType = (int)pop_scope_{0}[4];", scopeID);
+
+			WriteToBody("");
+			WriteToBody("// End scope: {0}", scopeID);
+			rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
+			WriteToBody("}}");
+
+			currentScope = scopeStack.Pop();
+		}
+
+		protected override void Handle_METAL_FILL_SLOT(ICommand command)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected override void Handle_METAL_DEFINE_MACRO(ICommand command)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected override void Handle_METAL_FILL_PARAM(ICommand command)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected override void Handle_METAL_IMPORT(ICommand command)
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion
 	}
 }

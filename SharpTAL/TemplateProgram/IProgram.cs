@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-
 namespace SharpTAL.TemplateProgram
 {
+	using System;
+	using System.Linq;
+	using System.Collections.Generic;
+
 	public interface IProgram
 	{
 		/// <summary>
@@ -62,12 +62,12 @@ namespace SharpTAL.TemplateProgram
 		/// <summary>
 		/// Commands of the entite template
 		/// </summary>
-		List<Command> TemplateCommands { get; }
+		List<ICommand> TemplateCommands { get; }
 		
 		/// <summary>
 		/// Commands of this program
 		/// </summary>
-		IEnumerable<Command> ProgramCommands { get; }
+		IEnumerable<ICommand> ProgramCommands { get; }
 
 		/// <summary>
 		/// Index of the first program command

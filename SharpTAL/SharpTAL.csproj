@@ -95,6 +95,8 @@
     <Compile Include="TemplateProgram\CommandTypeComparer.cs" />
     <Compile Include="TemplateProgram\Command.cs" />
     <Compile Include="TemplateProgram\CommandType.cs" />
+    <Compile Include="TemplateProgram\AbstractProgramInterpreter.cs" />
+    <Compile Include="TemplateProgram\ICommand.cs" />
     <Compile Include="TemplateProgram\Namespaces.cs" />
     <Compile Include="TemplateProgram\ProgramSlot.cs" />
     <Compile Include="TemplateProgram\IProgram.cs" />

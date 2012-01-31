@@ -49,11 +49,11 @@ namespace SharpTAL.TemplateProgram
 		public string TemplateBodyHash { get { return parentProgram.TemplateBodyHash; } }
 		public Dictionary<string, IProgram> Macros { get { return parentProgram.Macros; } }
 		public Dictionary<int, int> EndTagLocationTable { get { return parentProgram.EndTagLocationTable; } }
-		public List<Command> TemplateCommands { get { return parentProgram.TemplateCommands; } }
+		public List<ICommand> TemplateCommands { get { return parentProgram.TemplateCommands; } }
 		public int Start { get; protected set; }
 		public int End { get { return parentProgram.EndTagLocationTable[endTagCommandLocation] + 1; } }
 
-		public IEnumerable<Command> ProgramCommands
+		public IEnumerable<ICommand> ProgramCommands
 		{
 			get
 			{
@@ -68,7 +68,7 @@ namespace SharpTAL.TemplateProgram
 				parentProgram = value;
 
 				// Set the parent of each macro command
-				foreach (Command cmd in parentProgram.TemplateCommands.GetRange(Start, End - Start))
+				foreach (ICommand cmd in parentProgram.TemplateCommands.GetRange(Start, End - Start))
 					cmd.ParentProgram = this;
 			}
 		}

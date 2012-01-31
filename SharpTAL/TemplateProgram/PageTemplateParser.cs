@@ -99,7 +99,7 @@ namespace SharpTAL.TemplateProgram
 
 		// Per-template-body compiling state
 		HashSet<string> importMacroCommands = null;
-		List<Command> programCommands;
+		List<ICommand> programCommands;
 		Dictionary<int, int> endTagsCommandMap;
 		Dictionary<string, IProgram> macroMap;
 		List<TagStackItem> tagStack;
@@ -201,7 +201,7 @@ namespace SharpTAL.TemplateProgram
 				return program;
 
 			// Per-template-body compiling state
-			programCommands = new List<Command>();
+			programCommands = new List<ICommand>();
 			endTagsCommandMap = new Dictionary<int, int>();
 			macroMap = new Dictionary<string, IProgram>();
 			tagStack = new List<TagStackItem>();
@@ -1121,57 +1121,4 @@ namespace SharpTAL.TemplateProgram
 			return new List<Command> { new TALOmitTag(currentStartTag, expression) };
 		}
 	}
-
-	// <TODO>
-	// Test program interpretation without assembly generation.
-	// This will support only dynamic expression types like path: and python: and maybe dquery: (dynamicquery) (no csharp: because this requires assembly generation)
-	//public abstract class AbstractProgramInterpreter
-	//{
-	//    protected Dictionary<CommandType, Action<Command>> commandHandlers;
-	//    public AbstractProgramInterpreter()
-	//    {
-	//        commandHandlers = new Dictionary<CommandType, Action<Command>>();
-	//        commandHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
-	//        commandHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
-	//        commandHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
-	//        commandHandlers.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
-	//        commandHandlers.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
-	//        commandHandlers.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
-	//        commandHandlers.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
-	//        commandHandlers.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
-	//        commandHandlers.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
-	//        commandHandlers.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
-	//        commandHandlers.Add(CommandType.CMD_START_SCOPE, Handle_CMD_START_SCOPE);
-	//        commandHandlers.Add(CommandType.CMD_OUTPUT, Handle_CMD_OUTPUT);
-	//        commandHandlers.Add(CommandType.CMD_START_TAG, Handle_CMD_START_TAG);
-	//        commandHandlers.Add(CommandType.CMD_ENDTAG_ENDSCOPE, Handle_CMD_ENDTAG_ENDSCOPE);
-	//        commandHandlers.Add(CommandType.CMD_NOOP, Handle_CMD_NOOP);
-	//    }
-	//    public void Run(IEnumerable<Command> commands)
-	//    {
-	//        foreach (Command cmd in commands)
-	//            commandHandlers[cmd.CommandType](cmd);
-	//    }
-	//    protected abstract void Handle_META_INTERPOLATION(Command cmd);
-	//    protected abstract void Handle_METAL_USE_MACRO(Command cmd);
-	//    protected abstract void Handle_METAL_DEFINE_SLOT(Command cmd);
-	//    protected abstract void Handle_METAL_FILL_SLOT(Command cmd);
-	//    protected abstract void Handle_METAL_DEFINE_MACRO(Command cmd);
-	//    protected abstract void Handle_METAL_DEFINE_PARAM(Command cmd);
-	//    protected abstract void Handle_METAL_FILL_PARAM(Command cmd);
-	//    protected abstract void Handle_METAL_IMPORT(Command cmd);
-	//    protected abstract void Handle_TAL_DEFINE(Command cmd);
-	//    protected abstract void Handle_TAL_CONDITION(Command cmd);
-	//    protected abstract void Handle_TAL_REPEAT(Command cmd);
-	//    protected abstract void Handle_TAL_CONTENT(Command cmd);
-	//    protected abstract void Handle_TAL_REPLACE(Command cmd);
-	//    protected abstract void Handle_TAL_ATTRIBUTES(Command cmd);
-	//    protected abstract void Handle_TAL_OMITTAG(Command cmd);
-	//    protected abstract void Handle_CMD_START_SCOPE(Command cmd);
-	//    protected abstract void Handle_CMD_OUTPUT(Command cmd);
-	//    protected abstract void Handle_CMD_START_TAG(Command cmd);
-	//    protected abstract void Handle_CMD_ENDTAG_ENDSCOPE(Command cmd);
-	//    protected abstract void Handle_CMD_NOOP(Command cmd);
-	//}
-	// </TODO>
 }
