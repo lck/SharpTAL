@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2011 Roman Lacko
+// Copyright (c) 2010 - 2012 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -41,7 +41,7 @@ namespace SharpTAL
 	using SharpTAL.TemplateProgram;
 	using SharpTAL.TemplateProgram.Commands;
 
-	public class CodeGenerator : AbstractProgramInterpreter, ITemplateCodeGenerator
+	public class CodeGenerator : AbstractProgramInterpreter, ICodeGenerator
 	{
 		protected static readonly string FileBodyTemplate =
 			@"${usings}
@@ -51,6 +51,7 @@ namespace Templates
     [SecurityPermission(SecurityAction.PermitOnly, Execution = true)]
     public class Template_${template_hash}
     {
+        // TODO: public static void Render(StreamWriter output, Dictionary<string, object> globals, Func<string, object> formatResult)
         public static void Render(StreamWriter output, Dictionary<string, object> globals, CultureInfo culture)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
@@ -410,8 +411,8 @@ namespace Templates
 			public string VarName;
 		}
 
+		protected Dictionary<string, string> typeNamesCache;
 		protected List<string> globalNames;
-		protected Dictionary<string, string> globalsTypes;
 		protected StringBuilder globalsBody;
 		protected string globalsBodyTabs;
 		protected StringBuilder rendererBody;
@@ -421,8 +422,8 @@ namespace Templates
 
 		public CodeGenerator()
 		{
+			typeNamesCache = new Dictionary<string, string>();
 			globalNames = new List<string>();
-			globalsTypes = new Dictionary<string, string>();
 			globalsBody = new StringBuilder();
 			globalsBodyTabs = "                ";
 			rendererBody = new StringBuilder();
@@ -445,7 +446,7 @@ namespace Templates
 					Type type = ti.GlobalsTypes[varName];
 					if (type != null)
 					{
-						string typeName = ResolveTypeName(type);
+						string typeName = Utils.GetFullTypeName(type, typeNamesCache);
 						globalNames.Add(varName);
 						WriteToGlobals(@"{0} {1} = ({0})globals[""{1}""];", typeName, varName);
 					}
@@ -518,7 +519,7 @@ namespace Templates
 							!assemblies.Contains(Path.GetFileName(type.Assembly.Location)))
 						{
 							// Check if assembly has defined "ExtensionAttribute"
-							GetExtMethodsNs(namespacesList, type.Assembly);
+							Utils.GetExtensionMethodNamespaces(type.Assembly, namespacesList);
 							assemblies.Add(type.Assembly.Location);
 
 							// Referenced assemblies
@@ -528,7 +529,7 @@ namespace Templates
 								if (!assemblies.Contains(assembly.Location) &&
 									!assemblies.Contains(Path.GetFileName(assembly.Location)))
 								{
-									GetExtMethodsNs(namespacesList, assembly);
+									Utils.GetExtensionMethodNamespaces(assembly, namespacesList);
 									assemblies.Add(assembly.Location);
 								}
 							}
@@ -545,7 +546,7 @@ namespace Templates
 					if (!assemblies.Contains(refAsm.Location) &&
 						!assemblies.Contains(Path.GetFileName(refAsm.Location)))
 					{
-						GetExtMethodsNs(namespacesList, refAsm);
+						Utils.GetExtensionMethodNamespaces(refAsm, namespacesList);
 						assemblies.Add(refAsm.Location);
 					}
 				}
@@ -612,25 +613,6 @@ Global variable with namespace name allready exists.", programNamespace));
 					WriteToBody(@"{0}.macros.Add(""{1}"", macro_{0}_{1});", programNamespace, macro.Name);
 					WriteToBody(@"__macros.Add(@""{0}.{1}"", @""{2}"");", programNamespace, macro.Name, macro.TemplatePath);
 					WriteToBody(@"");
-				}
-			}
-		}
-
-		private static void GetExtMethodsNs(List<string> namespacesList, Assembly assembly)
-		{
-			if (assembly.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
-			{
-				foreach (Type tp in assembly.GetTypes())
-				{
-					// Check if type has defined "ExtensionAttribute"
-					if (tp.IsSealed && !tp.IsGenericType && !tp.IsNested &&
-						tp.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
-					{
-						if (!namespacesList.Contains(tp.Namespace))
-						{
-							namespacesList.Add(tp.Namespace);
-						}
-					}
 				}
 			}
 		}
@@ -754,49 +736,7 @@ Global variable with namespace name allready exists.", programNamespace));
 				Environment.NewLine, rendererBodyTabs, format);
 		}
 
-		protected string ResolveTypeName(Type type)
-		{
-			string typeName = "";
-			if (globalsTypes.ContainsKey(type.FullName))
-			{
-				typeName = globalsTypes[type.FullName];
-			}
-			else
-			{
-				if (type.IsGenericType)
-				{
-					typeName = string.Format("{0}.{1}<", type.Namespace, type.Name.Split('`')[0]);
-					Type[] typeArguments = type.GetGenericArguments();
-					bool first = true;
-					foreach (Type typeArg in typeArguments)
-					{
-						if (!typeArg.IsGenericParameter)
-						{
-							if (!first)
-							{
-								typeName = string.Format("{0}, ", typeName);
-							}
-							first = false;
-							string typeArgTypeName = ResolveTypeName(typeArg);
-							typeName = string.Format("{0}{1}", typeName, typeArgTypeName);
-						}
-						else
-						{
-							// TODO: ???
-						}
-					}
-					typeName = string.Format("{0}>", typeName);
-				}
-				else
-				{
-					typeName = type.FullName.Replace("+", ".");
-				}
-				globalsTypes[type.FullName] = typeName;
-			}
-			return typeName;
-		}
-
-		string SafeVariableName(string str)
+		static string SafeVariableName(string str)
 		{
 			string name = "";
 			for (int i = 0; i < str.Length; i++)

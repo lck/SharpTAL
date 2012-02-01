@@ -100,7 +100,7 @@
     <Compile Include="TemplateProgram\Namespaces.cs" />
     <Compile Include="TemplateProgram\ProgramSlot.cs" />
     <Compile Include="TemplateProgram\IProgram.cs" />
-    <Compile Include="ITemplateCodeGenerator.cs" />
+    <Compile Include="ICodeGenerator.cs" />
     <Compile Include="TemplateProgram\ProgramMacro.cs" />
     <Compile Include="TemplateProgram\Program.cs" />
     <Compile Include="TemplateParser\ParseError.cs" />

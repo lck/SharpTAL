@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2011 Roman Lacko
+// Copyright (c) 2010 - 2012 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -166,6 +166,67 @@ namespace SharpTAL
 				return string.Format("&{0};", name);
 			else
 				return string.Format("&#{0};", cp);
+		}
+
+		public static void GetExtensionMethodNamespaces(Assembly assembly, List<string> namespaces)
+		{
+			if (assembly.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
+			{
+				foreach (Type tp in assembly.GetTypes())
+				{
+					// Check if type has defined "ExtensionAttribute"
+					if (tp.IsSealed && !tp.IsGenericType && !tp.IsNested &&
+						tp.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
+					{
+						if (!namespaces.Contains(tp.Namespace))
+						{
+							namespaces.Add(tp.Namespace);
+						}
+					}
+				}
+			}
+		}
+
+		public static string GetFullTypeName(Type type, Dictionary<string, string> names)
+		{
+			string typeName = "";
+			if (names.ContainsKey(type.FullName))
+			{
+				typeName = names[type.FullName];
+			}
+			else
+			{
+				if (type.IsGenericType)
+				{
+					typeName = string.Format("{0}.{1}<", type.Namespace, type.Name.Split('`')[0]);
+					Type[] typeArguments = type.GetGenericArguments();
+					bool first = true;
+					foreach (Type typeArg in typeArguments)
+					{
+						if (!typeArg.IsGenericParameter)
+						{
+							if (!first)
+							{
+								typeName = string.Format("{0}, ", typeName);
+							}
+							first = false;
+							string typeArgTypeName = GetFullTypeName(typeArg, names);
+							typeName = string.Format("{0}{1}", typeName, typeArgTypeName);
+						}
+						else
+						{
+							// TODO: ???
+						}
+					}
+					typeName = string.Format("{0}>", typeName);
+				}
+				else
+				{
+					typeName = type.FullName.Replace("+", ".");
+				}
+				names[type.FullName] = typeName;
+			}
+			return typeName;
 		}
 	}
 }
