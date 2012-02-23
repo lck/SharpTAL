@@ -110,8 +110,7 @@ namespace SharpTAL
 			CheckRenderInput(globals);
 			try
 			{
-				// TODO: templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, globals, new Func<string, object>(FormatResult) });
-				templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, globals, Culture });
+				templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, globals, new Func<object, string>(FormatResult) });
 			}
 			catch (TargetInvocationException ex)
 			{
@@ -121,6 +120,17 @@ namespace SharpTAL
 			{
 				throw new RenderTemplateException(templateInfo, ex.Message, ex);
 			}
+		}
+
+		protected virtual string FormatResult(object result)
+		{
+			IFormattable formattable = result as IFormattable;
+			string resultValue = "";
+			if (formattable != null)
+				resultValue = formattable.ToString("", Culture);
+			else
+				resultValue = result.ToString();
+			return resultValue;
 		}
 
 		void CheckRenderInput(Dictionary<string, object> globals)

@@ -17,6 +17,27 @@
 	{
 		public static Dictionary<string, object> globals;
 
+		class CustomTemplate : Template
+		{
+			CultureInfo customCulture = new CultureInfo("sk-SK");
+
+			public CustomTemplate(string body)
+				: base(body)
+			{
+			}
+
+			protected override string FormatResult(object result)
+			{
+				IFormattable formattable = result as IFormattable;
+				string resultValue = "";
+				if (formattable != null)
+					resultValue = formattable.ToString("", customCulture);
+				else
+					resultValue = result.ToString();
+				return resultValue;
+			}
+		}
+
 		[TestFixtureSetUp]
 		public void SetUpClass()
 		{
@@ -236,6 +257,19 @@
 
 			Template t = new Template(template);
 			t.Culture = new CultureInfo("fi-FI");
+
+			string actual = t.Render(globals);
+			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
+				Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
+		}
+
+		[Test]
+		public void TestCustomFormatResult()
+		{
+			string template = @"<html tal:attributes=""value 1.05""> </html>";
+			string expected = @"<html value=""1,05""> </html>";
+
+			ITemplate t = new CustomTemplate(template);
 
 			string actual = t.Render(globals);
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",

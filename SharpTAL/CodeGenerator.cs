@@ -51,8 +51,7 @@ namespace Templates
     [SecurityPermission(SecurityAction.PermitOnly, Execution = true)]
     public class Template_${template_hash}
     {
-        // TODO: public static void Render(StreamWriter output, Dictionary<string, object> globals, Func<string, object> formatResult)
-        public static void Render(StreamWriter output, Dictionary<string, object> globals, CultureInfo culture)
+        public static void Render(StreamWriter output, Dictionary<string, object> globals, Func<object, string> formatResult)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
             Stack<List<object>> __scopeStack = new Stack<List<object>>();
@@ -72,6 +71,8 @@ namespace Templates
             // Template globals
             Dictionary<string, RepeatVariable> repeat = new Dictionary<string, RepeatVariable>();
             Dictionary<string, MacroDelegate> macros = new Dictionary<string, MacroDelegate>();
+            
+            FormatResult = formatResult;
             
             try
             {
@@ -162,6 +163,7 @@ namespace Templates
             }
         }
         
+        private static Func<object, string> FormatResult { get; set; }
         private const string DEFAULT_VALUE = ""${defaultvalue}"";
         private static readonly Regex _re_needs_escape = new Regex(@""[&<>""""\']"");
         private static readonly Regex _re_amp = new Regex(@""&(?!([A-Za-z]+|#[0-9]+);)"");
@@ -219,17 +221,6 @@ namespace Templates
             if (!string.IsNullOrEmpty(quote) && str.IndexOf(quote) >= 0)
                 str = str.Replace(quote, quoteEntity);
             return str;
-        }
-        
-        private static string FormatResult(object result, CultureInfo culture)
-        {
-            IFormattable formattable = result as IFormattable;
-            string resultValue = """";
-            if (formattable != null)
-                resultValue = formattable.ToString("""", culture);
-            else
-                resultValue = result.ToString();
-            return resultValue;
         }
         
         private static bool IsDefaultValue(object obj)
@@ -1177,7 +1168,7 @@ Global variable with namespace name allready exists.", programNamespace));
 					WriteToBody(@"    if (!__currentAttributes.ContainsKey(""{0}""))", att.Name);
 					WriteToBody(@"        __currentAttributes.Add(""{0}"", new Attr {{ Name = @""{0}"", Value = @"""", Eq = @""{1}"", Quote = @""{2}"", QuoteEntity = @""{3}"" }});",
 						att.Name, att.Eq, att.Quote.Replace(@"""", @""""""), att.QuoteEntity);
-					WriteToBody(@"    __currentAttributes[""{0}""].Value = FormatResult(attribute_{1}_{2}, culture);", att.Name, attVarName, scopeID);
+					WriteToBody(@"    __currentAttributes[""{0}""].Value = FormatResult(attribute_{1}_{2});", att.Name, attVarName, scopeID);
 					WriteToBody(@"}}");
 				}
 			}
@@ -1249,7 +1240,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"    }}");
 			WriteToBody(@"    else");
 			WriteToBody(@"    {{");
-			WriteToBody(@"        output.Write(Escape(FormatResult(__tagContent, culture)));");
+			WriteToBody(@"        output.Write(Escape(FormatResult(__tagContent)));");
 			WriteToBody(@"    }}");
 			WriteToBody(@"}}");
 

@@ -59,15 +59,15 @@ namespace SharpTAL.TemplateCache
 					templateTypeFullName, assembly.FullName));
 			}
 
-			// Check if the template type has public method [static void Render(StreamWriter output, Dictionary<string, object>)]
+			// Check if the template type has method [public static void Render(StreamWriter output, Dictionary<string, object>, Func<object, string>)]
 			MethodInfo renderMethod = templateType.GetMethod("Render",
 				BindingFlags.Public | BindingFlags.Static,
-				null, new Type[] { typeof(StreamWriter), typeof(Dictionary<string, object>), typeof(CultureInfo) }, null);
+				null, new Type[] { typeof(StreamWriter), typeof(Dictionary<string, object>), typeof(Func<object, string>) }, null);
 
 			if (renderMethod == null || renderMethod.ReturnType.FullName != "System.Void")
 			{
 				throw new Exception(string.Format(@"Failed to find Render method in type [{0}] in assembly [{1}].
-The signature of method must be [static void Render(StreamWriter output, Dictionary<string, object>, CultureInfo culture)]",
+The signature of method must be [static void Render(StreamWriter output, Dictionary<string, object>, Func<object, string> formatResult)]",
 					templateTypeFullName, assembly.FullName));
 			}
 
