@@ -202,9 +202,6 @@ namespace SharpTAL.TemplateCache
 						continue;
 					}
 
-					// Read assembly
-					Assembly assembly = Utils.ReadAssembly(fi.FullName);
-
 					// Get template hash from file name
 					string templateHash = fileNameMatch.Groups["key"].Value;
 
@@ -212,6 +209,7 @@ namespace SharpTAL.TemplateCache
 					TemplateInfo ti = new TemplateInfo() { TemplateKey = templateHash };
 
 					// Try to load the Render() method from assembly
+					Assembly assembly = Utils.ReadAssembly(fi.FullName);
 					ti.RenderMethod = GetTemplateRenderMethod(assembly, ti);
 
 					templateCache.Add(templateHash, ti);

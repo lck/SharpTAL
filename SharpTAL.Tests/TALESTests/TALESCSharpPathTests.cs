@@ -14,7 +14,6 @@
 	[TestFixture]
 	public class TALESCSharpPathTests
 	{
-		public static ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		public delegate object TestFuncDelegate(string param);
@@ -46,13 +45,6 @@
 		[TestFixtureSetUp]
 		public void SetUpClass()
 		{
-			// Using FileSystemTemplateCache in this tests
-			string cacheFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Template Cache");
-			if (!Directory.Exists(cacheFolder))
-			{
-				Directory.CreateDirectory(cacheFolder);
-			}
-			cache = new FileSystemTemplateCache(cacheFolder, true, typeof(TALESCSharpPathTests).Name + "_{key}.dll");
 		}
 
 		[TestFixtureTearDown]
@@ -75,7 +67,7 @@
 			globals.Add("testing", "testing");
 			globals.Add("map", new Dictionary<string, object>() { { "test", "maptest" } });
 			globals.Add("data", new Dictionary<string, object>() { { "one", 1 }, { "zero", 0 } });
-			string actual = cache.RenderTemplate(template, globals);
+			string actual = new Template(template).Render(globals);
 			actual = actual.Replace("{", "{{").Replace("}", "}}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);

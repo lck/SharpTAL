@@ -1,5 +1,5 @@
 ﻿//
-// ITemplateCache.cs
+// ITemplate.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,25 +26,42 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.IO;
-using System.Globalization;
-
-namespace SharpTAL.TemplateCache
+namespace SharpTAL
 {
-	public interface ITemplateCache
+	using System;
+	using System.Collections.Generic;
+	using System.Reflection;
+	using System.IO;
+	using System.Globalization;
+	using SharpTAL.TemplateCache;
+
+	public interface ITemplate
 	{
+		/// <summary>
+		/// Template cache to store the compiled template body
+		/// </summary>
+		ITemplateCache TemplateCache { get; set; }
+		
 		/// <summary>
 		/// Compile template to ensure that the compiled assembly is already in cache when
 		/// RenderTemplate is called for the first time. For precompiling, the actual values
 		/// of globals are not required, just the names and types of the global variables.
 		/// </summary>
+		void Compile();
+
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="globals">Dictionary of global variables</param>
+		/// <returns>Rendered template</returns>
+		string Render(Dictionary<string, object> globals);
+
+		/// <summary>
+		/// Render the template
+		/// </summary>
+		/// <param name="output">The output stream</param>
 		/// <param name="templateBody">The template body</param>
 		/// <param name="globals">Dictionary of global variables</param>
-		/// <param name="referencedAssemblies">List of referenced assemblies</param>
-		/// <returns>The TemplateInfo generated from compiled template body</returns>
-		TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies);
+		void Render(StreamWriter outputWriter, Dictionary<string, object> globals);
 	}
 }

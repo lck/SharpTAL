@@ -15,7 +15,7 @@
 	public class MemoryTemplateCacheTests
 	{
 		public static MemoryTemplateCache cache;
-		public static Dictionary<string, object> globals;
+		public static Dictionary<string, Type> globals;
 		public static List<Assembly> refAssemblies;
 
 		[TestFixtureSetUp]
@@ -32,8 +32,8 @@
 		[SetUp]
 		public void SetUp()
 		{
-			globals = new Dictionary<string, object>();
-			globals.Add("the_string", "string");
+			globals = new Dictionary<string, Type>();
+			globals.Add("the_string", typeof(string));
 
 			refAssemblies = new List<Assembly>();
 			refAssemblies.Add(typeof(MemoryTemplateCacheTests).Assembly);
@@ -44,10 +44,10 @@
 		{
 			TemplateInfo ti;
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash1 = ti.TemplateKey;
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash2 = ti.TemplateKey;
 			Assert.AreEqual(hash1, hash2, "Reusing generated template in cache failed. Hash1: {0}, Hash2: {1}", hash1, hash2);
 		}
@@ -57,10 +57,10 @@
 		{
 			TemplateInfo ti;
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash1 = ti.TemplateKey;
 
-			cache.RenderTemplate(@"<template2></template2>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template2></template2>", globals, refAssemblies);
 			string hash2 = ti.TemplateKey;
 			Assert.AreNotEqual(hash1, hash2, "Template re-generation if template change failed. Hash1: {0}, Hash2: {1}", hash1, hash2);
 		}
@@ -70,12 +70,12 @@
 		{
 			TemplateInfo ti;
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash1 = ti.TemplateKey;
 
-			globals.Add("the_string_2", "string");
+			globals.Add("the_string_2", typeof(string));
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash2 = ti.TemplateKey;
 			Assert.AreNotEqual(hash1, hash2, "Template re-generation if globals types change failed. Hash1: {0}, Hash2: {1}", hash1, hash2);
 		}
@@ -85,12 +85,12 @@
 		{
 			TemplateInfo ti;
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash1 = ti.TemplateKey;
 
 			refAssemblies.Clear();
 
-			cache.RenderTemplate(@"<template></template>", globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(@"<template></template>", globals, refAssemblies);
 			string hash2 = ti.TemplateKey;
 			Assert.AreNotEqual(hash1, hash2, "Template re-generation if referenced assemblies change failed. Hash1: {0}, Hash2: {1}", hash1, hash2);
 		}
@@ -103,12 +103,12 @@
 
 			File.WriteAllText("TestImportChange_Imports.xml", "<import1></import1>");
 
-			cache.RenderTemplate(templateBody, globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(templateBody, globals, refAssemblies);
 			string hash1 = ti.TemplateKey;
 
 			File.WriteAllText("TestImportChange_Imports.xml", "<import2></import2>");
 
-			cache.RenderTemplate(templateBody, globals, refAssemblies, out ti);
+			ti = cache.CompileTemplate(templateBody, globals, refAssemblies);
 			string hash2 = ti.TemplateKey;
 			Assert.AreNotEqual(hash1, hash2, "Template re-generation if referenced assemblies change failed. Hash1: {0}, Hash2: {1}", hash1, hash2);
 		}

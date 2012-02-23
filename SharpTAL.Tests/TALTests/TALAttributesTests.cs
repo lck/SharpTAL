@@ -15,19 +15,11 @@
 	[TestFixture]
 	public class TALAttributesTests
 	{
-		public static ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		[TestFixtureSetUp]
 		public void SetUpClass()
 		{
-			// Using FileSystemTemplateCache in this tests
-			string cacheFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Template Cache");
-			if (!Directory.Exists(cacheFolder))
-			{
-				Directory.CreateDirectory(cacheFolder);
-			}
-			cache = new FileSystemTemplateCache(cacheFolder, true, typeof(TALAttributesTests).Name + "_{key}.dll");
 		}
 
 		[TestFixtureTearDown]
@@ -50,7 +42,7 @@
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			string actual = cache.RenderTemplate(template, globals);
+			string actual = new Template(template).Render(globals);
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);
 		}
@@ -231,7 +223,7 @@
 		{
 			string template = @"<html tal:attributes=""value 1.05""> </html>";
 			string expected = @"<html value=""1.05""> </html>";
-			string actual = cache.RenderTemplate(template, globals);
+			string actual = new Template(template).Render(globals);
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
 		}
@@ -241,8 +233,11 @@
 		{
 			string template = @"<html tal:attributes=""value 1.05""> </html>";
 			string expected = @"<html value=""1,05""> </html>";
-			TemplateInfo ti;
-			string actual = cache.RenderTemplate(template, globals, null, out ti, new CultureInfo("fi-FI"));
+
+			Template t = new Template(template);
+			t.Culture = new CultureInfo("fi-FI");
+
+			string actual = t.Render(globals);
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, "Conversion using invariant culture failed", template, actual, expected);
 		}

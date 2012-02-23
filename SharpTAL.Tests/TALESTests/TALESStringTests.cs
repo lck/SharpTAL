@@ -14,7 +14,6 @@
 	[TestFixture]
 	public class TALESStringTests
 	{
-		public static ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		private delegate object TestFuncDelegate();
@@ -32,13 +31,6 @@
 		[TestFixtureSetUp]
 		public void SetUpClass()
 		{
-			// Using FileSystemTemplateCache in this tests
-			string cacheFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Template Cache");
-			if (!Directory.Exists(cacheFolder))
-			{
-				Directory.CreateDirectory(cacheFolder);
-			}
-			cache = new FileSystemTemplateCache(cacheFolder, true, typeof(TALESStringTests).Name + "_{key}.dll");
 		}
 
 		[TestFixtureTearDown]
@@ -62,7 +54,7 @@
 
 		public static void RunTest(string template, string expected, string errMsg)
 		{
-			string actual = cache.RenderTemplate(template, globals);
+			string actual = new Template(template).Render(globals);
 			actual = actual.Replace("{", "{").Replace("}", "}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);

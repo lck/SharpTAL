@@ -31,10 +31,14 @@ namespace SharpTAL
 	using System;
 	using System.Collections.Generic;
 	using System.Reflection;
+	using System.IO;
+	using System.Globalization;
 	using SharpTAL.TemplateProgram;
 
 	public class TemplateInfo
-    {
+	{
+		#region Template Cache output
+
 		/// <summary>
 		/// Contains a unique key that represent the template in the template cache.
 		/// The template key is computed from the following parts:
@@ -45,50 +49,71 @@ namespace SharpTAL
 		/// </summary>
 		public string TemplateKey;
 
+		// TODO: sem dat zoznam render() metod (aj tych z makier), ale v akom tvare ? ako MethodInfo ?
+		//	maly by byt v takom tvare aby sa dali priamo volat z inej template render() metody ktora tento template importuje
+		//	to znamena ze metal:import bude importovat assemblies, nebude injectovat importovane templates do main template
 		/// <summary>
-        /// Template body.
-        /// </summary>
-        public string TemplateBody;
+		/// Reference to template render method.
+		/// </summary>
+		public MethodInfo RenderMethod;
 
-        /// <summary>
-        /// Types of global objects
-        /// The key contains the object name.
-        /// The value contains the object type.
-        /// </summary>
-        public Dictionary<string, Type> GlobalsTypes;
+		#endregion
 
-        /// <summary>
-        /// List of referenced assemblies.
-        /// </summary>
-        public List<Assembly> ReferencedAssemblies;
+		#region Template Parser input
 
-        /// <summary>
-        /// Reference to generated method used to render the template.
-        /// </summary>
-        public MethodInfo RenderMethod;
+		/// <summary>
+		/// Template body.
+		/// </summary>
+		public string TemplateBody;
+
+		#endregion
+
+		#region Code Generator input
+
+		/// <summary>
+		/// Types of global objects
+		/// The key contains the object name.
+		/// The value contains the object type.
+		/// </summary>
+		public Dictionary<string, Type> GlobalsTypes;
+
+		/// <summary>
+		/// List of referenced assemblies.
+		/// </summary>
+		public List<Assembly> ReferencedAssemblies;
+
+		#region Template Parser output
 
 		/// <summary>
 		/// Main template program compiled from TemplateBody.
-        /// </summary>
-        public Program MainProgram;
+		/// </summary>
+		public Program MainProgram;
 
 		/// <summary>
 		/// Dictionary of TemplatePrograms compiled from templates imported by "metal:import" command.
 		/// The key contains the full path to the template file.
 		/// The value contains the compiled program.
-        /// </summary>
-        public Dictionary<string, Program> ImportedPrograms;
+		/// </summary>
+		public Dictionary<string, Program> ImportedPrograms;
 
-        /// <summary>
+		/// <summary>
 		/// Dictionary of paths to imported programs hashed by namespace created by "metal:import" command.
 		/// The key contains the imported program namespace.
 		/// The value contains the list of full paths to template files.
-        /// </summary>
-        public Dictionary<string, HashSet<string>> ImportedNamespaces;
+		/// </summary>
+		public Dictionary<string, HashSet<string>> ImportedNamespaces;
 
-        /// <summary>
-        /// Contains the C# source code used to compile the assembly.
-        /// </summary>
-        public string GeneratedSourceCode;
-    }
+		#endregion
+
+		#endregion
+
+		#region Code Generator output
+
+		/// <summary>
+		/// Contains the C# source code used to compile the assembly.
+		/// </summary>
+		public string GeneratedSourceCode;
+
+		#endregion
+	}
 }

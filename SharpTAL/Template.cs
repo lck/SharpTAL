@@ -35,8 +35,8 @@ namespace SharpTAL
 	using System.Globalization;
 	using SharpTAL.TemplateProgram;
 	using SharpTAL.TemplateCache;
-	
-	public class Template
+
+	public class Template : ITemplate
 	{
 		private static ITemplateCache defaultTemplateCache = new MemoryTemplateCache();
 		protected string body;
@@ -67,6 +67,11 @@ namespace SharpTAL
 
 		public Template(string body, Dictionary<string, Type> globalsTypes) :
 			this(body, globalsTypes, null)
+		{
+		}
+
+		public Template(string body, List<Assembly> referencedAssemblies) :
+			this(body, null, referencedAssemblies)
 		{
 		}
 

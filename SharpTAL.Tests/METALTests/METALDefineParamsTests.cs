@@ -14,14 +14,11 @@
 	[TestFixture]
 	public class METALDefineParamsTests
 	{
-		public static ITemplateCache cache;
 		public static Dictionary<string, object> globals;
 
 		[TestFixtureSetUp]
 		public void SetUpClass()
 		{
-			// Using MemoryTemplateCache in this tests
-			cache = new MemoryTemplateCache();
 		}
 
 		[TestFixtureTearDown]
@@ -41,7 +38,7 @@
 		public static void RunTest(string macros, string template, string expected, string errMsg)
 		{
 			template += macros;
-			string actual = cache.RenderTemplate(template, globals);
+			string actual = new Template(template).Render(globals);
 			actual = actual.Replace("{", "{{").Replace("}", "}}");
 			Assert.AreEqual(expected, actual, "{1} - {0}template: {2}{0}actual: {3}{0}expected: {4}",
 				Environment.NewLine, errMsg, template, actual, expected);
