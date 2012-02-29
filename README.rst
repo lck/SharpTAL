@@ -134,6 +134,21 @@ Planned features
 Changes
 -------
 
+2.0a3 (2012-03-??)
+~~~~~~~~~~~~~~~~~~
+
+Features:
+
+- The "Template" class now provides virtual method "FormatResult(object)" to enable customization of expression results formatting.
+
+Internal:
+
+Backwards Incompatibilities:
+
+- Removed "RenderTemplate()" methods from "ITemplateCache" interface (and it's implementations).
+
+Bugs fixed:
+
 2.0a2 (2012-01-05)
 ~~~~~~~~~~~~~~~~~~
 
