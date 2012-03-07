@@ -70,8 +70,7 @@ namespace SharpTAL.Demo {
         ///    Special friend name: &lt;p metal:define-slot=&quot;slot&quot;&gt;default content&lt;/p&gt;
         ///&lt;/tal:tag&gt;
         ///
-        ///&lt;/tal:root&gt;
-        ///.
+        ///&lt;/tal:root&gt;.
         /// </summary>
         internal static string Macros {
             get {
@@ -82,16 +81,28 @@ namespace SharpTAL.Demo {
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
         ///&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.1//EN&quot; &quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&gt;
-        ///&lt;tal:root&gt;
+        ///&lt;tal:root
+        ///	tal:define=&apos;script_lang string:javascript;
+        ///		quote string:[&quot;]&apos;
+        ///	tal:define=&quot;quote2 string:[&apos;]&quot;
+        ///	&gt;
         ///
-        ///&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; xmlns:tal=&quot;http://xml.zope.org/namespaces/tal&quot;&gt;
-        ///&lt;body tal:define=&quot;specialFriend from f in friends where f.Age &amp;lt; 30 select f&quot;&gt;
-        ///	
-        ///	&lt;!-- Executing void methods --&gt;
-        ///	&lt;tal:tag tal:define=&apos;z 0;;Console.WriteLine(&quot;One!&quot;);;Console.WriteLine(&quot;Two!&quot;);;&apos;/&gt;
+        ///&lt;!-- Macro --&gt;
+        ///&lt;tal:tag metal:define-macro=&quot;inlineMacro&quot;&gt;
+        ///    Hello from inline macro.
+        ///&lt;/tal:tag&gt;
         ///
-        ///	&lt;!-- Include and use Macros in default namespace --&gt;
-        ///	&lt;tal:tag metal: [rest of string was truncated]&quot;;.
+        ///&lt;!-- CDATA parsing --&gt;
+        ///&lt;![CDATA[
+        ///	&lt;/div&gt;
+        ///	&lt;
+        ///	&gt;
+        ///	&quot;
+        ///]]&gt;
+        ///
+        ///&lt;!-- Inline string substitution --&gt;
+        ///Hello = ${string:hello { &quot;${@&quot;world
+        ///!&quot;}&quot; &lt; ${22 / 3} [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string Main {
             get {

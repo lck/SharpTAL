@@ -107,43 +107,6 @@ namespace SharpTAL
 			return hash;
 		}
 
-		/// <summary>
-		/// Returns a unique key that represent the template in the template cache.
-		/// The template key is computed from the following parts:
-		///	 Template body hash,
-		///	 Global types hash,
-		///	 Imported templates hash,
-		///	 Referenced assemblies hash
-		/// </summary>
-		/// <param name="ti">Template info</param>
-		/// <returns>Template key</returns>
-		public static string ComputeTemplateKey(TemplateInfo ti)
-		{
-			// Template body hash
-			string hash = Utils.ComputeHash(ti.TemplateBody);
-
-			// Global types hash
-			hash += Utils.ComputeHash(ti.GlobalsTypes);
-
-			// Imported templates hash
-			if (ti.ImportedPrograms != null && ti.ImportedPrograms.Count > 0)
-			{
-				List<string> keys = new List<string>(ti.ImportedPrograms.Keys);
-				keys.Sort();
-				foreach (string path in keys)
-				{
-					hash += Utils.ComputeHash(ti.ImportedPrograms[path].TemplateBody);
-				}
-			}
-
-			// Referenced assemblies hash
-			hash += Utils.ComputeHash(ti.ReferencedAssemblies);
-
-			// Template Key
-			string templateKey = Utils.ComputeHash(hash);
-			return templateKey;
-		}
-
 		public static string ByteArrayToString(byte[] arrInput)
 		{
 			int i;

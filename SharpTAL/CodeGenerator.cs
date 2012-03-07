@@ -36,6 +36,7 @@ namespace SharpTAL
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Diagnostics;
+	using System.Runtime.Serialization;
 	using ICSharpCode.NRefactory;
 	using SharpTAL.TemplateParser;
 	using SharpTAL.TemplateProgram;
@@ -51,7 +52,7 @@ namespace Templates
     [SecurityPermission(SecurityAction.PermitOnly, Execution = true)]
     public class Template_${template_hash}
     {
-        public static void Render(StreamWriter output, Dictionary<string, object> globals, Func<object, string> formatResult)
+        public static void Render(StreamWriter output, SharpTAL.IRenderContext context)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
             Stack<List<object>> __scopeStack = new Stack<List<object>>();
@@ -69,10 +70,12 @@ namespace Templates
             CommandInfo __currentCmdInfo = new CommandInfo();
             
             // Template globals
-            Dictionary<string, RepeatVariable> repeat = new Dictionary<string, RepeatVariable>();
+            var repeat = (SharpTAL.IRepeatDictionary)context[""repeat""];
+            // TODO: get macros from context
             Dictionary<string, MacroDelegate> macros = new Dictionary<string, MacroDelegate>();
             
-            FormatResult = formatResult;
+            FormatResult = (Func<object, string>)context[""__FormatResult""];
+            IsFalseResult = (Func<object, bool>)context[""__IsFalseResult""];
             
             try
             {
@@ -164,6 +167,7 @@ namespace Templates
         }
         
         private static Func<object, string> FormatResult { get; set; }
+        private static Func<object, bool> IsFalseResult { get; set; }
         private const string DEFAULT_VALUE = ""${defaultvalue}"";
         private static readonly Regex _re_needs_escape = new Regex(@""[&<>""""\']"");
         private static readonly Regex _re_amp = new Regex(@""&(?!([A-Za-z]+|#[0-9]+);)"");
@@ -231,154 +235,6 @@ namespace Templates
             }
             return false;
         }
-        
-        private static bool IsFalseResult(object obj)
-        {
-            if (obj == null)
-            {
-                // Value was Nothing
-                return true;
-            }
-            if (obj is bool)
-            {
-                return ((bool)obj) == false;
-            }
-            if (obj is int)
-            {
-                return ((int)obj) == 0;
-            }
-            if (obj is float)
-            {
-                return ((float)obj) == 0;
-            }
-            if (obj is double)
-            {
-                return ((double)obj) == 0;
-            }
-            if (obj is string)
-            {
-                return string.IsNullOrEmpty(((string)obj));
-            }
-            if (obj is IEnumerable)
-            {
-                return ((IEnumerable)obj).GetEnumerator().MoveNext() == false;
-            }
-            // Everything else is true, so we return false!
-            return false;
-        }
-        
-        private class RepeatVariable
-        {
-            private IEnumerable sequence;
-            private int position;
-            private bool iterStatus;
-            public RepeatVariable(IEnumerable sequence)
-            {
-                this.sequence = sequence;
-                this.position = -1;
-            }
-            public void UpdateStatus(bool iterStatus)
-            {
-                this.position++;
-                this.iterStatus = iterStatus;
-            }
-            public int length
-            {
-                get
-                {
-                    if (this.sequence is ICollection)
-                        return ((ICollection)this.sequence).Count;
-                    if (this.sequence is string)
-                        return ((string)this.sequence).Length;
-                    return 0;
-                }
-            }
-            public int index { get { return this.position; } }
-            public int number { get { return this.position + 1; } }
-            public bool even
-            {
-                get
-                {
-                    if ((this.position % 2) != 0)
-                        return false;
-                    return true;
-                }
-            }
-            public bool odd
-            {
-                get
-                {
-                    if ((this.position % 2) == 0)
-                        return false;
-                    return true;
-                }
-            }
-            public bool start
-            {
-                get
-                {
-                    if (this.position == 0)
-                        return true;
-                    return false;
-                }
-            }
-            public bool end { get { return this.iterStatus == false; } }
-            public string letter
-            {
-                get
-                {
-                    string result = """";
-                    int nextCol = this.position;
-                    if (nextCol == 0)
-                        return ""a"";
-                    while (nextCol > 0)
-                    {
-                        int tmp = nextCol;
-                        nextCol = tmp / 26;
-                        int thisCol = tmp % 26;
-                        result = ((char)(((int)'a') + thisCol)).ToString() + result;
-                    }
-                    return result;
-                }
-            }
-            public string Letter { get { return this.letter.ToUpper(); } }
-            public string roman
-            {
-                get
-                {
-                    Dictionary<string, int> romanNumeralList = new Dictionary<string, int>()
-                    {
-                        { ""m"", 1000 }
-                        ,{ ""cm"", 900 }
-                        ,{ ""d"", 500 }
-                        ,{ ""cd"", 400 }
-                        ,{ ""c"", 100 }
-                        ,{ ""xc"", 90 }
-                        ,{ ""l"", 50 }
-                        ,{ ""xl"", 40 }
-                        ,{ ""x"", 10 }
-                        ,{ ""ix"", 9 }
-                        ,{ ""v"", 5 }
-                        ,{ ""iv"", 4 }
-                        ,{ ""i"", 1 }
-                    };
-                    if (this.position > 3999)
-                        return "" "";
-                    int num = this.position + 1;
-                    string result = """";
-                    foreach (KeyValuePair<string, int> kv in romanNumeralList)
-                    {
-                        while (num >= kv.Value)
-                        {
-                            result += kv.Key;
-                            num -= kv.Value;
-                        }
-                    }
-                    return result;
-                }
-            }
-            public string Roman { get { return this.roman.ToUpper(); } }
-        }
     }
 }
 ";
@@ -410,6 +266,8 @@ namespace Templates
 		protected string rendererBodyTabs;
 		protected Scope currentScope;
 		protected Stack<Scope> scopeStack;
+		// TODO: use this instead of generating guids
+		protected ObjectIDGenerator idGen = new ObjectIDGenerator();
 
 		public CodeGenerator()
 		{
@@ -439,7 +297,7 @@ namespace Templates
 					{
 						string typeName = Utils.GetFullTypeName(type, typeNamesCache);
 						globalNames.Add(varName);
-						WriteToGlobals(@"{0} {1} = ({0})globals[""{1}""];", typeName, varName);
+						WriteToGlobals(@"{0} {1} = ({0})context[""{1}""];", typeName, varName);
 					}
 				}
 			}
@@ -494,7 +352,8 @@ namespace Templates
 				"System.Collections.Generic",
 				"System.Security.Permissions",
 				"System.Security",
-				"System.Globalization"
+				"System.Globalization",
+				"SharpTAL",
 			};
 
 			// Find all namespaces with extension methods in assemblies where global types are defined
@@ -934,22 +793,19 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"// Backup the current attributes for this tag");
 			WriteToBody(@"Dictionary<string, Attr> __currentAttributesCopy_{0} = new Dictionary<string, Attr>(__currentAttributes);", repeatSubScopeID);
 			WriteToBody(@"");
-			WriteToBody(@"var repeat_expression_{0} = {1};", repeatSubScopeID, expression);
-			WriteToBody(@"var enumerable_{0}_{1} = repeat_expression_{1};", varName, repeatSubScopeID);
+			WriteToBody(@"var enumerable_{0}_{1} = {2};", varName, repeatSubScopeID, expression);
 			WriteToBody(@"var enumerator_{0}_{1} = enumerable_{0}_{1}.GetEnumerator();", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_isdefault_{0}_{1} = false;", varName, repeatSubScopeID);
-			WriteToBody(@"bool enumerator_isfirst_{0}_{1} = true;", varName, repeatSubScopeID);
-			WriteToBody(@"if (IsDefaultValue(repeat_expression_{0}))", repeatSubScopeID);
+			WriteToBody(@"bool isfirst_{0}_{1} = true;", varName, repeatSubScopeID);
+			WriteToBody(@"bool islast_{0}_{1} = !enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
+			WriteToBody(@"bool isdefault_{0}_{1} = false;", varName, repeatSubScopeID);
+			WriteToBody(@"if (IsDefaultValue(enumerable_{0}_{1}))", varName, repeatSubScopeID);
 			WriteToBody(@"{{");
 			WriteToBody(@"    // Stop after first enumeration, so only default content is rendered");
-			WriteToBody(@"    enumerator_status_{0}_{1} = false;", varName, repeatSubScopeID);
-			WriteToBody(@"    enumerator_isdefault_{0}_{1} = true;", varName, repeatSubScopeID);
+			WriteToBody(@"    islast_{0}_{1} = true;", varName, repeatSubScopeID);
+			WriteToBody(@"    isdefault_{0}_{1} = true;", varName, repeatSubScopeID);
 			WriteToBody(@"}}");
 			WriteToBody(@"else");
-			WriteToBody(@"{{");
-			WriteToBody(@"    repeat[""{0}""] = new RepeatVariable(enumerable_{0}_{1});", varName, repeatSubScopeID);
-			WriteToBody(@"}}");
+			WriteToBody(@"    repeat[""{0}""] = new SharpTAL.RepeatItem(enumerable_{0}_{1});", varName, repeatSubScopeID);
 			WriteToBody(@"do");
 			WriteToBody(@"{{");
 			WriteToBody(@"    __outputTag = 1;");
@@ -958,19 +814,19 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"    __moveToEndTag = false;");
 			WriteToBody(@"    ");
 			WriteToBody(@"    // Skip repeat, if there is nothing to enumerate");
-			WriteToBody(@"    if (enumerator_status_{0}_{1} == false &&", varName, repeatSubScopeID);
-			WriteToBody(@"        enumerator_isfirst_{0}_{1} == true &&", varName, repeatSubScopeID);
-			WriteToBody(@"        enumerator_isdefault_{0}_{1} == false)", varName, repeatSubScopeID);
+			WriteToBody(@"    if (isfirst_{0}_{1} &&", varName, repeatSubScopeID);
+			WriteToBody(@"        islast_{0}_{1} &&", varName, repeatSubScopeID);
+			WriteToBody(@"        isdefault_{0}_{1} == false)", varName, repeatSubScopeID);
 			WriteToBody(@"    {{");
 			WriteToBody(@"        goto END_REPEAT_{0};", repeatSubScopeID);
 			WriteToBody(@"    }}");
-			WriteToBody(@"    enumerator_isfirst_{0}_{1} = false;", varName, repeatSubScopeID);
+			WriteToBody(@"    isfirst_{0}_{1} = false;", varName, repeatSubScopeID);
 			WriteToBody(@"    ");
 			WriteToBody(@"    var {0} = enumerator_{0}_{1}.Current;", varName, repeatSubScopeID);
-			WriteToBody(@"    if (!enumerator_isdefault_{0}_{1})", varName, repeatSubScopeID);
+			WriteToBody(@"    if (!isdefault_{0}_{1})", varName, repeatSubScopeID);
 			WriteToBody(@"    {{");
-			WriteToBody(@"        enumerator_status_{0}_{1} = enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
-			WriteToBody(@"        repeat[""{0}""].UpdateStatus(enumerator_status_{0}_{1});", varName, repeatSubScopeID);
+			WriteToBody(@"        islast_{0}_{1} = !enumerator_{0}_{1}.MoveNext();", varName, repeatSubScopeID);
+			WriteToBody(@"        repeat[""{0}""].next(islast_{0}_{1});", varName, repeatSubScopeID);
 			WriteToBody(@"    }}");
 
 			rendererBodyTabs += "    ";
@@ -1258,17 +1114,18 @@ Global variable with namespace name allready exists.", programNamespace));
 				SubScope subScope = currentScope.SubScope.Pop();
 				if (subScope is RepeatScope)
 				{
+					RepeatScope repeatScope = (RepeatScope)subScope;
 					WriteToBody("");
 					WriteToBody("// End sub-scope repeat: {0}", subScope.ID);
 					WriteToBody(@"");
 					WriteToBody(@"// Restore the current attributes");
-					WriteToBody(@"__currentAttributes = new Dictionary<string, Attr>(__currentAttributesCopy_{1});", scopeID, subScope.ID);
+					WriteToBody(@"__currentAttributes = new Dictionary<string, Attr>(__currentAttributesCopy_{1});", scopeID, repeatScope.ID);
 					WriteToBody(@"");
 					rendererBodyTabs = rendererBodyTabs.Remove(rendererBodyTabs.Length - 5, 4);
 					WriteToBody("}}");
-					WriteToBody(@"while (enumerator_status_{0}_{1} == true);", ((RepeatScope)subScope).VarName, subScope.ID);
-					WriteToBody(@"END_REPEAT_{0}:", subScope.ID);
-					WriteToBody(@"repeat[""{0}""] = null;", ((RepeatScope)subScope).VarName);
+					WriteToBody(@"while (!islast_{0}_{1});", repeatScope.VarName, repeatScope.ID);
+					WriteToBody(@"END_REPEAT_{0}:", repeatScope.ID);
+					WriteToBody(@"repeat[""{0}""] = null;", repeatScope.VarName);
 				}
 				else
 				{

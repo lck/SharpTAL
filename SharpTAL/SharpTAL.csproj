@@ -72,6 +72,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyGenerator.cs" />
+    <Compile Include="IRepeatDictionary.cs" />
+    <Compile Include="RenderContext.cs" />
+    <Compile Include="TemplateProgram\ProgramGeneratorResult.cs" />
+    <Compile Include="TemplateProgram\ProgramGeneratorParameters.cs" />
+    <Compile Include="IRenderContext.cs" />
+    <Compile Include="RepeatDictionary.cs" />
+    <Compile Include="ITALESIterator.cs" />
+    <Compile Include="RepeatItem.cs" />
     <Compile Include="ITemplate.cs" />
     <Compile Include="TemplateCache\AbstractTemplateCache.cs" />
     <Compile Include="Constants.cs" />
@@ -124,7 +132,7 @@
     <Compile Include="Errors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HTMLEntityDefs.cs" />
-    <Compile Include="TemplateProgram\PageTemplateParser.cs" />
+    <Compile Include="TemplateProgram\ProgramGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

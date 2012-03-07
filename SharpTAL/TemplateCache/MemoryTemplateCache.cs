@@ -52,18 +52,8 @@ namespace SharpTAL.TemplateCache
 		{
 			lock (templateInfoCacheLock)
 			{
-				// Generate template program from template body and generate the TemplateKey
-				PageTemplateParser pageTemplateParser = new PageTemplateParser();
-				TemplateInfo ti = new TemplateInfo
-				{
-					TemplateBody = templateBody,
-					GlobalsTypes = globalsTypes,
-					ReferencedAssemblies = referencedAssemblies
-				};
-				pageTemplateParser.GenerateTemplateProgram(ref ti);
-
-				// Compute the template key
-				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
+				// Generate template program
+				TemplateInfo ti = GenerateTemplateProgram(templateBody, globalsTypes, referencedAssemblies);
 
 				// Generated template found in cache
 				if (templateInfoCache.ContainsKey(ti.TemplateKey))

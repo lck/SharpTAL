@@ -29,6 +29,7 @@
 namespace SharpTAL
 {
 	using System;
+	using System.Collections;
 	using System.Collections.Generic;
 	using System.Reflection;
 	using System.IO;
@@ -84,9 +85,11 @@ namespace SharpTAL
 			this.Culture = CultureInfo.InvariantCulture;
 		}
 
+		#region ITemplate interface implementation
+
 		public void Compile()
 		{
-			templateInfo = templateCache.CompileTemplate(body, globalsTypes, referencedAssemblies);
+			Recompile(null);
 		}
 
 		public string Render(Dictionary<string, object> globals)
@@ -107,10 +110,24 @@ namespace SharpTAL
 
 		public void Render(StreamWriter outputWriter, Dictionary<string, object> globals)
 		{
-			CheckRenderInput(globals);
+			CompileCheck(globals);
+
 			try
 			{
-				templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, globals, new Func<object, string>(FormatResult) });
+				IRenderContext context = new RenderContext();
+
+				foreach (var item in globals)
+					context[item.Key] = item.Value;
+
+				context["__FormatResult"] = new Func<object, string>(FormatResult);
+				context["__IsFalseResult"] = new Func<object, bool>(IsFalseResult);
+
+				if (!context.ContainsKey("repeat"))
+					context["repeat"] = new RepeatDictionary();
+
+				// TODO: add template "macros" to context
+
+				templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, context });
 			}
 			catch (TargetInvocationException ex)
 			{
@@ -120,6 +137,13 @@ namespace SharpTAL
 			{
 				throw new RenderTemplateException(templateInfo, ex.Message, ex);
 			}
+		}
+
+		#endregion
+
+		protected virtual string DefaultExpressionType
+		{
+			get { return "csharp"; }
 		}
 
 		protected virtual string FormatResult(object result)
@@ -133,34 +157,66 @@ namespace SharpTAL
 			return resultValue;
 		}
 
-		void CheckRenderInput(Dictionary<string, object> globals)
+		protected virtual bool IsFalseResult(object obj)
 		{
-			if (templateInfo == null)
+			if (obj == null)
 			{
-				if (globalsTypes == null)
-				{
-					Recompile(globals);
-					return;
-				}
-				else
-				{
-					Compile();
-					return;
-				}
+				// Value was Nothing
+				return true;
 			}
-			if (globals.Count != globalsTypes.Count)
+			if (obj is bool)
+			{
+				return ((bool)obj) == false;
+			}
+			if (obj is int)
+			{
+				return ((int)obj) == 0;
+			}
+			if (obj is float)
+			{
+				return ((float)obj) == 0;
+			}
+			if (obj is double)
+			{
+				return ((double)obj) == 0;
+			}
+			if (obj is string)
+			{
+				return string.IsNullOrEmpty(((string)obj));
+			}
+			if (obj is IEnumerable)
+			{
+				return ((IEnumerable)obj).GetEnumerator().MoveNext() == false;
+			}
+			// Everything else is true, so we return false!
+			return false;
+		}
+
+		void CompileCheck(Dictionary<string, object> globals)
+		{
+			// First time compile
+			if (templateInfo == null)
 			{
 				Recompile(globals);
 				return;
 			}
-			foreach (string name in globalsTypes.Keys)
+
+			if (globals == null && globalsTypes == null)
+				return;
+
+			// Compare globals and globalsTypes
+			if ((globals == null && globalsTypes != null) ||
+				(globals != null && globalsTypes == null) ||
+				(globals != null && globalsTypes != null && globals.Count != globalsTypes.Count))
 			{
-				if (!globals.ContainsKey(name))
-				{
-					Recompile(globals);
-					return;
-				}
-				if (globals[name].GetType() != globalsTypes[name])
+				Recompile(globals);
+				return;
+			}
+
+			foreach (string varName in globalsTypes.Keys)
+			{
+				if (globals.ContainsKey(varName) == false ||
+					globals[varName].GetType() != globalsTypes[varName])
 				{
 					Recompile(globals);
 					return;
@@ -170,11 +226,14 @@ namespace SharpTAL
 
 		void Recompile(Dictionary<string, object> globals)
 		{
-			globalsTypes = new Dictionary<string, Type>();
-			foreach (string name in globals.Keys)
+			if (globals != null && globals.Count > 0)
 			{
-				object obj = globals[name];
-				globalsTypes.Add(name, obj != null ? obj.GetType() : null);
+				globalsTypes = new Dictionary<string, Type>();
+				foreach (string name in globals.Keys)
+				{
+					object obj = globals[name];
+					globalsTypes.Add(name, obj != null ? obj.GetType() : null);
+				}
 			}
 			templateInfo = templateCache.CompileTemplate(body, globalsTypes, referencedAssemblies);
 		}

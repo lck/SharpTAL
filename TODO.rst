@@ -2,6 +2,11 @@
 TODO
 ====
 
+- Implement statement "meta:reference" to add assembly references:
+    <div meta:reference="System.Data.dll" />
+	multiple references:
+    <div meta:reference="System.Data.dll; System.Xml.dll" />
+
 - CodeGenerator: implement metal:macros as true class methods
 
 - Make the Template class to be "wrapper" around Render() methods generated from xml/html template.

@@ -8,7 +8,7 @@ Changes
 Features
 --------
 
-- The "Template" class now provides virtual method "FormatResult(object)" to enable customization of expression results formatting.
+- The "Template" class now provides virtual method "FormatResult(object)" to enable customization of expression results formatting. [Roman Lacko]
 
 Bugs fixed
 ----------
@@ -19,7 +19,7 @@ Internal
 Backwards Incompatibilities
 ---------------------------
 
-- Removed "RenderTemplate()" methods from "ITemplateCache" interface (and it's implementations).
+- Removed "RenderTemplate()" methods from "ITemplateCache" interface (and it's implementations). [Roman Lacko]
 
 
 2.0a2 (2012-01-05)

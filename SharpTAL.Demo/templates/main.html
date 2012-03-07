@@ -78,6 +78,9 @@ id="z">
 	<tal:tag metal:use-macro='imp3.macros["recursiveMacro"]' metal:fill-param="counter 3" />
 	<tal:tag metal:use-macro='imp3.macros["recursiveMacro2"]' metal:fill-param="counter 1" />
 	
+	<!-- Enumarate default -->
+	<p tal:repeat="entry default">Default Only</p>
+	
 	<!-- Enumarate all friends -->
     <div tal:repeat='f friends'>
 		<i tal:content="string:Friend name: ${f.Name}. Age: ${f.Age}" />
@@ -87,7 +90,7 @@ id="z">
 	<table>
         <tr tal:repeat='row new string[] { "red", "green", "blue" }'>
 			<td tal:repeat='col new string[] { "rectangle", "triangle", "circle" }'>
-				${((string)row).ToUpper()} ${col}
+				ROW#${repeat["row"].number} ${((string)row).ToUpper()} ${col} ${repeat["row"].end ? "END" : ""} ${repeat["row"].start ? "START" : ""}
 			</td>
         </tr>
 	</table>

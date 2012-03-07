@@ -96,18 +96,8 @@ namespace SharpTAL.TemplateCache
 					templateInfoCache = LoadTemplatesInfo(templateCacheFolder);
 				}
 
-				// Generate template program from template body and generate the TemplateKey
-				PageTemplateParser pageTemplateParser = new PageTemplateParser();
-				TemplateInfo ti = new TemplateInfo
-				{
-					TemplateBody = templateBody,
-					GlobalsTypes = globalsTypes,
-					ReferencedAssemblies = referencedAssemblies
-				};
-				pageTemplateParser.GenerateTemplateProgram(ref ti);
-
-				// Compute the template key
-				ti.TemplateKey = Utils.ComputeTemplateKey(ti);
+				// Generate template program
+				TemplateInfo ti = GenerateTemplateProgram(templateBody, globalsTypes, referencedAssemblies);
 
 				// Generated template found in cache
 				if (templateInfoCache.ContainsKey(ti.TemplateKey))
@@ -115,13 +105,13 @@ namespace SharpTAL.TemplateCache
 					return templateInfoCache[ti.TemplateKey];
 				}
 
-				// Path to output assembly
-				string assemblyFileName = fileNamePattern.Replace("{key}", ti.TemplateKey);
-				string assemblyPath = Path.Combine(templateCacheFolder, assemblyFileName);
-
 				// Generate code
 				ICodeGenerator codeGenerator = new CodeGenerator();
 				ti.GeneratedSourceCode = codeGenerator.GenerateCode(ti);
+
+				// Path to output assembly
+				string assemblyFileName = fileNamePattern.Replace("{key}", ti.TemplateKey);
+				string assemblyPath = Path.Combine(templateCacheFolder, assemblyFileName);
 
 				// Generate assembly
 				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();

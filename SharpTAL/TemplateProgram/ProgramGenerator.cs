@@ -1,5 +1,5 @@
 ﻿//
-// PageTemplateParser.cs
+// ProgramGenerator.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -40,9 +40,9 @@ namespace SharpTAL.TemplateProgram
 	using SharpTAL.TemplateProgram.Commands;
 
 	/// <summary>
-	/// ZPT (Zope Page Template) parser
+	/// ZPT (Zope Page Template) parser and Template program generator
 	/// </summary>
-	public class PageTemplateParser : AbstractTemplateParser
+	public class ProgramGenerator : AbstractTemplateParser
 	{
 		class TagStackItem
 		{
@@ -106,7 +106,7 @@ namespace SharpTAL.TemplateProgram
 		int endTagCommandLocationCounter;
 		Tag currentStartTag;
 
-		public PageTemplateParser()
+		public ProgramGenerator()
 		{
 			talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>>();
 			talAttributeHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
