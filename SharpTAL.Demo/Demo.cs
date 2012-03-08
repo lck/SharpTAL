@@ -64,52 +64,6 @@ namespace SharpTAL.Demo
 
 	class Demo
 	{
-		static string FormatResult(object result)
-		{
-			IFormattable formattable = result as IFormattable;
-			string resultValue = "";
-			if (formattable != null)
-				resultValue = formattable.ToString("", System.Globalization.CultureInfo.CurrentCulture);
-			else
-				resultValue = result.ToString();
-			return resultValue;
-		}
-
-		static bool IsFalseResult(object obj)
-		{
-			if (obj == null)
-			{
-				// Value was Nothing
-				return true;
-			}
-			if (obj is bool)
-			{
-				return ((bool)obj) == false;
-			}
-			if (obj is int)
-			{
-				return ((int)obj) == 0;
-			}
-			if (obj is float)
-			{
-				return ((float)obj) == 0;
-			}
-			if (obj is double)
-			{
-				return ((double)obj) == 0;
-			}
-			if (obj is string)
-			{
-				return string.IsNullOrEmpty(((string)obj));
-			}
-			if (obj is IEnumerable)
-			{
-				return ((IEnumerable)obj).GetEnumerator().MoveNext() == false;
-			}
-			// Everything else is true, so we return false!
-			return false;
-		}
-
 		static void Main(string[] args)
 		{
 			// Referenced Assemblies
