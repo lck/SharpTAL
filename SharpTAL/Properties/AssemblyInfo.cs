@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2012 Roman Lacko
+// Copyright (c) 2010 - 2013 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -34,10 +34,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Roman Lacko")]
 [assembly: AssemblyProduct("SharpTAL")]
-[assembly: AssemblyCopyright("Copyright © Roman Lacko 2010")]
+[assembly: AssemblyCopyright("Copyright © Roman Lacko 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("7c963350-87b5-4250-b9e9-ea379550b290")]
-[assembly: AssemblyVersion("1.9.0.2")]
-[assembly: AssemblyFileVersion("1.9.0.2")]
+[assembly: AssemblyVersion("1.9.0.3")]
+[assembly: AssemblyFileVersion("1.9.0.3")]
