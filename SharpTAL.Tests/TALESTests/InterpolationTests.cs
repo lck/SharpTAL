@@ -71,5 +71,30 @@ World"") + ""!""} }, \${escaped} 9 / 3 = ${9 / 3}}}</html>",
 World! }, \${escaped} 9 / 3 = 3}</html>",
 			   "Multiline interpolation failed!");
 		}
+
+		[Test]
+		public void TestInterpolationCDataMultiline()
+		{
+			RunTest(@"<html>
+  <head>
+    <script>
+      <![CDATA[
+      alert(""${""Hello world!""}"");
+      ]]>
+    </script>
+  </head>
+</html>",
+			   @"<html>
+  <head>
+    <script>
+      <![CDATA[
+      alert(""Hello world!"");
+      ]]>
+    </script>
+  </head>
+</html>",
+
+			   "CData interpolation failed!");
+		}
 	}
 }

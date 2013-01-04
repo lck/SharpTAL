@@ -512,6 +512,11 @@ namespace SharpTAL.TemplateProgram
 			HandleData(data);
 		}
 
+		protected override void HandleCData(string data)
+		{
+			HandleData(data);
+		}
+
 		protected override void HandleDefault(string data)
 		{
 			HandleData(data);

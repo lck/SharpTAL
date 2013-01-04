@@ -44,7 +44,7 @@ namespace SharpTAL.TemplateParser
 	public class ElementParser
 	{
 		static readonly string XML_NS = "http://www.w3.org/XML/1998/namespace";
-		
+
 		static readonly Regex match_tag_prefix_and_name = new Regex(
 			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \r\n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
 		static readonly Regex match_single_attribute = new Regex(
@@ -96,6 +96,8 @@ namespace SharpTAL.TemplateParser
 				return visit_start_tag(token);
 			if (kind == TokenKind.Text)
 				return visit_text(token);
+			if (kind == TokenKind.CData)
+				return visit_cdata(token);
 			return visit_default(token);
 		}
 
@@ -112,6 +114,11 @@ namespace SharpTAL.TemplateParser
 		Element visit_text(Token token)
 		{
 			return new Element(ElementKind.Text, token);
+		}
+
+		Element visit_cdata(Token token)
+		{
+			return new Element(ElementKind.CData, token);
 		}
 
 		Element visit_start_tag(Token token)

@@ -37,6 +37,7 @@ namespace SharpTAL.TemplateParser
 		EndTag,
 		StartTag,
 		Text,
+		CData,
 		Default
 	}
 }
