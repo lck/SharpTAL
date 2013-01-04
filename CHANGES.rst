@@ -2,12 +2,13 @@
 Changes
 =======
 
-2.0a3 (2013-01-??)
+2.0b1 (2013-01-04)
 ==================
 
 Features
 --------
 
+- Added support for code blocks using the `<?csharp ... ?>` processing instruction syntax.
 - Enable expression interpolation in CDATA [Roman Lacko]
 - The "Template" class now provides virtual method "FormatResult(object)" to enable customization of expression results formatting. [Roman Lacko]
 

@@ -1,5 +1,5 @@
 ﻿//
-// ElementKind.cs
+// CMDCodeBlock.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -26,19 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-
-namespace SharpTAL.TemplateParser
+namespace SharpTAL.TemplateProgram.Commands
 {
-	public enum ElementKind
+	using System;
+	using System.Collections.Generic;
+	using SharpTAL.TemplateParser;
+
+	public class CMDCodeBlock : Command
 	{
-		Element,
-		Comment,
-		EndTag,
-		StartTag,
-		Text,
-		CData,
-		ProcessingInstruction,
-		Default
+		public string Language { get; protected set; }
+		public string Code { get; protected set; }
+
+		public CMDCodeBlock(string language, string code)
+			: base(null, CommandType.CMD_CODE_BLOCK)
+		{
+			Language = language;
+			Code = code;
+		}
 	}
 }

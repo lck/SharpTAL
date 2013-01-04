@@ -517,6 +517,18 @@ namespace SharpTAL.TemplateProgram
 			HandleData(data);
 		}
 
+		protected override void HandleProcessingInstruction(Element e)
+		{
+			var name = ((Token)e.StartTagTokens["name"]).ToString();
+			var text = ((Token)e.StartTagTokens["text"]).ToString();
+			if (name != "csharp")
+			{
+				HandleData(string.Format("<?{0}{1}?>", name, text));
+				return;
+			}
+			programCommands.Add(new CMDCodeBlock(name, text));
+		}
+
 		protected override void HandleDefault(string data)
 		{
 			HandleData(data);

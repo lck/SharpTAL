@@ -43,6 +43,7 @@ namespace SharpTAL.TemplateParser
 		protected abstract void HandleData(string data);
 		protected abstract void HandleComment(string data);
 		protected abstract void HandleCData(string data);
+		protected abstract void HandleProcessingInstruction(Element e);
 		protected abstract void HandleDefault(string data);
 
 		public void ParseTemplate(string templateBody, string templatePath, Dictionary<string, string> defaultNamespaces)
@@ -133,6 +134,10 @@ namespace SharpTAL.TemplateParser
 			{
 				foreach (Token token in e.StartTagTokens.Values)
 					HandleCData(token.ToString());
+			}
+			else if (e.Kind == ElementKind.ProcessingInstruction)
+			{
+				HandleProcessingInstruction(e);
 			}
 			else if (e.Kind == ElementKind.Default)
 			{

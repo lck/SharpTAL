@@ -74,6 +74,7 @@
     <Compile Include="AssemblyGenerator.cs" />
     <Compile Include="IRepeatDictionary.cs" />
     <Compile Include="RenderContext.cs" />
+    <Compile Include="TemplateProgram\Commands\CMDCodeBlock.cs" />
     <Compile Include="TemplateProgram\ProgramGeneratorResult.cs" />
     <Compile Include="TemplateProgram\ProgramGeneratorParameters.cs" />
     <Compile Include="IRenderContext.cs" />

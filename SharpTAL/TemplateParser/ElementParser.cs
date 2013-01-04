@@ -54,11 +54,17 @@ namespace SharpTAL.TemplateParser
 			@"((?<quote>[\'""])(?<value>.*?)\k<quote>|" +
 			@"(?<alt_value>[^\s\'"">/]+))|" +
 			@"(?<simple_value>(?![ \\n\\t\\r]*=)))", RegexOptions.Singleline);
-		static readonly Regex match_comment = new Regex(@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
-		static readonly Regex match_cdata = new Regex(@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
-		static readonly Regex match_declaration = new Regex(@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
-		static readonly Regex match_processing_instruction = new Regex(@"^<\?(?<text>.*?)\?>", RegexOptions.Singleline);
-		static readonly Regex match_xml_declaration = new Regex(@"^<\?xml(?=[ /])", RegexOptions.Singleline);
+		static readonly Regex match_comment = new Regex(
+			@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
+		static readonly Regex match_cdata = new Regex(
+			@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
+		static readonly Regex match_declaration = new Regex(
+			@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
+		static readonly Regex match_processing_instruction = new Regex(
+			//@"^<\?(?<text>.*?)\?>", RegexOptions.Singleline);
+			@"^<\?(?<name>\w+)(?<text>.*?)\?>", RegexOptions.Singleline);
+		static readonly Regex match_xml_declaration = new Regex(
+			@"^<\?xml(?=[ /])", RegexOptions.Singleline);
 
 		IEnumerable<Token> stream;
 		List<Dictionary<string, string>> namespaces;
@@ -88,6 +94,10 @@ namespace SharpTAL.TemplateParser
 			TokenKind kind = token.Kind;
 			if (kind == TokenKind.Comment)
 				return visit_comment(token);
+			if (kind == TokenKind.CData)
+				return visit_cdata(token);
+			if (kind == TokenKind.ProcessingInstruction)
+				return visit_processing_instruction(token);
 			if (kind == TokenKind.EndTag)
 				return visit_end_tag(token);
 			if (kind == TokenKind.EmptyTag)
@@ -96,8 +106,6 @@ namespace SharpTAL.TemplateParser
 				return visit_start_tag(token);
 			if (kind == TokenKind.Text)
 				return visit_text(token);
-			if (kind == TokenKind.CData)
-				return visit_cdata(token);
 			return visit_default(token);
 		}
 
@@ -119,6 +127,13 @@ namespace SharpTAL.TemplateParser
 		Element visit_cdata(Token token)
 		{
 			return new Element(ElementKind.CData, token);
+		}
+
+		Element visit_processing_instruction(Token token)
+		{
+			Match match = match_processing_instruction.Match(token.ToString());
+			Dictionary<string, object> node = groupdict(match_processing_instruction, match, token);
+			return new Element(ElementKind.ProcessingInstruction, node);
 		}
 
 		Element visit_start_tag(Token token)

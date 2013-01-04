@@ -586,6 +586,13 @@ Global variable with namespace name allready exists.", programNamespace));
 				Environment.NewLine, rendererBodyTabs, format);
 		}
 
+		protected void WriteToBodyNoFormat(string text)
+		{
+			rendererBody.AppendFormat(
+				@"{0}{1}{2}",
+				Environment.NewLine, rendererBodyTabs, text);
+		}
+
 		static string SafeVariableName(string str)
 		{
 			string name = "";
@@ -908,6 +915,15 @@ Global variable with namespace name allready exists.", programNamespace));
 				WriteToBody(@"output.Write(@""{0}"");", data.Replace(@"""", @""""""));
 		}
 
+		protected override void Handle_CMD_CODE_BLOCK(ICommand command)
+		{
+			CMDCodeBlock codeCmd = (CMDCodeBlock)command;
+
+			WriteCmdInfo(command);
+
+			WriteToBodyNoFormat(codeCmd.Code);
+		}
+		
 		protected override void Handle_TAL_OMITTAG(ICommand command)
 		{
 			// Conditionally turn off tag output

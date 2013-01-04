@@ -55,6 +55,7 @@ namespace SharpTAL.TemplateProgram
 		protected abstract void Handle_CMD_OUTPUT(ICommand command);
 		protected abstract void Handle_CMD_START_TAG(ICommand command);
 		protected abstract void Handle_CMD_ENDTAG_ENDSCOPE(ICommand command);
+		protected abstract void Handle_CMD_CODE_BLOCK(ICommand command);
 		
 		Dictionary<CommandType, Action<ICommand>> commandHandlers;
 
@@ -76,6 +77,7 @@ namespace SharpTAL.TemplateProgram
 			commandHandlers.Add(CommandType.CMD_OUTPUT, Handle_CMD_OUTPUT);
 			commandHandlers.Add(CommandType.CMD_START_TAG, Handle_CMD_START_TAG);
 			commandHandlers.Add(CommandType.CMD_ENDTAG_ENDSCOPE, Handle_CMD_ENDTAG_ENDSCOPE);
+			commandHandlers.Add(CommandType.CMD_CODE_BLOCK, Handle_CMD_CODE_BLOCK);
 		}
 
 		public void HandleCommands(IEnumerable<ICommand> commands)
