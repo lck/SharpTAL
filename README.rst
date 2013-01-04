@@ -134,11 +134,12 @@ Planned features
 Changes
 -------
 
-2.0a3 (2012-03-??)
+2.0a3 (2013-01-??)
 ~~~~~~~~~~~~~~~~~~
 
 Features:
 
+- Enable expression interpolation in CDATA [Roman Lacko]
 - The "Template" class now provides virtual method "FormatResult(object)" to enable customization of expression results formatting. [Roman Lacko]
 
 Internal:
