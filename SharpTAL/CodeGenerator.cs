@@ -908,7 +908,7 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteCmdInfo(command);
 
-			if (currentScope != null && currentScope.Interpolation)
+			if (currentScope == null || (currentScope != null && currentScope.Interpolation))
 			{
 				string expression = FormatStringExpression(data);
 				WriteToBody(@"output.Write({0});", expression);

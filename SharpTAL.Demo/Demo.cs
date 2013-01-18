@@ -101,8 +101,7 @@ namespace SharpTAL.Demo
 				Console.WriteLine("Basic tests:");
 				Console.WriteLine("=======================================");
 				sw.Start();
-				Console.WriteLine(new SharpTAL.Template("<tal:tag>Hello ${w}!</tal:tag>")
-					.Render(new Dictionary<string, object> { { "w", "world" } }));
+				Console.WriteLine(new SharpTAL.Template("Hello ${w}!").Render(new Dictionary<string, object> { { "w", "world" } }));
 				sw.Stop();
 				Console.WriteLine(string.Format("{0} ms", sw.ElapsedMilliseconds));
 

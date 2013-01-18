@@ -54,6 +54,7 @@
     <Compile Include="METALTests\METALImportTests.cs" />
     <Compile Include="METALTests\METALNameSpaceTests.cs" />
     <Compile Include="TALESTests\CodeBlocksTests.cs" />
+    <Compile Include="TALESTests\TextTemplateTests.cs" />
     <Compile Include="TALESTests\InterpolationTests.cs" />
     <Compile Include="TALESTests\TALESCSharpPathTests.cs" />
     <Compile Include="TALESTests\TALESStringTests.cs" />
