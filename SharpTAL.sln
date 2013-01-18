@@ -31,7 +31,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{FEE6FF2A-1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{05158FDF-0386-4D95-B7A2-77BDA0E17A66}"
 	ProjectSection(SolutionItems) = preProject
+		Libs\ICSharpCode.NRefactory.CSharp.dll = Libs\ICSharpCode.NRefactory.CSharp.dll
 		Libs\ICSharpCode.NRefactory.dll = Libs\ICSharpCode.NRefactory.dll
+		Libs\ICSharpCode.NRefactory.Xml.dll = Libs\ICSharpCode.NRefactory.Xml.dll
+		Libs\Mono.Cecil.dll = Libs\Mono.Cecil.dll
+		Libs\Mono.Cecil.Mdb.dll = Libs\Mono.Cecil.Mdb.dll
+		Libs\Mono.Cecil.Pdb.dll = Libs\Mono.Cecil.Pdb.dll
+		Libs\Mono.Cecil.Rocks.dll = Libs\Mono.Cecil.Rocks.dll
 		Libs\nunit.framework.dll = Libs\nunit.framework.dll
 	EndProjectSection
 EndProject

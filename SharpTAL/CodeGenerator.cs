@@ -37,7 +37,10 @@ namespace SharpTAL
 	using System.Text.RegularExpressions;
 	using System.Diagnostics;
 	using System.Runtime.Serialization;
+
 	using ICSharpCode.NRefactory;
+	using ICSharpCode.NRefactory.CSharp;
+
 	using SharpTAL.TemplateParser;
 	using SharpTAL.TemplateProgram;
 	using SharpTAL.TemplateProgram.Commands;
@@ -535,13 +538,12 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected string FormatCSharpExpression(string expression)
 		{
-			using (var parser = ParserFactory.CreateParser(SupportedLanguage.CSharp, new StringReader(expression + ";")))
+			var parser = new CSharpParser();
+			var astExpr = parser.ParseExpression(expression + ";");
+			if (parser.HasErrors)
 			{
-				var astExpr = parser.ParseExpression();
-				if (parser.Errors.Count > 0)
-				{
-					throw new TemplateParseException(null, string.Format("{0}\n{1}", expression, parser.Errors.ErrorOutput));
-				}
+				var errors = string.Join(Environment.NewLine, parser.Errors.Select(err => err.Message));
+				throw new TemplateParseException(null, string.Format("{0}{1}{2}", expression, Environment.NewLine, errors));
 			}
 			return expression;
 		}
@@ -923,7 +925,7 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteToBodyNoFormat(codeCmd.Code);
 		}
-		
+
 		protected override void Handle_TAL_OMITTAG(ICommand command)
 		{
 			// Conditionally turn off tag output
