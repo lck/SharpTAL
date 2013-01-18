@@ -20,8 +20,7 @@ the `Chameleon project <http://github.com/malthe/chameleon/>`_.
 Getting the code
 ----------------
 
-You can download the binary packages from the codeplex `home page <http://sharptal.codeplex.com/>`_.
-Latest version relies on ICSharpCode.NRefactory.dll library (included in latest binary package).
+Binaries are provided as a NuGet package (`https://nuget.org/packages/SharpTAL <https://nuget.org/packages/SharpTAL/>`_).
 
 The project is hosted in a GitHub `repository <http://github.com/lck/SharpTAL/>`_
 

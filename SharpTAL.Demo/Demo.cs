@@ -95,10 +95,22 @@ namespace SharpTAL.Demo
 
 			try
 			{
+				Stopwatch sw = new Stopwatch();
+				
+				// Basic test
+				Console.WriteLine("Basic tests:");
+				Console.WriteLine("=======================================");
+				sw.Start();
+				Console.WriteLine(new SharpTAL.Template("<tal:tag>Hello ${w}!</tal:tag>")
+					.Render(new Dictionary<string, object> { { "w", "world" } }));
+				sw.Stop();
+				Console.WriteLine(string.Format("{0} ms", sw.ElapsedMilliseconds));
+
 				// Template program generator speed tests
+				Console.WriteLine();
 				Console.WriteLine("Template program generator speed tests:");
 				Console.WriteLine("=======================================");
-				Stopwatch sw = new Stopwatch();
+				sw.Reset();
 				sw.Start();
 				ProgramGenerator pageTemplateParser = new ProgramGenerator();
 				for (int i = 0; i < 5; i++)
