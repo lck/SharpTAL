@@ -15,7 +15,7 @@ Dependency Changes
 ------------------
 
 - SharpTAL now relies on ICSharpCode.NRefactory 5.3.0
-- .NET 4.0 and above is now required
+- .NET 4.0 is now required
 
 
 2.0b1 (2013-01-04)

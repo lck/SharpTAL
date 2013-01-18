@@ -3,7 +3,7 @@ SharpTAL
 
 SharpTAL is an HTML/XML template engine for .NET platform,
 with minimal dependencies that you can use in any application
-running on .NET Framework ver. 3.5 and up or Mono ver. 2.6.
+running on .NET 4.0.
 
 The template engine compiles HTML/XML templates into .NET assemblies.
 
@@ -144,7 +144,7 @@ Features:
 Dependency Changes:
 
 - SharpTAL now relies on ICSharpCode.NRefactory 5.3.0
-- .NET 4.0 and above is now required
+- .NET 4.0 is now required
 
 
 2.0b1 (2013-01-04)
