@@ -30,6 +30,7 @@ namespace SharpTAL.TemplateCache
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.IO;
 	using System.Reflection;
 	using System.Globalization;
@@ -120,7 +121,7 @@ namespace SharpTAL.TemplateCache
 			Type templateType = assembly.GetType(templateTypeFullName);
 			if (templateType == null)
 			{
-				throw new Exception(string.Format("Failed to find type [{0}] in assembly [{1}].",
+				throw new Exception(string.Format("Failed to find the type [{0}] in assembly [{1}].",
 					templateTypeFullName, assembly.FullName));
 			}
 
@@ -131,12 +132,43 @@ namespace SharpTAL.TemplateCache
 
 			if (renderMethod == null || renderMethod.ReturnType.FullName != "System.Void")
 			{
-				throw new Exception(string.Format(@"Failed to find Render method in type [{0}] in assembly [{1}].
+				throw new Exception(string.Format(@"Failed to find the Render method in type [{0}] in assembly [{1}].
 The signature of method must be [static void Render(StreamWriter output, IRenderContext context)]",
 					templateTypeFullName, assembly.FullName));
 			}
 
 			return renderMethod;
+		}
+
+		/// <summary>
+		/// Try to find the template source generator version
+		/// </summary>
+		/// <param name="assembly"></param>
+		/// <param name="ti"></param>
+		/// <returns></returns>
+		protected static string GetTemplateGeneratorVersion(Assembly assembly, TemplateInfo ti)
+		{
+			string templateTypeFullName = string.Format("Templates.Template_{0}", ti.TemplateKey);
+
+			// Check if assembly contains the template type
+			Type templateType = assembly.GetType(templateTypeFullName);
+			if (templateType == null)
+			{
+				throw new Exception(string.Format("Failed to find the type [{0}] in assembly [{1}].",
+					templateTypeFullName, assembly.FullName));
+			}
+
+			// Check if the template type has field [public const string GENERATOR_VERSION]
+			FieldInfo versionField = templateType.GetFields(BindingFlags.Public | BindingFlags.Static)
+				.Where(p => p.IsLiteral && p.FieldType.FullName == "System.String" && p.Name == "GENERATOR_VERSION").FirstOrDefault();
+
+			if (versionField == null)
+			{
+				throw new Exception(string.Format(@"Failed to find the GENERATOR_VERSION field in type [{0}] in assembly [{1}].",
+					templateTypeFullName, assembly.FullName));
+			}
+
+			return (string)versionField.GetValue(null);
 		}
 	}
 }

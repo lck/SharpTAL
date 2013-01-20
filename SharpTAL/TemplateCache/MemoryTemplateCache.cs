@@ -72,6 +72,9 @@ namespace SharpTAL.TemplateCache
 				// Try to load the Render() method from assembly
 				ti.RenderMethod = GetTemplateRenderMethod(assembly, ti);
 
+				// Try to load the template generator version from assembly
+				ti.GeneratorVersion = GetTemplateGeneratorVersion(assembly, ti);
+
 				templateInfoCache.Add(ti.TemplateKey, ti);
 
 				return ti;

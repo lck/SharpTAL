@@ -55,6 +55,8 @@ namespace Templates
     [SecurityPermission(SecurityAction.PermitOnly, Execution = true)]
     public class Template_${template_hash}
     {
+        public const string GENERATOR_VERSION = ""${generator_version}"";
+        
         public static void Render(StreamWriter output, SharpTAL.IRenderContext context)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
@@ -430,6 +432,7 @@ namespace Templates
 			//-------------------------
 
 			string templateSource = FileBodyTemplate.
+				Replace("${generator_version}", this.GetType().Assembly.GetName().Version.ToString()).
 				Replace("${defaultvalue}", Constants.DEFAULT_VALUE).
 				Replace("${usings}", usings).
 				Replace("${template_hash}", ti.TemplateKey).

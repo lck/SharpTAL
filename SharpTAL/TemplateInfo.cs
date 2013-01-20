@@ -38,7 +38,7 @@ namespace SharpTAL
 	public class TemplateInfo
 	{
 		#region Template Cache output
-
+		
 		/// <summary>
 		/// Contains a unique key that represent the template in the template cache.
 		/// The template key is computed from the following parts:
@@ -56,6 +56,11 @@ namespace SharpTAL
 		/// Reference to template render method.
 		/// </summary>
 		public MethodInfo RenderMethod;
+
+		/// <summary>
+		/// Template generator version.
+		/// </summary>
+		public string GeneratorVersion;
 
 		#endregion
 
