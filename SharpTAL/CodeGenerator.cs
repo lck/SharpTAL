@@ -150,7 +150,6 @@ namespace Templates
                     msg = string.Format(@""{0}{1}  Line:       {2}"", msg, Environment.NewLine, __currentCmdInfo.Line);
                     msg = string.Format(@""{0}{1}  Position:   {2}"", msg, Environment.NewLine, __currentCmdInfo.Position);
                     msg = string.Format(@""{0}{1}  Source:     {2}"", msg, Environment.NewLine, __currentCmdInfo.Source);
-                    msg = string.Format(@""{0}{1}  Omit Scope: {2}"", msg, Environment.NewLine, __currentCmdInfo.OmitTagScope);
                 }
                 
                 // Macros
@@ -183,12 +182,26 @@ namespace Templates
         
         private class CommandInfo
         {
+            public CommandInfo()
+            {
+            }
+            public CommandInfo(string commandName)
+            {
+                CommandName = commandName;
+            }
+            public CommandInfo(string commandName, string tag, int line, int position, string source)
+            {
+                CommandName = commandName;
+                Tag = tag;
+                Line = line;
+                Position = position;
+                Source = source;
+            }
             public string CommandName;
             public string Tag;
             public int Line;
             public int Position;
             public string Source;
-            public bool OmitTagScope;
         }
         
         private class Attr
@@ -473,16 +486,38 @@ Global variable with namespace name allready exists.", programNamespace));
 		private void WriteCmdInfo(ICommand command)
 		{
 			WriteToBody("");
-			WriteToBody("__currentCmdInfo = new CommandInfo();");
-			WriteToBody(@"__currentCmdInfo.CommandName = ""{0}"";", Enum.GetName(typeof(CommandType), command.CommandType));
 			if (command.Tag != null)
 			{
-				WriteToBody(@"__currentCmdInfo.Tag = @""{0}"";", command.Tag.ToString().Replace(Environment.NewLine, "").Replace(@"""", @""""""));
-				WriteToBody(@"__currentCmdInfo.Line = {0};", command.Tag.LineNumber);
-				WriteToBody(@"__currentCmdInfo.Position = {0};", command.Tag.LinePosition);
-				WriteToBody(@"__currentCmdInfo.Source = @""{0}"";", command.Tag.SourcePath);
+				WriteToBody(@"__currentCmdInfo = new CommandInfo(""{0}"", @""{1}"", {2}, {3}, @""{4}"");",
+					Enum.GetName(typeof(CommandType), command.CommandType),
+					command.Tag.ToString().Replace(Environment.NewLine, "").Replace(@"""", @""""""),
+					command.Tag.LineNumber,
+					command.Tag.LinePosition,
+					command.Tag.SourcePath);
+			}
+			else
+			{
+				WriteToBody(@"__currentCmdInfo = new CommandInfo(""{0}"");",
+					Enum.GetName(typeof(CommandType), command.CommandType));
 			}
 			WriteToBody("");
+		}
+
+		protected string FormatCodeBlock(CMDCodeBlock codeBlock)
+		{
+			return FormatCSharpStatements(codeBlock.Code);
+		}
+
+		protected string FormatCSharpStatements(string code)
+		{
+			var parser = new CSharpParser();
+			var stmts = parser.ParseStatements(code);
+			if (parser.HasErrors)
+			{
+				var errors = string.Join(Environment.NewLine, parser.Errors.Select(err => err.Message));
+				throw new TemplateParseException(null, string.Format("{0}{1}{2}", code, Environment.NewLine, errors));
+			}
+			return code;
 		}
 
 		static readonly Regex _str_expr_regex = new Regex(@"(?<!\\)\$({(?<expression>.*)})", RegexOptions.Singleline);
@@ -539,7 +574,7 @@ Global variable with namespace name allready exists.", programNamespace));
 		protected string FormatCSharpExpression(string expression)
 		{
 			var parser = new CSharpParser();
-			var astExpr = parser.ParseExpression(expression + ";");
+			var expr = parser.ParseExpression(expression + ";");
 			if (parser.HasErrors)
 			{
 				var errors = string.Join(Environment.NewLine, parser.Errors.Select(err => err.Message));
@@ -923,7 +958,8 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteCmdInfo(command);
 
-			WriteToBodyNoFormat(codeCmd.Code);
+			string code = FormatCodeBlock(codeCmd);
+			WriteToBodyNoFormat(code);
 		}
 
 		protected override void Handle_TAL_OMITTAG(ICommand command)

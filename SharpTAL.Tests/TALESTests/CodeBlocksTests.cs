@@ -23,6 +23,15 @@
 		}
 
 		[Test]
+		[ExpectedException(typeof(TemplateParseException))]
+		public void TestCodeBlockInvalid()
+		{
+			RunTest(@"<?csharp if (1 > 2) { ?>",
+				"",
+				"CodeBlocks with invalid code failed!");
+		}
+
+		[Test]
 		public void TestCodeBlocksWithNestedScope()
 		{
 			RunTest(@"<?csharp var oranges = new List<int> { 1, 2, 3 }; ?><div>
