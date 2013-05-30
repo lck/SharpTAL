@@ -6,6 +6,8 @@
 	using System.Linq;
 	using System.IO;
 	using System.Reflection;
+	using System.Collections;
+	using System.Xml;
 
 	using NUnit.Framework;
 
@@ -14,6 +16,14 @@
 	[TestFixture]
 	public class TALDefineTests
 	{
+		public class XmlDocumentList : List<XmlDocument>
+		{
+		}
+
+		public class XmlDocumentDictRecursive : Dictionary<XmlDocument, XmlDocumentDictRecursive>
+		{
+		}
+
 		public static Dictionary<string, object> globals;
 
 		[TestFixtureSetUp]
@@ -34,6 +44,13 @@
 			globals.Add("one", new List<object>() { 1 });
 			globals.Add("two", new List<object>() { "one", "two" });
 			globals.Add("three", new List<object>() { 1, "Two", 3 });
+			var xmlDoc = new XmlDocument();
+			xmlDoc.LoadXml("<nodes><node>1</node><node>2</node><node>3</node></nodes>");
+			globals.Add("xmlDocs", new XmlDocumentList { xmlDoc });
+			globals.Add("xmlDocsDict", new XmlDocumentDictRecursive
+				{
+					{ xmlDoc, new XmlDocumentDictRecursive { { xmlDoc, null } } }
+				});
 		}
 
 		public static void RunTest(string template, string expected, string errMsg)

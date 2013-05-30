@@ -2,6 +2,15 @@
 Changes
 =======
 
+2.1 (2013-05-30)
+================
+
+Features:
+--------
+
+- Significantly improved the type definition resolution of variables defined in globals dictionary
+
+
 2.0 (2013-01-18)
 ================
 

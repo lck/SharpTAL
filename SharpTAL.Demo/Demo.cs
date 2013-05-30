@@ -62,6 +62,14 @@ namespace SharpTAL.Demo
 		public int Age;
 	}
 
+	public class XmlDocumentList : List<XmlDocument>
+	{
+	}
+
+	public class XmlDocumentDictRecursive : Dictionary<XmlDocument, XmlDocumentDictRecursive>
+	{
+	}
+
 	class Demo
 	{
 		static void Main(string[] args)
@@ -82,9 +90,13 @@ namespace SharpTAL.Demo
                     }
                 }
             };
-			XmlDocument xmlDoc = new XmlDocument();
+			var xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml(Resources.Macros);
-			globals.Add("xmlDoc", xmlDoc);
+			globals.Add("xmlDocs", new XmlDocumentList { xmlDoc });
+			globals.Add("xmlDocsDict", new XmlDocumentDictRecursive
+				{
+					{ xmlDoc, new XmlDocumentDictRecursive { { xmlDoc, null } } }
+				});
 
 			// Globals types
 			Dictionary<string, Type> globalsTypes = new Dictionary<string, Type>();

@@ -27,8 +27,10 @@
 //
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.CodeDom.Compiler;
@@ -81,21 +83,26 @@ namespace SharpTAL
 					Type type = ti.GlobalsTypes[varName];
 					if (type != null)
 					{
-						if (!assemblies.Contains(type.Assembly.Location) &&
-							!assemblies.Contains(Path.GetFileName(type.Assembly.Location)))
+						List<Type> genericTypeArguments = new List<Type>(GetGenericTypeArguments(type));
+						List<Assembly> asmList = genericTypeArguments.Select(t => t.Assembly).ToList();
+						foreach (var assembly in asmList)
 						{
-							compilerParameters.ReferencedAssemblies.Add(type.Assembly.Location);
-							assemblies.Add(type.Assembly.Location);
-
-							// Referenced assemblies
-							foreach (AssemblyName assemblyName in type.Assembly.GetReferencedAssemblies())
+							if (!assemblies.Contains(assembly.Location) &&
+								!assemblies.Contains(Path.GetFileName(assembly.Location)))
 							{
-								Assembly assembly = AppDomain.CurrentDomain.Load(assemblyName);
-								if (!assemblies.Contains(assembly.Location) &&
-									!assemblies.Contains(Path.GetFileName(assembly.Location)))
+								compilerParameters.ReferencedAssemblies.Add(assembly.Location);
+								assemblies.Add(assembly.Location);
+
+								// Referenced assemblies
+								foreach (AssemblyName refAssemblyName in assembly.GetReferencedAssemblies())
 								{
-									compilerParameters.ReferencedAssemblies.Add(assembly.Location);
-									assemblies.Add(assembly.Location);
+									Assembly refAssembly = AppDomain.CurrentDomain.Load(refAssemblyName);
+									if (!assemblies.Contains(refAssembly.Location) &&
+										!assemblies.Contains(Path.GetFileName(refAssembly.Location)))
+									{
+										compilerParameters.ReferencedAssemblies.Add(refAssembly.Location);
+										assemblies.Add(refAssembly.Location);
+									}
 								}
 							}
 						}
@@ -159,6 +166,40 @@ namespace SharpTAL
 
 				return compilerResults.CompiledAssembly;
 			}
+		}
+
+		private static Type GetGenericType(Type type)
+		{
+			Type baseType = type;
+			while (baseType != typeof(object))
+			{
+				if (baseType.IsGenericType)
+					return baseType;
+				baseType = baseType.BaseType;
+			}
+			return null;
+		}
+
+		private static List<Type> GetGenericTypeArguments(Type type)
+		{
+			List<Type> genericTypeArguments = new List<Type>();
+			Type genericType = GetGenericType(type);
+			if (genericType != null)
+			{
+				foreach (var innerType in genericType.GetGenericArguments())
+				{
+					if (innerType.IsGenericType && !genericTypeArguments.Contains(innerType))
+					{
+						genericTypeArguments.AddRange(GetGenericTypeArguments(innerType));
+					}
+					genericTypeArguments.Add(innerType);
+				}
+			}
+			else
+			{
+				genericTypeArguments.Add(type);
+			}
+			return genericTypeArguments;
 		}
 	}
 }
