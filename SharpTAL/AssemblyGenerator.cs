@@ -83,7 +83,7 @@ namespace SharpTAL
 					Type type = ti.GlobalsTypes[varName];
 					if (type != null)
 					{
-						List<Type> genericTypeArguments = new List<Type>(GetGenericTypeArguments(type));
+						List<Type> genericTypeArguments = new List<Type>(Utils.GetGenericTypeArguments(type));
 						List<Assembly> asmList = genericTypeArguments.Select(t => t.Assembly).ToList();
 						foreach (var assembly in asmList)
 						{
@@ -166,40 +166,6 @@ namespace SharpTAL
 
 				return compilerResults.CompiledAssembly;
 			}
-		}
-
-		private static Type GetGenericType(Type type)
-		{
-			Type baseType = type;
-			while (baseType != typeof(object))
-			{
-				if (baseType.IsGenericType)
-					return baseType;
-				baseType = baseType.BaseType;
-			}
-			return null;
-		}
-
-		private static List<Type> GetGenericTypeArguments(Type type)
-		{
-			List<Type> genericTypeArguments = new List<Type>();
-			Type genericType = GetGenericType(type);
-			if (genericType != null)
-			{
-				foreach (var innerType in genericType.GetGenericArguments())
-				{
-					if (innerType.IsGenericType && !genericTypeArguments.Contains(innerType))
-					{
-						genericTypeArguments.AddRange(GetGenericTypeArguments(innerType));
-					}
-					genericTypeArguments.Add(innerType);
-				}
-			}
-			else
-			{
-				genericTypeArguments.Add(type);
-			}
-			return genericTypeArguments;
 		}
 	}
 }

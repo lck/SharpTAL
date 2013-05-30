@@ -27,6 +27,7 @@
 //
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
@@ -161,27 +162,16 @@ namespace SharpTAL
 			{
 				if (type.IsGenericType)
 				{
-					typeName = string.Format("{0}.{1}<", type.Namespace, type.Name.Split('`')[0]);
-					Type[] typeArguments = type.GetGenericArguments();
-					bool first = true;
-					foreach (Type typeArg in typeArguments)
+					if (type.ContainsGenericParameters)
 					{
-						if (!typeArg.IsGenericParameter)
-						{
-							if (!first)
-							{
-								typeName = string.Format("{0}, ", typeName);
-							}
-							first = false;
-							string typeArgTypeName = GetFullTypeName(typeArg, names);
-							typeName = string.Format("{0}{1}", typeName, typeArgTypeName);
-						}
-						else
-						{
-							// TODO: ???
-						}
+						throw new InvalidOperationException("Generic types with generic parameters are not supported in globals dictionary.");
 					}
-					typeName = string.Format("{0}>", typeName);
+					Type genericType = type.GetGenericTypeDefinition();
+					string genericTypeName = string.Format("{0}.{1}",
+						genericType.Namespace, genericType.Name.Substring(0, genericType.Name.IndexOf('`')));
+					string genericArgs = string.Join(",",
+						type.GetGenericArguments().Select(typeArg => GetFullTypeName(typeArg, names)).ToArray());
+					typeName = string.Format("{0}<{1}>", genericTypeName, genericArgs);
 				}
 				else
 				{
@@ -190,6 +180,40 @@ namespace SharpTAL
 				names[type.FullName] = typeName;
 			}
 			return typeName;
+		}
+
+		public static Type GetGenericType(Type type)
+		{
+			Type baseType = type;
+			while (baseType != typeof(object))
+			{
+				if (baseType.IsGenericType)
+					return baseType;
+				baseType = baseType.BaseType;
+			}
+			return null;
+		}
+
+		public static List<Type> GetGenericTypeArguments(Type type)
+		{
+			List<Type> genericTypeArguments = new List<Type>();
+			Type genericType = GetGenericType(type);
+			if (genericType != null)
+			{
+				foreach (var innerType in genericType.GetGenericArguments())
+				{
+					if (innerType.IsGenericType && !genericTypeArguments.Contains(innerType))
+					{
+						genericTypeArguments.AddRange(GetGenericTypeArguments(innerType));
+					}
+					genericTypeArguments.Add(innerType);
+				}
+			}
+			else
+			{
+				genericTypeArguments.Add(type);
+			}
+			return genericTypeArguments;
 		}
 	}
 }

@@ -92,10 +92,14 @@ namespace SharpTAL.Demo
             };
 			var xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml(Resources.Macros);
-			globals.Add("xmlDocs", new XmlDocumentList { xmlDoc });
-			globals.Add("xmlDocsDict", new XmlDocumentDictRecursive
+			globals.Add("xmlDocsList", new XmlDocumentList { xmlDoc });
+			globals.Add("xmlDocsDictRecursive", new XmlDocumentDictRecursive
 				{
 					{ xmlDoc, new XmlDocumentDictRecursive { { xmlDoc, null } } }
+				});
+			globals.Add("xmlDocsDictListTuple", new Dictionary<XmlDocument, List<Tuple<string, string>>>
+				{
+					{ xmlDoc, new List<Tuple<string, string>> { new Tuple<string, string>("a", "b") } }
 				});
 
 			// Globals types

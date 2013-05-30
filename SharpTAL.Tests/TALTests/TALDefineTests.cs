@@ -46,10 +46,14 @@
 			globals.Add("three", new List<object>() { 1, "Two", 3 });
 			var xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml("<nodes><node>1</node><node>2</node><node>3</node></nodes>");
-			globals.Add("xmlDocs", new XmlDocumentList { xmlDoc });
-			globals.Add("xmlDocsDict", new XmlDocumentDictRecursive
+			globals.Add("xmlDocsList", new XmlDocumentList { xmlDoc });
+			globals.Add("xmlDocsDictRecursive", new XmlDocumentDictRecursive
 				{
 					{ xmlDoc, new XmlDocumentDictRecursive { { xmlDoc, null } } }
+				});
+			globals.Add("xmlDocsDictListTuple", new Dictionary<XmlDocument, List<Tuple<string, string>>>
+				{
+					{ xmlDoc, new List<Tuple<string, string>> { new Tuple<string, string>("a", "b") } }
 				});
 		}
 
