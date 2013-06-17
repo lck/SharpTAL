@@ -17,7 +17,7 @@ Contents
 Authors
 =======
 
-``SharpTAL`` is made by `Roman Lacko <mailto:sharptal.rlacko@gmail.com>`_ .
+``SharpTAL`` is made by `Roman Lacko <mailto:backup.rlacko@gmail.com>`_ .
 
 Indices and Tables
 ==================
