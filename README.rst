@@ -46,6 +46,8 @@ The basic TAL (Template Attribute Language) example
 The ${...} notation is short-hand for text insertion. The C# expression inside the braces is evaluated and the result included in the output.
 By default, the string is escaped before insertion. To avoid this, use the *structure:* prefix::
 
+.. code-block:: html
+
     <div>${structure: ...}</div>
 
 The macro language (known as the macro expansion language or METAL) provides a means of filling in portions of a generic template.
