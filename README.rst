@@ -26,7 +26,7 @@ Introduction
 
 Using a set of simple language constructs, you control the document flow, element repetition and text replacement.
 
-The basic TAL (Template Attribute Language) example
+The basic TAL (Template Attribute Language) example:
 
 .. code-block:: html
 
@@ -44,7 +44,7 @@ The basic TAL (Template Attribute Language) example
     </html>
 
 The ${...} notation is short-hand for text insertion. The C# expression inside the braces is evaluated and the result included in the output.
-By default, the string is escaped before insertion. To avoid this, use the *structure:* prefix::
+By default, the string is escaped before insertion. To avoid this, use the *structure:* prefix:
 
 .. code-block:: html
 
@@ -52,7 +52,7 @@ By default, the string is escaped before insertion. To avoid this, use the *stru
 
 The macro language (known as the macro expansion language or METAL) provides a means of filling in portions of a generic template.
 
-The macro template (saved as main.html file)
+The macro template (saved as main.html file):
 
 .. code-block:: html
 
@@ -68,7 +68,7 @@ The macro template (saved as main.html file)
       </body>
     </html>
 
-Template that imports and uses the macro, filling in the “content” slot
+Template that imports and uses the macro, filling in the “content” slot:
 
 .. code-block:: html
 
