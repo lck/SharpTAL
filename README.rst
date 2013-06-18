@@ -2,20 +2,15 @@ SharpTAL
 ========
 
 SharpTAL is an HTML/XML template engine for .NET platform,
-with minimal dependencies that you can use in any application
-running on .NET 4.0.
+that you can use in any application running on .NET 4.0.
 
 The template engine compiles HTML/XML templates into .NET assemblies.
 
 It contains implementation of the ZPT language (Zope Page Templates).
 ZPT is a system which can generate HTML, XML or plain text output.
-ZPT is formed by the TAL (Template Attribute Language), TALES (TAL Expression Syntax) and the METAL (Macro Expansion TAL).
-
-First versions of SharpTAL were based on `SimpleTAL <http://www.owlfish.com/software/simpleTAL/>`_,
-the python implementation of page templates.
-
-Latest version of SharpTAL implements the template parser ported from another excellent template engine,
-the `Chameleon project <http://github.com/malthe/chameleon/>`_.
+ZPT is formed by the `TAL (Template Attribute Language) <https://sharptal.readthedocs.org/en/latest/tal.html>`_,
+`TALES (TAL Expression Syntax) <https://sharptal.readthedocs.org/en/latest/tales.html>`_
+and the `METAL (Macro Expansion TAL) <https://sharptal.readthedocs.org/en/latest/metal.html>`_.
 
 Getting the code
 ----------------
@@ -31,7 +26,9 @@ Introduction
 
 Using a set of simple language constructs, you control the document flow, element repetition and text replacement.
 
-The basic TAL (Template Attribute Language) example::
+The basic TAL (Template Attribute Language) example
+
+.. code-block:: html
 
     <html>
       <body>
@@ -53,7 +50,9 @@ By default, the string is escaped before insertion. To avoid this, use the *stru
 
 The macro language (known as the macro expansion language or METAL) provides a means of filling in portions of a generic template.
 
-The macro template (saved as main.html file)::
+The macro template (saved as main.html file)
+
+.. code-block:: html
 
     <html metal:define-macro="main">
       <head>
@@ -67,7 +66,9 @@ The macro template (saved as main.html file)::
       </body>
     </html>
 
-Template that imports and uses the macro, filling in the “content” slot::
+Template that imports and uses the macro, filling in the “content” slot
+
+.. code-block:: html
 
     <metal:tag metal:import="main.html" use-macro='macros["main"]'>
       <p metal:fill-slot="content">${structure: document.body}<p/>
@@ -75,48 +76,37 @@ Template that imports and uses the macro, filling in the “content” slot::
 
 In the example, the statement *metal:import* is used to import a template from the file system using a path relative to the calling template.
 
-Here’s a complete sample code that shows how easy the library is to use::
+Here’s a sample code that shows how easy the library is to use:
 
-    using System;
-    using System.Collections.Generic;
+.. code-block:: csharp
 
-    using SharpTAL;
-
-    namespace Demo
+    var globals = new Dictionary<string, object>
     {
-        public class User
-        {
-            public string Name { get; set; }
-        }
+        { "movies", new List<string> { "alien", "star wars", "star trek" } }
+    };
 
-        class Sample
-        {
-            static void Main(string[] args)
-            {
-                // Objects used in template
-                User user = new User { Name = "Roman" };
+    const string body = @"<!DOCTYPE html>
+    <html tal:define='textInfo new System.Globalization.CultureInfo(""en-US"", false).TextInfo'>
+        Favorite sci-fi movies:
+        <div tal:repeat='movie movies'>${textInfo.ToTitleCase(movie)}</div>
+    </html>";
 
-                // The template with template body
-                Template template = new Template(@"<html><h1>Hello ${user.Name}!</h1></html>");
+    var template = new Template(body);
 
-                // Dictionary of globals variables used in template
-                Dictionary<string, object> globals = new Dictionary<string, object> { { "user", user } };
-                
-                // Render the template. In this moment the assembly will be generated and cached
-                // Result: <html><h1>Hello Roman!</h1></html>
-                Console.WriteLine(template.Render(globals));
+    var result = template.Render(globals);
 
-                // Set the user name to another value
-                user.Name = "Peter";
+    Console.WriteLine(result);
 
-                // A second call to Render() will use cached assembly
-                // Result: <html><h1>Hello Peter!</h1></html>
-                Console.WriteLine(template.Render(globals));
+Here's the console output:
 
-                Console.ReadKey();
-            }
-        }
-    }
+.. code-block:: html
+
+    <!DOCTYPE html>
+    <html>
+       Favorite sci-fi movies:
+       <div>Alien</div><div>Star Wars</div><div>Star Trek</div>
+    </html>
+
 
 License
 -------
