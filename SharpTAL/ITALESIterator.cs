@@ -1,10 +1,10 @@
 ﻿//
-// ITALESIterator.cs
+// ITalesIterator.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -28,10 +28,6 @@
 
 namespace SharpTAL
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-
 	/// <summary>
 	/// TAL Iterator provided by TALES
 	///
@@ -44,10 +40,10 @@ namespace SharpTAL
 	/// The results are undefined of calling any of the methods except
 	/// 'length' before the first iteration.
 	/// </summary>
-	public interface ITALESIterator
+	public interface ITalesIterator
 	{
 		void next(bool isLast);
-		
+
 		int length { get; }
 
 		int index { get; }

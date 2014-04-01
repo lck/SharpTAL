@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,19 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+
+using SharpTAL.TemplateParser;
+using SharpTAL.TemplateProgram.Commands;
+
 namespace SharpTAL.TemplateProgram
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-	using System.Collections.Specialized;
-	using System.IO;
-	using System.Reflection;
-	using System.Text.RegularExpressions;
-
-	using SharpTAL.TemplateParser;
-	using SharpTAL.TemplateProgram.Commands;
-
 	/// <summary>
 	/// ZPT (Zope Page Template) parser and Template program generator
 	/// </summary>
@@ -54,7 +52,7 @@ namespace SharpTAL.TemplateProgram
 				UseMacroCommandLocation = -1;
 			}
 
-			public Tag Tag { get; set; }
+			public Tag Tag { get; private set; }
 			public int? EndTagCommandLocation { get; set; }
 			public List<Action> PopFunctionList { get; set; }
 			public int UseMacroCommandLocation { get; set; }
@@ -63,88 +61,87 @@ namespace SharpTAL.TemplateProgram
 		/// <summary>
 		/// Contains compiled template programs. The key is the template body hash.
 		/// </summary>
-		static Dictionary<string, Program> templateProgramCache = new Dictionary<string, Program>();
-		static object templateProgramCacheLock = new object();
+		private static readonly Dictionary<string, Program> TemplateProgramCache = new Dictionary<string, Program>();
+		private static readonly object TemplateProgramCacheLock = new object();
 
-		const string MAIN_PROGRAM_NAMESPACE = "template";
-		const string MAIN_TEMPLATE_PATH = "<main>";
-		const string DEFAULT_VALUE_EXPRESSION = "default";
+		private const string MainProgramNamespace = "template";
+		private const string MainTemplatePath = "<main>";
+		private const string DefaultValueExpression = "default";
 
-		static readonly Regex TAL_DEFINE_REGEX = new Regex("(?<!;);(?!;)");
-		static readonly Regex TAL_ATTRIBUTES_REGEX = new Regex("(?<!;);(?!;)");
-		static readonly Regex METAL_DEFINE_PARAM_REGEX = new Regex("(?<!;);(?!;)");
-		static readonly Regex METAL_FILL_PARAM_REGEX = new Regex("(?<!;);(?!;)");
-		static readonly Regex METAL_IMPORT_REGEX = new Regex("(?<!;);(?!;)");
-		static readonly Regex METAL_NAME_REGEX = new Regex("[a-zA-Z_][a-zA-Z0-9_]*");
+		private static readonly Regex TalDefineRegex = new Regex("(?<!;);(?!;)");
+		private static readonly Regex TalAttributesRegex = new Regex("(?<!;);(?!;)");
+		private static readonly Regex MetalDefineParamRegex = new Regex("(?<!;);(?!;)");
+		private static readonly Regex MetalFillParamRegex = new Regex("(?<!;);(?!;)");
+		private static readonly Regex MetalImportRegex = new Regex("(?<!;);(?!;)");
+		private static readonly Regex MetalNameRegex = new Regex("[a-zA-Z_][a-zA-Z0-9_]*");
 
-		static readonly Dictionary<string, string> defaultNamespaces = new Dictionary<string, string> {
-				{ "xmlns", Namespaces.XMLNS_NS },
-				{ "xml", Namespaces.XML_NS },
-				{ "meta", Namespaces.META_NS},
-				{ "tal", Namespaces.TAL_NS },
-				{ "metal", Namespaces.METAL_NS } };
+		private static readonly Dictionary<string, string> DefaultNamespaces = new Dictionary<string, string> {
+				{ "xmlns", Namespaces.XmlnsNs },
+				{ "xml", Namespaces.XmlNs },
+				{ "meta", Namespaces.MetaNs},
+				{ "tal", Namespaces.TalNs },
+				{ "metal", Namespaces.MetalNs } };
 
-		Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>> talAttributeHandlers;
+		private readonly Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>> _talAttributeHandlers;
 
 		// Per-template compiling state (including inline templates compiling)
-		string meta_namespace_prefix;
-		List<string> meta_namespace_prefix_stack;
-		Dictionary<string, CommandType> meta_attribute_map;
-		string tal_namespace_prefix;
-		List<string> tal_namespace_prefix_stack;
-		Dictionary<string, CommandType> tal_attribute_map;
-		string metal_namespace_prefix;
-		List<string> metal_namespace_prefix_stack;
-		Dictionary<string, CommandType> metal_attribute_map;
+		private string _metaNamespacePrefix;
+		private List<string> _metaNamespacePrefixStack;
+		private Dictionary<string, CommandType> _metaAttributeMap;
+		private string _talNamespacePrefix;
+		private List<string> _talNamespacePrefixStack;
+		private Dictionary<string, CommandType> _talAttributeMap;
+		private string _metalNamespacePrefix;
+		private List<string> _metalNamespacePrefixStack;
+		private Dictionary<string, CommandType> _metalAttributeMap;
 
 		// Per-template-body compiling state
-		HashSet<string> importMacroCommands = null;
-		List<ICommand> programCommands;
-		Dictionary<int, int> endTagsCommandMap;
-		Dictionary<string, IProgram> macroMap;
-		List<TagStackItem> tagStack;
-		int endTagCommandLocationCounter;
-		Tag currentStartTag;
+		private HashSet<string> _importMacroCommands;
+		private List<ICommand> _programCommands;
+		private Dictionary<int, int> _endTagsCommandMap;
+		private Dictionary<string, IProgram> _macroMap;
+		private List<TagStackItem> _tagStack;
+		private int _endTagCommandLocationCounter;
+		private Tag _currentStartTag;
 
 		public ProgramGenerator()
 		{
-			talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>>();
-			talAttributeHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
-			talAttributeHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
-			talAttributeHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
-			talAttributeHandlers.Add(CommandType.METAL_FILL_SLOT, Handle_METAL_FILL_SLOT);
-			talAttributeHandlers.Add(CommandType.METAL_DEFINE_MACRO, Handle_METAL_DEFINE_MACRO);
-			talAttributeHandlers.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
-			talAttributeHandlers.Add(CommandType.METAL_FILL_PARAM, Handle_METAL_FILL_PARAM);
-			talAttributeHandlers.Add(CommandType.METAL_IMPORT, Handle_METAL_IMPORT);
-			talAttributeHandlers.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
-			talAttributeHandlers.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
-			talAttributeHandlers.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
-			talAttributeHandlers.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
-			talAttributeHandlers.Add(CommandType.TAL_REPLACE, Handle_TAL_REPLACE);
-			talAttributeHandlers.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
-			talAttributeHandlers.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
+			_talAttributeHandlers = new Dictionary<CommandType, Func<List<TagAttribute>, List<Command>>>
+			{
+				{CommandType.MetaInterpolation, Handle_META_INTERPOLATION},
+				{CommandType.MetalUseMacro, Handle_METAL_USE_MACRO},
+				{CommandType.MetalDefineSlot, Handle_METAL_DEFINE_SLOT},
+				{CommandType.MetalFillSlot, Handle_METAL_FILL_SLOT},
+				{CommandType.MetalDefineMacro, Handle_METAL_DEFINE_MACRO},
+				{CommandType.MetalDefineParam, Handle_METAL_DEFINE_PARAM},
+				{CommandType.MetalFillParam, Handle_METAL_FILL_PARAM},
+				{CommandType.MetalImport, Handle_METAL_IMPORT},
+				{CommandType.TalDefine, Handle_TAL_DEFINE},
+				{CommandType.TalCondition, Handle_TAL_CONDITION},
+				{CommandType.TalRepeat, Handle_TAL_REPEAT},
+				{CommandType.TalContent, Handle_TAL_CONTENT},
+				{CommandType.TalReplace, Handle_TAL_REPLACE},
+				{CommandType.TalAttributes, Handle_TAL_ATTRIBUTES},
+				{CommandType.TalOmittag, Handle_TAL_OMITTAG}
+			};
 		}
 
 		public void GenerateTemplateProgram(ref TemplateInfo ti)
 		{
 			// Init per-template compiling state (including inline templates compiling)
 			// Default namespaces
-			SetMETAPrefix("meta");
-			meta_namespace_prefix_stack = new List<string>();
-			meta_namespace_prefix_stack.Add("meta");
-			SetTALPrefix("tal");
-			tal_namespace_prefix_stack = new List<string>();
-			tal_namespace_prefix_stack.Add("tal");
-			SetMETALPrefix("metal");
-			metal_namespace_prefix_stack = new List<string>();
-			metal_namespace_prefix_stack.Add("metal");
+			SetMetaPrefix("meta");
+			_metaNamespacePrefixStack = new List<string> { "meta" };
+			SetTalPrefix("tal");
+			_talNamespacePrefixStack = new List<string> { "tal" };
+			SetMetalPrefix("metal");
+			_metalNamespacePrefixStack = new List<string> { "metal" };
 
 			ti.ImportedPrograms = new Dictionary<string, Program>();
 			ti.ImportedNamespaces = new Dictionary<string, HashSet<string>>();
 
 			// Compile main template body
-			ti.MainProgram = GetTemplateProgram(ti.TemplateBody, MAIN_TEMPLATE_PATH);
+			ti.MainProgram = GetTemplateProgram(ti.TemplateBody, MainTemplatePath);
 
 			// Compile imported templates
 			CompileImportedTemplates(ti, ti.MainProgram);
@@ -155,11 +152,9 @@ namespace SharpTAL.TemplateProgram
 			foreach (string importCmd in program.ImportMacroCommands)
 			{
 				// Parse import command
-				string programNamespace = importCmd.Split(new char[] { ':' }, 2)[0];
+				string programNamespace = importCmd.Split(new[] { ':' }, 2)[0];
 
-				// TODO: Cesta k sablone, ktoru chcem importnut je relativna voci sablone, v ktorej volam import, takze tu musim vyskaldat absolutnu cestu
-				//	ak je sablona vytvorena zo stringu, treba takej sablone nastavit cestu podla assembly kde v ktorej sa vytvorila, ...alebo ?
-				string templatePath = importCmd.Split(new char[] { ':' }, 2)[1];
+				string templatePath = importCmd.Split(new[] { ':' }, 2)[1];
 
 				Program importedProgram;
 				ti.ImportedPrograms.TryGetValue(templatePath, out importedProgram);
@@ -178,7 +173,7 @@ namespace SharpTAL.TemplateProgram
 
 				// Save info about Imported program by namespace and path
 				if (!ti.ImportedNamespaces.ContainsKey(programNamespace))
-					ti.ImportedNamespaces.Add(programNamespace, new HashSet<string>() { templatePath });
+					ti.ImportedNamespaces.Add(programNamespace, new HashSet<string> { templatePath });
 				else if (!ti.ImportedNamespaces[programNamespace].Contains(templatePath))
 					ti.ImportedNamespaces[programNamespace].Add(templatePath);
 			}
@@ -187,38 +182,36 @@ namespace SharpTAL.TemplateProgram
 		Program GetTemplateProgram(string templateBody, string templatePath)
 		{
 			// Init per-template-body compiling state
-			importMacroCommands = new HashSet<string>();
+			_importMacroCommands = new HashSet<string>();
 
 			// Try to get template program from cache
 			string bodyHash = Utils.ComputeHash(templateBody);
-			Program program = null;
-			lock (templateProgramCacheLock)
+			Program program;
+			lock (TemplateProgramCacheLock)
 			{
-				if (templateProgramCache.TryGetValue(bodyHash, out program))
+				if (TemplateProgramCache.TryGetValue(bodyHash, out program))
 					return program;
 			}
-			if (program != null)
-				return program;
 
 			// Per-template-body compiling state
-			programCommands = new List<ICommand>();
-			endTagsCommandMap = new Dictionary<int, int>();
-			macroMap = new Dictionary<string, IProgram>();
-			tagStack = new List<TagStackItem>();
-			endTagCommandLocationCounter = 0;
-			currentStartTag = null;
+			_programCommands = new List<ICommand>();
+			_endTagsCommandMap = new Dictionary<int, int>();
+			_macroMap = new Dictionary<string, IProgram>();
+			_tagStack = new List<TagStackItem>();
+			_endTagCommandLocationCounter = 0;
+			_currentStartTag = null;
 
 			// Parse template
-			ParseTemplate(templateBody, templatePath, defaultNamespaces);
+			ParseTemplate(templateBody, templatePath, DefaultNamespaces);
 
 			// Create template program instance
-			program = new Program(templateBody, templatePath, bodyHash, programCommands, endTagsCommandMap, macroMap, importMacroCommands);
+			program = new Program(templateBody, templatePath, bodyHash, _programCommands, _endTagsCommandMap, _macroMap, _importMacroCommands);
 
 			// Put template program to cache
-			lock (templateProgramCacheLock)
+			lock (TemplateProgramCacheLock)
 			{
-				if (!templateProgramCache.ContainsKey(bodyHash))
-					templateProgramCache.Add(bodyHash, program);
+				if (!TemplateProgramCache.ContainsKey(bodyHash))
+					TemplateProgramCache.Add(bodyHash, program);
 			}
 
 			return program;
@@ -229,76 +222,76 @@ namespace SharpTAL.TemplateProgram
 		protected override void HandleStartTag(Tag tag)
 		{
 			// Note down the tag we are handling, it will be used for error handling during compilation
-			currentStartTag = new Tag(tag);
+			_currentStartTag = new Tag(tag);
 
 			// Expand HTML entity references in attribute values
-			foreach (TagAttribute att in currentStartTag.Attributes)
+			foreach (TagAttribute att in _currentStartTag.Attributes)
 				att.Value = att.UnescapedValue;
 
 			// Sorted dictionary of TAL attributes grouped by attribute type. The dictionary is sorted by the attribute type.
 			SortedDictionary<CommandType, List<TagAttribute>> talAttributesDictionary = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
 			// Clean HTML/XML attributes
-			List<TagAttribute> cleanAttributes = new List<TagAttribute>();
-			List<Action> popFunctionList = new List<Action>();
-			bool isTALElementNameSpace = false;
+			var cleanAttributes = new List<TagAttribute>();
+			var popFunctionList = new List<Action>();
+			bool isTalElementNameSpace = false;
 			string prefixToAdd = "";
 
 			// Resolve TAL/METAL namespace declarations from attributes
-			foreach (var att in currentStartTag.Attributes)
+			foreach (var att in _currentStartTag.Attributes)
 			{
 				if (att.Name.Length > 4 && att.Name.Substring(0, 5) == "xmlns")
 				{
 					// We have a namespace declaration.
 					string prefix = att.Name.Length > 5 ? att.Name.Substring(6) : "";
-					if (att.Value == Namespaces.META_NS)
+					if (att.Value == Namespaces.MetaNs)
 					{
 						// It's a META namespace declaration
 						if (prefix.Length > 0)
 						{
-							meta_namespace_prefix_stack.Add(meta_namespace_prefix);
-							SetMETAPrefix(prefix);
+							_metaNamespacePrefixStack.Add(_metaNamespacePrefix);
+							SetMetaPrefix(prefix);
 							// We want this function called when the scope ends
-							popFunctionList.Add(PopMETANamespace);
+							popFunctionList.Add(PopMetaNamespace);
 						}
 						else
 						{
 							// We don't allow META/METAL/TAL to be declared as a default
-							string msg = "Can not use META name space by default, a prefix must be provided.";
-							throw new TemplateParseException(currentStartTag, msg);
+							const string msg = "Can not use META name space by default, a prefix must be provided.";
+							throw new TemplateParseException(_currentStartTag, msg);
 						}
 					}
-					else if (att.Value == Namespaces.METAL_NS)
+					else if (att.Value == Namespaces.MetalNs)
 					{
 						// It's a METAL namespace declaration
 						if (prefix.Length > 0)
 						{
-							metal_namespace_prefix_stack.Add(metal_namespace_prefix);
-							SetMETALPrefix(prefix);
+							_metalNamespacePrefixStack.Add(_metalNamespacePrefix);
+							SetMetalPrefix(prefix);
 							// We want this function called when the scope ends
-							popFunctionList.Add(PopMETALNamespace);
+							popFunctionList.Add(PopMetalNamespace);
 						}
 						else
 						{
 							// We don't allow META/METAL/TAL to be declared as a default
-							string msg = "Can not use METAL name space by default, a prefix must be provided.";
-							throw new TemplateParseException(currentStartTag, msg);
+							const string msg = "Can not use METAL name space by default, a prefix must be provided.";
+							throw new TemplateParseException(_currentStartTag, msg);
 						}
 					}
-					else if (att.Value == Namespaces.TAL_NS)
+					else if (att.Value == Namespaces.TalNs)
 					{
 						// TAL this time
 						if (prefix.Length > 0)
 						{
-							tal_namespace_prefix_stack.Add(tal_namespace_prefix);
-							SetTALPrefix(prefix);
+							_talNamespacePrefixStack.Add(_talNamespacePrefix);
+							SetTalPrefix(prefix);
 							// We want this function called when the scope ends
-							popFunctionList.Add(PopTALNamespace);
+							popFunctionList.Add(PopTalNamespace);
 						}
 						else
 						{
 							// We don't allow META/METAL/TAL to be declared as a default
-							string msg = "Can not use TAL name space by default, a prefix must be provided.";
-							throw new TemplateParseException(currentStartTag, msg);
+							const string msg = "Can not use TAL name space by default, a prefix must be provided.";
+							throw new TemplateParseException(_currentStartTag, msg);
 						}
 					}
 					else
@@ -314,44 +307,44 @@ namespace SharpTAL.TemplateProgram
 			{
 				// We have a namespace involved, so let's look to see if its one of ours
 				string _namespace = tag.Name.Substring(0, tag.Name.IndexOf(':'));
-				if (_namespace == metal_namespace_prefix)
+				if (_namespace == _metalNamespacePrefix)
 				{
-					isTALElementNameSpace = true;
-					prefixToAdd = metal_namespace_prefix + ":";
+					isTalElementNameSpace = true;
+					prefixToAdd = _metalNamespacePrefix + ":";
 				}
-				else if (_namespace == tal_namespace_prefix)
+				else if (_namespace == _talNamespacePrefix)
 				{
-					isTALElementNameSpace = true;
-					prefixToAdd = tal_namespace_prefix + ":";
+					isTalElementNameSpace = true;
+					prefixToAdd = _talNamespacePrefix + ":";
 				}
-				if (isTALElementNameSpace)
+				if (isTalElementNameSpace)
 				{
 					// We should treat this an implicit omit-tag
 					// Will go to default, i.e. yes
-					talAttributesDictionary[CommandType.TAL_OMITTAG] = new List<TagAttribute>() { new TALTagAttribute { Value = "", CommandType = CommandType.TAL_OMITTAG } };
+					talAttributesDictionary[CommandType.TalOmittag] = new List<TagAttribute> { new TalTagAttribute { Value = "", CommandType = CommandType.TalOmittag } };
 				}
 			}
 
 			// Look for TAL/METAL attributes
-			foreach (var att in currentStartTag.Attributes)
+			foreach (var att in _currentStartTag.Attributes)
 			{
 				if (att.Name.Length > 4 && att.Name.Substring(0, 5) == "xmlns")
 					// We have a namespace declaration.
 					continue;
 
-				string talCommandName = "";
+				string talCommandName;
 
-				if (isTALElementNameSpace && att.Name.IndexOf(':') < 0)
+				if (isTalElementNameSpace && att.Name.IndexOf(':') < 0)
 					// This means that the attribute name does not have a namespace, so use the prefix for this tag.
 					talCommandName = prefixToAdd + att.Name;
 				else
 					talCommandName = att.Name;
 
-				if (tal_attribute_map.ContainsKey(talCommandName))
+				if (_talAttributeMap.ContainsKey(talCommandName))
 				{
 					// It's a TAL attribute
-					CommandType cmdType = tal_attribute_map[talCommandName];
-					if (cmdType == CommandType.TAL_OMITTAG && isTALElementNameSpace)
+					CommandType cmdType = _talAttributeMap[talCommandName];
+					if (cmdType == CommandType.TalOmittag && isTalElementNameSpace)
 					{
 						// Supressing omit-tag command present on TAL or METAL element
 					}
@@ -359,24 +352,24 @@ namespace SharpTAL.TemplateProgram
 					{
 						if (!talAttributesDictionary.ContainsKey(cmdType))
 							talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
-						talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+						talAttributesDictionary[cmdType].Add(new TalTagAttribute(att) { CommandType = cmdType });
 					}
 				}
-				else if (metal_attribute_map.ContainsKey(talCommandName))
+				else if (_metalAttributeMap.ContainsKey(talCommandName))
 				{
 					// It's a METAL attribute
-					CommandType cmdType = metal_attribute_map[talCommandName];
+					CommandType cmdType = _metalAttributeMap[talCommandName];
 					if (!talAttributesDictionary.ContainsKey(cmdType))
 						talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
-					talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+					talAttributesDictionary[cmdType].Add(new TalTagAttribute(att) { CommandType = cmdType });
 				}
-				else if (meta_attribute_map.ContainsKey(talCommandName))
+				else if (_metaAttributeMap.ContainsKey(talCommandName))
 				{
 					// It's a META attribute
-					CommandType cmdType = meta_attribute_map[talCommandName];
+					CommandType cmdType = _metaAttributeMap[talCommandName];
 					if (!talAttributesDictionary.ContainsKey(cmdType))
 						talAttributesDictionary.Add(cmdType, new List<TagAttribute>());
-					talAttributesDictionary[cmdType].Add(new TALTagAttribute(att) { CommandType = cmdType });
+					talAttributesDictionary[cmdType].Add(new TalTagAttribute(att) { CommandType = cmdType });
 				}
 				else
 				{
@@ -389,19 +382,19 @@ namespace SharpTAL.TemplateProgram
 			{
 				// Insert normal HTML/XML attributes BEFORE other TAL/METAL TAL_ATTRIBUTES commands
 				// as fake TAL_ATTRIBUTES commands to enable string expressions interpolation on normal HTML/XML attributes.
-				if (!talAttributesDictionary.ContainsKey(CommandType.TAL_ATTRIBUTES))
-					talAttributesDictionary.Add(CommandType.TAL_ATTRIBUTES, new List<TagAttribute>());
-				talAttributesDictionary[CommandType.TAL_ATTRIBUTES].InsertRange(0, cleanAttributes);
+				if (!talAttributesDictionary.ContainsKey(CommandType.TalAttributes))
+					talAttributesDictionary.Add(CommandType.TalAttributes, new List<TagAttribute>());
+				talAttributesDictionary[CommandType.TalAttributes].InsertRange(0, cleanAttributes);
 			}
 
 			// Create a symbol for the end of the tag - we don't know what the offset is yet
-			endTagCommandLocationCounter++;
+			_endTagCommandLocationCounter++;
 
 			TagStackItem tagStackItem = null;
 			foreach (CommandType cmdType in talAttributesDictionary.Keys)
 			{
 				// Resolve program commands from tal attributes
-				var commands = talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]);
+				var commands = _talAttributeHandlers[cmdType](talAttributesDictionary[cmdType]);
 				if (commands != null)
 					foreach (Command cmd in commands)
 					{
@@ -411,16 +404,16 @@ namespace SharpTAL.TemplateProgram
 							tagStackItem = AddTagToStack(tag, cleanAttributes);
 
 							// Save metal:use-macro command position
-							if (cmd.CommandType == CommandType.METAL_USE_MACRO)
-								tagStackItem.UseMacroCommandLocation = programCommands.Count + 1;
+							if (cmd.CommandType == CommandType.MetalUseMacro)
+								tagStackItem.UseMacroCommandLocation = _programCommands.Count + 1;
 
 							// Append command to create new scope for the tag
-							Command startScopeCmd = new CMDStartScope(currentStartTag);
-							programCommands.Add(startScopeCmd);
+							Command startScopeCmd = new CmdStartScope(_currentStartTag);
+							_programCommands.Add(startScopeCmd);
 						}
 
 						// All others just append
-						programCommands.Add(cmd);
+						_programCommands.Add(cmd);
 					}
 			}
 
@@ -429,23 +422,23 @@ namespace SharpTAL.TemplateProgram
 				tagStackItem = AddTagToStack(tag, cleanAttributes);
 
 				// Append command to create new scope for the tag
-				programCommands.Add(new CMDStartScope(currentStartTag));
+				_programCommands.Add(new CmdStartScope(_currentStartTag));
 			}
 
 			// Save pop functions and end tag command location for this tag
 			tagStackItem.PopFunctionList = popFunctionList;
-			tagStackItem.EndTagCommandLocation = endTagCommandLocationCounter;
+			tagStackItem.EndTagCommandLocation = _endTagCommandLocationCounter;
 
 			// Finally, append start tag command
-			programCommands.Add(new CMDStartTag(currentStartTag));
+			_programCommands.Add(new CmdStartTag(_currentStartTag));
 		}
 
 		protected override void HandleEndTag(Tag tag)
 		{
-			while (tagStack.Count > 0)
+			while (_tagStack.Count > 0)
 			{
-				TagStackItem tagStackItem = tagStack.Last();
-				tagStack.RemoveAt(tagStack.Count - 1);
+				TagStackItem tagStackItem = _tagStack.Last();
+				_tagStack.RemoveAt(_tagStack.Count - 1);
 
 				Tag oldTag = tagStackItem.Tag;
 
@@ -465,36 +458,31 @@ namespace SharpTAL.TemplateProgram
 					{
 						// We have a command (it's a TAL tag)
 						// Note where the end tag command location should point (i.e. the next command)
-						endTagsCommandMap[(int)endTagCommandLocation] = programCommands.Count;
+						_endTagsCommandMap[(int)endTagCommandLocation] = _programCommands.Count;
 
 						// We need a "close scope and tag" command
-						programCommands.Add(new CMDEntTagEndScope(tag));
+						_programCommands.Add(new CmdEntTagEndScope(tag));
 						return;
 					}
-					else if (!tag.Singleton)
+					if (!tag.Singleton)
 					{
 						// We are popping off an un-interesting tag, just add the close as text
-						programCommands.Add(new CMDOutput(tag, "</" + tag.Name + ">"));
+						_programCommands.Add(new CmdOutput(tag, "</" + tag.Name + ">"));
 						return;
 					}
-					else
-					{
-						// We are suppressing the output of this tag, so just return
-						return;
-					}
+					// We are suppressing the output of this tag, so just return
+					return;
 				}
-				else
-				{
-					// We have a different tag, which means something like <br> which never closes is in 
-					// between us and the real tag.
 
-					// If the tag that we did pop off has a command though it means un-balanced TAL tags!
-					if (endTagCommandLocation != null)
-					{
-						// ERROR
-						string msg = string.Format("TAL/METAL Elements must be balanced - found close tag {0} expecting {1}", tag.Name, oldTag.Name);
-						throw new TemplateParseException(oldTag, msg);
-					}
+				// We have a different tag, which means something like <br> which never closes is in 
+				// between us and the real tag.
+
+				// If the tag that we did pop off has a command though it means un-balanced TAL tags!
+				if (endTagCommandLocation != null)
+				{
+					// ERROR
+					string msg = string.Format("TAL/METAL Elements must be balanced - found close tag {0} expecting {1}", tag.Name, oldTag.Name);
+					throw new TemplateParseException(oldTag, msg);
 				}
 			}
 			throw new TemplateParseException(null,
@@ -504,7 +492,7 @@ namespace SharpTAL.TemplateProgram
 		protected override void HandleData(string data)
 		{
 			// Just add it as an output
-			programCommands.Add(new CMDOutput(currentStartTag, data));
+			_programCommands.Add(new CmdOutput(_currentStartTag, data));
 		}
 
 		protected override void HandleComment(string data)
@@ -519,14 +507,14 @@ namespace SharpTAL.TemplateProgram
 
 		protected override void HandleProcessingInstruction(Element e)
 		{
-			var name = ((Token)e.StartTagTokens["name"]).ToString();
-			var text = ((Token)e.StartTagTokens["text"]).ToString();
+			var name = (e.StartTagTokens["name"]).ToString();
+			var text = (e.StartTagTokens["text"]).ToString();
 			if (name != "csharp")
 			{
 				HandleData(string.Format("<?{0}{1}?>", name, text));
 				return;
 			}
-			programCommands.Add(new CMDCodeBlock(name, text));
+			_programCommands.Add(new CmdCodeBlock(name, text));
 		}
 
 		protected override void HandleDefault(string data)
@@ -542,63 +530,69 @@ namespace SharpTAL.TemplateProgram
 			tag.Attributes = cleanAttributes;
 
 			// Add tag to tag stack
-			TagStackItem tagStackItem = new TagStackItem(tag);
-			tagStack.Add(tagStackItem);
+			var tagStackItem = new TagStackItem(tag);
+			_tagStack.Add(tagStackItem);
 			return tagStackItem;
 		}
 
-		void SetMETAPrefix(string prefix)
+		void SetMetaPrefix(string prefix)
 		{
-			meta_namespace_prefix = prefix;
-			meta_attribute_map = new Dictionary<string, CommandType>(); ;
-			meta_attribute_map.Add(string.Format("{0}:interpolation", prefix), CommandType.META_INTERPOLATION);
+			_metaNamespacePrefix = prefix;
+			_metaAttributeMap = new Dictionary<string, CommandType>
+			{
+				{string.Format("{0}:interpolation", prefix), CommandType.MetaInterpolation}
+			};
 		}
 
-		void SetTALPrefix(string prefix)
+		void SetTalPrefix(string prefix)
 		{
-			tal_namespace_prefix = prefix;
-			tal_attribute_map = new Dictionary<string, CommandType>(); ;
-			tal_attribute_map.Add(string.Format("{0}:attributes", prefix), CommandType.TAL_ATTRIBUTES);
-			tal_attribute_map.Add(string.Format("{0}:content", prefix), CommandType.TAL_CONTENT);
-			tal_attribute_map.Add(string.Format("{0}:define", prefix), CommandType.TAL_DEFINE);
-			tal_attribute_map.Add(string.Format("{0}:replace", prefix), CommandType.TAL_REPLACE);
-			tal_attribute_map.Add(string.Format("{0}:omit-tag", prefix), CommandType.TAL_OMITTAG);
-			tal_attribute_map.Add(string.Format("{0}:condition", prefix), CommandType.TAL_CONDITION);
-			tal_attribute_map.Add(string.Format("{0}:repeat", prefix), CommandType.TAL_REPEAT);
+			_talNamespacePrefix = prefix;
+			_talAttributeMap = new Dictionary<string, CommandType>
+			{
+				{string.Format("{0}:attributes", prefix), CommandType.TalAttributes},
+				{string.Format("{0}:content", prefix), CommandType.TalContent},
+				{string.Format("{0}:define", prefix), CommandType.TalDefine},
+				{string.Format("{0}:replace", prefix), CommandType.TalReplace},
+				{string.Format("{0}:omit-tag", prefix), CommandType.TalOmittag},
+				{string.Format("{0}:condition", prefix), CommandType.TalCondition},
+				{string.Format("{0}:repeat", prefix), CommandType.TalRepeat}
+			};
 		}
 
-		void SetMETALPrefix(string prefix)
+		void SetMetalPrefix(string prefix)
 		{
-			metal_namespace_prefix = prefix;
-			metal_attribute_map = new Dictionary<string, CommandType>(); ;
-			metal_attribute_map.Add(string.Format("{0}:define-macro", prefix), CommandType.METAL_DEFINE_MACRO);
-			metal_attribute_map.Add(string.Format("{0}:use-macro", prefix), CommandType.METAL_USE_MACRO);
-			metal_attribute_map.Add(string.Format("{0}:define-slot", prefix), CommandType.METAL_DEFINE_SLOT);
-			metal_attribute_map.Add(string.Format("{0}:fill-slot", prefix), CommandType.METAL_FILL_SLOT);
-			metal_attribute_map.Add(string.Format("{0}:define-param", prefix), CommandType.METAL_DEFINE_PARAM);
-			metal_attribute_map.Add(string.Format("{0}:fill-param", prefix), CommandType.METAL_FILL_PARAM);
-			metal_attribute_map.Add(string.Format("{0}:import", prefix), CommandType.METAL_IMPORT);
+			_metalNamespacePrefix = prefix;
+			_metalAttributeMap = new Dictionary<string, CommandType>
+			{
+				{string.Format("{0}:define-macro", prefix), CommandType.MetalDefineMacro},
+				{string.Format("{0}:use-macro", prefix), CommandType.MetalUseMacro},
+				{string.Format("{0}:define-slot", prefix), CommandType.MetalDefineSlot},
+				{string.Format("{0}:fill-slot", prefix), CommandType.MetalFillSlot},
+				{string.Format("{0}:define-param", prefix), CommandType.MetalDefineParam},
+				{string.Format("{0}:fill-param", prefix), CommandType.MetalFillParam},
+				{string.Format("{0}:import", prefix), CommandType.MetalImport}
+			};
 		}
 
-		void PopMETANamespace()
+		void PopMetaNamespace()
 		{
-			string newPrefix = meta_namespace_prefix_stack[meta_namespace_prefix_stack.Count - 1];
-			meta_namespace_prefix_stack.RemoveAt(meta_namespace_prefix_stack.Count - 1);
-			SetMETAPrefix(newPrefix);
+			string newPrefix = _metaNamespacePrefixStack[_metaNamespacePrefixStack.Count - 1];
+			_metaNamespacePrefixStack.RemoveAt(_metaNamespacePrefixStack.Count - 1);
+			SetMetaPrefix(newPrefix);
 		}
 
-		void PopTALNamespace()
+		void PopTalNamespace()
 		{
-			string newPrefix = tal_namespace_prefix_stack[tal_namespace_prefix_stack.Count - 1];
-			tal_namespace_prefix_stack.RemoveAt(tal_namespace_prefix_stack.Count - 1);
-			SetTALPrefix(newPrefix);
+			string newPrefix = _talNamespacePrefixStack[_talNamespacePrefixStack.Count - 1];
+			_talNamespacePrefixStack.RemoveAt(_talNamespacePrefixStack.Count - 1);
+			SetTalPrefix(newPrefix);
 		}
 
-		void PopMETALNamespace()
+		void PopMetalNamespace()
 		{
-			string newPrefix = metal_namespace_prefix_stack[metal_namespace_prefix_stack.Count - 1];
-			metal_namespace_prefix_stack.RemoveAt(metal_namespace_prefix_stack.Count - 1);
-			SetMETALPrefix(newPrefix);
+			string newPrefix = _metalNamespacePrefixStack[_metalNamespacePrefixStack.Count - 1];
+			_metalNamespacePrefixStack.RemoveAt(_metalNamespacePrefixStack.Count - 1);
+			SetMetalPrefix(newPrefix);
 		}
 
 		List<Command> Handle_META_INTERPOLATION(List<TagAttribute> attributes)
@@ -609,17 +603,17 @@ namespace SharpTAL.TemplateProgram
 			if (string.IsNullOrEmpty(argument))
 			{
 				// No argument passed
-				string msg = "No argument passed! meta:interpolation command must be of the form: meta:interpolation='true|false'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed! meta:interpolation command must be of the form: meta:interpolation='true|false'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			if (argument == "true")
-				return new List<Command> { new METAInterpolation(currentStartTag, true) };
+				return new List<Command> { new MetaInterpolation(_currentStartTag, true) };
 
 			if (argument == "false")
-				return new List<Command> { new METAInterpolation(currentStartTag, false) };
+				return new List<Command> { new MetaInterpolation(_currentStartTag, false) };
 
-			throw new TemplateParseException(currentStartTag,
+			throw new TemplateParseException(_currentStartTag,
 				string.Format("Invalid command value '{0}'. Command meta:interpolation must be of the form: meta:interpolation='true|false'", argument));
 		}
 
@@ -631,25 +625,25 @@ namespace SharpTAL.TemplateProgram
 			if (string.IsNullOrEmpty(macroName))
 			{
 				// No argument passed
-				string msg = "No argument passed!  define-macro commands must be of the form: 'define-macro: name'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  define-macro commands must be of the form: 'define-macro: name'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// Check that the name of the macro is valid
-			if (METAL_NAME_REGEX.Match(macroName).Length != macroName.Length)
+			if (MetalNameRegex.Match(macroName).Length != macroName.Length)
 			{
 				string msg = string.Format("Macro name {0} is invalid.", macroName);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
-			if (macroMap.ContainsKey(macroName))
+			if (_macroMap.ContainsKey(macroName))
 			{
 				string msg = string.Format("Macro name {0} is already defined!", macroName);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// The macro starts at the next command.
-			IProgram macro = new ProgramMacro(macroName, programCommands.Count, endTagCommandLocationCounter);
-			macroMap.Add(macroName, macro);
+			IProgram macro = new ProgramMacro(macroName, _programCommands.Count, _endTagCommandLocationCounter);
+			_macroMap.Add(macroName, macro);
 
 			return null;
 		}
@@ -663,11 +657,11 @@ namespace SharpTAL.TemplateProgram
 			if (argument.Length == 0)
 			{
 				// No argument passed
-				string msg = "No argument passed!  use-macro commands must be of the form: 'use-macro: path'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  use-macro commands must be of the form: 'use-macro: path'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
-			return new List<Command> { new METALUseMacro(currentStartTag, argument, new Dictionary<string, ProgramSlot>(), new List<METALDefineParam>()) };
+			return new List<Command> { new MetalUseMacro(_currentStartTag, argument, new Dictionary<string, ProgramSlot>(), new List<MetalDefineParam>()) };
 		}
 
 		List<Command> Handle_METAL_DEFINE_SLOT(List<TagAttribute> attributes)
@@ -680,18 +674,18 @@ namespace SharpTAL.TemplateProgram
 			if (slotName.Length == 0)
 			{
 				// No argument passed
-				string msg = "No argument passed!  define-slot commands must be of the form: 'name'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  define-slot commands must be of the form: 'name'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// Check that the name of the slot is valid
-			if (METAL_NAME_REGEX.Match(slotName).Length != slotName.Length)
+			if (MetalNameRegex.Match(slotName).Length != slotName.Length)
 			{
 				string msg = string.Format("Slot name {0} is invalid.", slotName);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
-			return new List<Command> { new METALDefineSlot(currentStartTag, slotName) };
+			return new List<Command> { new MetalDefineSlot(_currentStartTag, slotName) };
 		}
 
 		List<Command> Handle_METAL_FILL_SLOT(List<TagAttribute> attributes)
@@ -702,23 +696,23 @@ namespace SharpTAL.TemplateProgram
 			if (slotName.Length == 0)
 			{
 				// No argument passed
-				string msg = "No argument passed!  fill-slot commands must be of the form: 'fill-slot: name'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  fill-slot commands must be of the form: 'fill-slot: name'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// Check that the name of the slot is valid
-			if (METAL_NAME_REGEX.Match(slotName).Length != slotName.Length)
+			if (MetalNameRegex.Match(slotName).Length != slotName.Length)
 			{
 				string msg = string.Format("Slot name {0} is invalid.", slotName);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// Determine what use-macro statement this belongs to by working through the list backwards
 			int ourMacroLocation = -1;
-			int location = tagStack.Count - 1;
+			int location = _tagStack.Count - 1;
 			while (ourMacroLocation == -1)
 			{
-				int macroLocation = tagStack[location].UseMacroCommandLocation;
+				int macroLocation = _tagStack[location].UseMacroCommandLocation;
 				if (macroLocation != -1)
 				{
 					ourMacroLocation = macroLocation;
@@ -729,20 +723,20 @@ namespace SharpTAL.TemplateProgram
 					if (location < 0)
 					{
 						string msg = string.Format("metal:fill-slot must be used inside a metal:use-macro call");
-						throw new TemplateParseException(currentStartTag, msg);
+						throw new TemplateParseException(_currentStartTag, msg);
 					}
 				}
 			}
 
 			// Update the metal:use-macro command slot definitions
-			METALUseMacro useMacroCmd = (METALUseMacro)programCommands[ourMacroLocation];
+			var useMacroCmd = (MetalUseMacro)_programCommands[ourMacroLocation];
 			if (useMacroCmd.Slots.ContainsKey(slotName))
 			{
 				string msg = string.Format("Slot {0} has already been filled!", slotName);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
-			int slotCommandStart = programCommands.Count; // The slot starts at the next command.
-			ProgramSlot slot = new ProgramSlot(slotName, slotCommandStart, endTagCommandLocationCounter);
+			int slotCommandStart = _programCommands.Count; // The slot starts at the next command.
+			var slot = new ProgramSlot(slotName, slotCommandStart, _endTagCommandLocationCounter);
 			useMacroCmd.Slots.Add(slotName, slot);
 
 			return null;
@@ -753,31 +747,29 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			List<Command> commands = new List<Command>();
+			var commands = new List<Command>();
 
 			// We only want to match semi-colons that are not escaped
-			foreach (string defStmt in METAL_DEFINE_PARAM_REGEX.Split(argument))
+			foreach (string defStmt in MetalDefineParamRegex.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
 
 				// Break each defineStmt into pieces "[local|global] varName expression"
-				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
-				string varType;
-				string varName;
+				var stmtBits = new List<string>(defineStmt.Split(new[] { ' ' }));
 				string expression = "";
 				if (stmtBits.Count < 2)
 				{
 					// Error, badly formed define-param command
 					string msg = string.Format("Badly formed define-param command '{0}'.  Define commands must be of the form: 'varType varName [expression][;varType varName [expression]]'", argument);
-					throw new TemplateParseException(currentStartTag, msg);
+					throw new TemplateParseException(_currentStartTag, msg);
 				}
-				varType = stmtBits[0];
-				varName = stmtBits[1];
-                if (stmtBits.Count >= 3)
-                    expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
+				string varType = stmtBits[0];
+				string varName = stmtBits[1];
+				if (stmtBits.Count >= 3)
+					expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 
-				commands.Add(new METALDefineParam(currentStartTag, varType, varName, expression));
+				commands.Add(new MetalDefineParam(_currentStartTag, varType, varName, expression));
 			}
 
 			return commands;
@@ -788,36 +780,34 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			List<METALDefineParam> fillParamsCommands = new List<METALDefineParam>();
+			var fillParamsCommands = new List<MetalDefineParam>();
 
 			// We only want to match semi-colons that are not escaped
-			foreach (string defStmt in METAL_FILL_PARAM_REGEX.Split(argument))
+			foreach (string defStmt in MetalFillParamRegex.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
 
 				// Break each defineStmt into pieces "[local|global] varName expression"
-				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
-				string varName;
-				string expression;
+				var stmtBits = new List<string>(defineStmt.Split(new[] { ' ' }));
 				if (stmtBits.Count < 2)
 				{
 					// Error, badly formed fill-param command
 					string msg = string.Format("Badly formed fill-param command '{0}'.  Fill-param commands must be of the form: 'varName expression[;varName expression]'", argument);
-					throw new TemplateParseException(currentStartTag, msg);
+					throw new TemplateParseException(_currentStartTag, msg);
 				}
-				varName = stmtBits[0];
-				expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
+				string varName = stmtBits[0];
+				string expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
 
-				fillParamsCommands.Add(new METALDefineParam(currentStartTag, "", varName, expression));
+				fillParamsCommands.Add(new MetalDefineParam(_currentStartTag, "", varName, expression));
 			}
 
 			// Determine what metal:use-macro statement this belongs to by working through the list backwards
 			int ourMacroLocation = -1;
-			int stackIndex = tagStack.Count - 1;
+			int stackIndex = _tagStack.Count - 1;
 			while (ourMacroLocation == -1)
 			{
-				int macroLocation = tagStack[stackIndex].UseMacroCommandLocation;
+				int macroLocation = _tagStack[stackIndex].UseMacroCommandLocation;
 				if (macroLocation != -1)
 				{
 					ourMacroLocation = macroLocation;
@@ -828,13 +818,13 @@ namespace SharpTAL.TemplateProgram
 					if (stackIndex < 0)
 					{
 						string msg = string.Format("metal:fill-param must be used inside a metal:use-macro call");
-						throw new TemplateParseException(currentStartTag, msg);
+						throw new TemplateParseException(_currentStartTag, msg);
 					}
 				}
 			}
 
 			// Update the metal:use-macro command param definitions
-			METALUseMacro useMacroCmd = (METALUseMacro)programCommands[ourMacroLocation];
+			var useMacroCmd = (MetalUseMacro)_programCommands[ourMacroLocation];
 			useMacroCmd.Parameters.AddRange(fillParamsCommands);
 
 			return null;
@@ -852,17 +842,17 @@ namespace SharpTAL.TemplateProgram
 			if (string.IsNullOrEmpty(argument))
 			{
 				// No argument passed
-				string msg = "No argument passed! Metal import commands must be of the form: 'path'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed! Metal import commands must be of the form: 'path'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			// Break up the list of imports first
 			// We only want to match semi-colons that are not escaped
-			foreach (string impStmt in METAL_IMPORT_REGEX.Split(argument))
+			foreach (string impStmt in MetalImportRegex.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string importStmt = impStmt.Trim().Replace(";;", ";");
-				string importNs = MAIN_PROGRAM_NAMESPACE;
+				string importNs = MainProgramNamespace;
 				string importPath;
 				// Check if import path is legal rooted path
 				if (Path.IsPathRooted(importStmt) && File.Exists(importStmt))
@@ -873,12 +863,12 @@ namespace SharpTAL.TemplateProgram
 				else
 				{
 					// Break each importStmt into pieces "importNs:importPath"
-					List<string> stmtBits = new List<string>(importStmt.Split(new char[] { ':' }, 2));
+					var stmtBits = new List<string>(importStmt.Split(new[] { ':' }, 2));
 					if (stmtBits.Count < 1)
 					{
 						// Error, badly formed import command
 						string msg = string.Format("Badly formed import command '{0}'.  Import commands must be of the form: '(importNs:)importPath[;(importNs:)importPath]'", argument);
-						throw new TemplateParseException(currentStartTag, msg);
+						throw new TemplateParseException(_currentStartTag, msg);
 					}
 					// We have namespace
 					if (stmtBits.Count > 1)
@@ -900,15 +890,15 @@ namespace SharpTAL.TemplateProgram
 					{
 						// Invalid path
 						string msg = "Path specified by import argument does not exists: " + importPath;
-						throw new TemplateParseException(currentStartTag, msg);
+						throw new TemplateParseException(_currentStartTag, msg);
 					}
 				}
 
 				// Save import command to cache
 				string importCmd = string.Format("{0}:{1}", importNs, importPath);
-				if (!importMacroCommands.Contains(importCmd))
+				if (!_importMacroCommands.Contains(importCmd))
 				{
-					importMacroCommands.Add(importCmd);
+					_importMacroCommands.Add(importCmd);
 				}
 			}
 
@@ -920,43 +910,43 @@ namespace SharpTAL.TemplateProgram
 			// Join attributes for commands that support multiple attributes
 			string argument = string.Join(";", attributes.Select(a => a.Value).ToArray());
 
-			List<Command> commands = new List<Command>();
+			var commands = new List<Command>();
 
 			// We only want to match semi-colons that are not escaped
-			foreach (string defStmt in TAL_DEFINE_REGEX.Split(argument))
+			foreach (string defStmt in TalDefineRegex.Split(argument))
 			{
 				//  remove any leading space and un-escape any semi-colons
 				string defineStmt = defStmt.TrimStart().Replace(";;", ";");
 
 				// Break each defineStmt into pieces "[local|global] varName expression"
-				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
-				TALDefine.VariableScope varScope = TALDefine.VariableScope.Local;
+				var stmtBits = new List<string>(defineStmt.Split(new[] { ' ' }));
+				var varScope = TalDefine.VariableScope.Local;
 				string varName;
 				string expression;
 				if (stmtBits.Count < 2)
 				{
 					// Error, badly formed define command
 					string msg = string.Format("Badly formed define command '{0}'.  Define commands must be of the form: '[local|nonlocal|global] varName expression[;[local|nonlocal|global] varName expression]'", argument);
-					throw new TemplateParseException(currentStartTag, msg);
+					throw new TemplateParseException(_currentStartTag, msg);
 				}
 				// Assume to start with that >2 elements means a local|global flag
 				if (stmtBits.Count > 2)
 				{
 					if (stmtBits[0] == "global")
 					{
-						varScope = TALDefine.VariableScope.Global;
+						varScope = TalDefine.VariableScope.Global;
 						varName = stmtBits[1];
 						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 					}
 					else if (stmtBits[0] == "local")
 					{
-						varScope = TALDefine.VariableScope.Local;
+						varScope = TalDefine.VariableScope.Local;
 						varName = stmtBits[1];
 						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 					}
 					else if (stmtBits[0] == "nonlocal")
 					{
-						varScope = TALDefine.VariableScope.NonLocal;
+						varScope = TalDefine.VariableScope.NonLocal;
 						varName = stmtBits[1];
 						expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 					}
@@ -974,7 +964,7 @@ namespace SharpTAL.TemplateProgram
 					expression = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray());
 				}
 
-				commands.Add(new TALDefine(currentStartTag, varScope, varName, expression));
+				commands.Add(new TalDefine(_currentStartTag, varScope, varName, expression));
 			}
 
 			return commands;
@@ -989,11 +979,11 @@ namespace SharpTAL.TemplateProgram
 			if (expression.Length == 0)
 			{
 				// No argument passed
-				string msg = "No argument passed!  condition commands must be of the form: 'path'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  condition commands must be of the form: 'path'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
-			return new List<Command> { new TALCondition(currentStartTag, expression) };
+			return new List<Command> { new TalCondition(_currentStartTag, expression) };
 		}
 
 		List<Command> Handle_TAL_REPEAT(List<TagAttribute> attributes)
@@ -1001,20 +991,20 @@ namespace SharpTAL.TemplateProgram
 			// Only last declared attribute is valid
 			string argument = attributes[attributes.Count - 1].Value;
 
-			List<string> attProps = new List<string>(argument.Split(new char[] { ' ' }));
+			var attProps = new List<string>(argument.Split(new[] { ' ' }));
 
 			// Sanity check
 			if (attProps.Count < 2)
 			{
 				// Error, badly formed repeat command
 				string msg = string.Format("Badly formed repeat command '{0}'.  Repeat commands must be of the form: 'variable path'", argument);
-				throw new TemplateParseException(currentStartTag, msg);
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			string varName = attProps[0];
 			string expression = string.Join(" ", attProps.GetRange(1, attProps.Count - 1).ToArray());
 
-			return new List<Command> { new TALRepeat(currentStartTag, varName, expression) };
+			return new List<Command> { new TalRepeat(_currentStartTag, varName, expression) };
 		}
 
 		List<Command> Handle_TAL_CONTENT(List<TagAttribute> attributes)
@@ -1033,14 +1023,14 @@ namespace SharpTAL.TemplateProgram
 			if (argument.Length == 0)
 			{
 				// No argument passed
-				string msg = "No argument passed!  content/replace commands must be of the form: 'path'";
-				throw new TemplateParseException(currentStartTag, msg);
+				const string msg = "No argument passed!  content/replace commands must be of the form: 'path'";
+				throw new TemplateParseException(_currentStartTag, msg);
 			}
 
 			bool structure = false;
-			string expression = "";
+			string expression;
 
-			string[] attProps = argument.Split(new char[] { ' ' });
+			string[] attProps = argument.Split(new[] { ' ' });
 			if (attProps.Length > 1)
 			{
 				if (attProps[0] == "structure")
@@ -1050,7 +1040,6 @@ namespace SharpTAL.TemplateProgram
 				}
 				else if (attProps[1] == "text")
 				{
-					structure = false;
 					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
 				}
 				else
@@ -1063,9 +1052,9 @@ namespace SharpTAL.TemplateProgram
 				expression = argument;
 
 			if (replace)
-				return new List<Command> { new TALReplace(currentStartTag, expression, structure) };
-			else
-				return new List<Command> { new TALContent(currentStartTag, expression, structure) };
+				return new List<Command> { new TalReplace(_currentStartTag, expression, structure) };
+
+			return new List<Command> { new TalContent(_currentStartTag, expression, structure) };
 		}
 
 		List<Command> Handle_TAL_REPLACE(List<TagAttribute> attributes)
@@ -1077,30 +1066,31 @@ namespace SharpTAL.TemplateProgram
 		{
 			// Compile tal:attributes into attribute command
 
-			List<TagAttribute> attrList = new List<TagAttribute>();
+			var attrList = new List<TagAttribute>();
 			foreach (TagAttribute att in attributes)
 			{
-				if (att is TALTagAttribute)
+				var attribute = att as TalTagAttribute;
+				if (attribute != null)
 				{
 					// This is TAL command attribute
 					// Break up the attribute args to list of TALTagAttributes
 					// We only want to match semi-colons that are not escaped
-					foreach (string attStmt in TAL_ATTRIBUTES_REGEX.Split(att.Value))
+					foreach (string attStmt in TalAttributesRegex.Split(attribute.Value))
 					{
 						// Remove any leading space and un-escape any semi-colons
 						// Break each attributeStmt into name and expression
-						List<string> stmtBits = new List<string>(attStmt.TrimStart().Replace(";;", ";").Split(' '));
+						var stmtBits = new List<string>(attStmt.TrimStart().Replace(";;", ";").Split(' '));
 						if (stmtBits.Count < 2)
 						{
 							// Error, badly formed attributes command
 							string msg = string.Format(
 								"Badly formed attributes command '{0}'. Attributes commands must be of the form: 'name expression[;name expression]'",
-								att.Value);
-							throw new TemplateParseException(currentStartTag, msg);
+								attribute.Value);
+							throw new TemplateParseException(_currentStartTag, msg);
 						}
-						TALTagAttribute talTagAttr = new TALTagAttribute
+						var talTagAttr = new TalTagAttribute
 						{
-							CommandType = ((TALTagAttribute)att).CommandType,
+							CommandType = attribute.CommandType,
 							Name = stmtBits[0].Trim(' ', '\r', '\n'),
 							Value = string.Join(" ", stmtBits.GetRange(1, stmtBits.Count - 1).ToArray()),
 							Eq = @"=",
@@ -1117,7 +1107,7 @@ namespace SharpTAL.TemplateProgram
 				}
 			}
 
-			TALAttributes cmd = new TALAttributes(currentStartTag, attrList);
+			var cmd = new TalAttributes(_currentStartTag, attrList);
 
 			return new List<Command> { cmd };
 		}
@@ -1130,13 +1120,13 @@ namespace SharpTAL.TemplateProgram
 			// Compile a condition command.
 			// If no argument is given then set the path to default
 
-			string expression = "";
+			string expression;
 			if (argument.Length == 0)
-				expression = DEFAULT_VALUE_EXPRESSION;
+				expression = DefaultValueExpression;
 			else
 				expression = argument;
 
-			return new List<Command> { new TALOmitTag(currentStartTag, expression) };
+			return new List<Command> { new TalOmitTag(_currentStartTag, expression) };
 		}
 	}
 }

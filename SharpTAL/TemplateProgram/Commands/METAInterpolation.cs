@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,18 +26,16 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using SharpTAL.TemplateParser;
+
 namespace SharpTAL.TemplateProgram.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using SharpTAL.TemplateParser;
-
-	public class METAInterpolation : Command
+	public class MetaInterpolation : Command
 	{
 		public bool Enabled { get; protected set; }
 
-		public METAInterpolation(Tag tag, bool enabled)
-			: base(tag, CommandType.META_INTERPOLATION)
+		public MetaInterpolation(Tag tag, bool enabled)
+			: base(tag, CommandType.MetaInterpolation)
 		{
 			Enabled = enabled;
 		}

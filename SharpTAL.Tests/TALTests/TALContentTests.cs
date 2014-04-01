@@ -1,16 +1,11 @@
-﻿namespace SharpTAL.SharpTALTests.TALTests
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+using NUnit.Framework;
+
+namespace SharpTAL.Tests.TALTests
 {
-	using System;
-	using System.Text;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.IO;
-	using System.Reflection;
-
-	using NUnit.Framework;
-
-	using SharpTAL.TemplateCache;
-
 	public static class Extensions
 	{
 		public static string ToUpperExtension(this string s)
@@ -20,7 +15,7 @@
 	}
 
 	[TestFixture]
-	public class TALContentTests
+	public class TalContentTests
 	{
 		public static Dictionary<string, object> globals;
 
@@ -55,7 +50,7 @@
 		{
 			List<Assembly> referencedAssemblies = new List<Assembly>()
 			{
-				typeof(TALContentTests).Assembly
+				typeof(TalContentTests).Assembly
 			};
 			string actual = new Template(template, referencedAssemblies).Render(globals);
 			actual = actual.Replace("{", "{{").Replace("}", "}}");

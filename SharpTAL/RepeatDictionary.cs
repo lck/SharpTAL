@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,109 +26,108 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections;
+using System.Collections.Generic;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-
 	/// <summary>
 	/// Repeat dictionary implementation
 	/// </summary>
 	public class RepeatDictionary : IRepeatDictionary
 	{
-		IDictionary<string, ITALESIterator> dict;
+		private readonly IDictionary<string, ITalesIterator> _dict;
 
 		public RepeatDictionary()
 		{
-			dict = new Dictionary<string, ITALESIterator>();
+			_dict = new Dictionary<string, ITalesIterator>();
 		}
 
-		public void Add(string key, ITALESIterator value)
+		public void Add(string key, ITalesIterator value)
 		{
-			dict.Add(key, value);
+			_dict.Add(key, value);
 		}
 
 		public bool ContainsKey(string key)
 		{
-			return dict.ContainsKey(key);
+			return _dict.ContainsKey(key);
 		}
 
 		public ICollection<string> Keys
 		{
-			get { return dict.Keys; }
+			get { return _dict.Keys; }
 		}
 
 		public bool Remove(string key)
 		{
-			return dict.Remove(key);
+			return _dict.Remove(key);
 		}
 
-		public bool TryGetValue(string key, out ITALESIterator value)
+		public bool TryGetValue(string key, out ITalesIterator value)
 		{
-			return dict.TryGetValue(key, out value);
+			return _dict.TryGetValue(key, out value);
 		}
 
-		public ICollection<ITALESIterator> Values
+		public ICollection<ITalesIterator> Values
 		{
-			get { return dict.Values; }
+			get { return _dict.Values; }
 		}
 
-		public ITALESIterator this[string key]
+		public ITalesIterator this[string key]
 		{
 			get
 			{
-				return dict[key];
+				return _dict[key];
 			}
 			set
 			{
-				dict[key] = value;
+				_dict[key] = value;
 			}
 		}
 
-		public void Add(KeyValuePair<string, ITALESIterator> item)
+		public void Add(KeyValuePair<string, ITalesIterator> item)
 		{
-			dict.Add(item);
+			_dict.Add(item);
 		}
 
 		public void Clear()
 		{
-			dict.Clear();
+			_dict.Clear();
 		}
 
-		public bool Contains(KeyValuePair<string, ITALESIterator> item)
+		public bool Contains(KeyValuePair<string, ITalesIterator> item)
 		{
-			return dict.Contains(item);
+			return _dict.Contains(item);
 		}
 
-		public void CopyTo(KeyValuePair<string, ITALESIterator>[] array, int arrayIndex)
+		public void CopyTo(KeyValuePair<string, ITalesIterator>[] array, int arrayIndex)
 		{
-			dict.CopyTo(array, arrayIndex);
+			_dict.CopyTo(array, arrayIndex);
 		}
 
 		public int Count
 		{
-			get { return dict.Count; }
+			get { return _dict.Count; }
 		}
 
 		public bool IsReadOnly
 		{
-			get { return dict.IsReadOnly; }
+			get { return _dict.IsReadOnly; }
 		}
 
-		public bool Remove(KeyValuePair<string, ITALESIterator> item)
+		public bool Remove(KeyValuePair<string, ITalesIterator> item)
 		{
-			return dict.Remove(item);
+			return _dict.Remove(item);
 		}
 
-		public IEnumerator<KeyValuePair<string, ITALESIterator>> GetEnumerator()
+		public IEnumerator<KeyValuePair<string, ITalesIterator>> GetEnumerator()
 		{
-			return dict.GetEnumerator();
+			return _dict.GetEnumerator();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return ((IEnumerable)dict).GetEnumerator();
+			return ((IEnumerable)_dict).GetEnumerator();
 		}
 	}
 }

@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,25 +26,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using System.IO;
+using System.Globalization;
+
+using SharpTAL.TemplateCache;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.Reflection;
-	using System.IO;
-	using System.Globalization;
-	using SharpTAL.TemplateProgram;
-	using SharpTAL.TemplateCache;
-
 	public class Template : ITemplate
 	{
-		private static ITemplateCache defaultTemplateCache = new MemoryTemplateCache();
-		protected string body;
-		protected Dictionary<string, Type> globalsTypes;
-		protected List<Assembly> referencedAssemblies;
-		protected ITemplateCache templateCache;
-		protected TemplateInfo templateInfo;
+		private static readonly ITemplateCache DefaultTemplateCache = new MemoryTemplateCache();
+		private readonly string _body;
+		private Dictionary<string, Type> _globalsTypes;
+		private readonly List<Assembly> _referencedAssemblies;
+		private ITemplateCache _templateCache;
+		private TemplateInfo _templateInfo;
 
 		public CultureInfo Culture { get; set; }
 
@@ -52,12 +52,12 @@ namespace SharpTAL
 		{
 			set
 			{
-				templateInfo = null;
-				templateCache = value;
+				_templateInfo = null;
+				_templateCache = value;
 			}
 			get
 			{
-				return templateCache ?? defaultTemplateCache;
+				return _templateCache ?? DefaultTemplateCache;
 			}
 		}
 
@@ -78,11 +78,11 @@ namespace SharpTAL
 
 		public Template(string body, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies)
 		{
-			this.body = body;
-			this.globalsTypes = globalsTypes;
-			this.referencedAssemblies = referencedAssemblies;
-			this.templateCache = defaultTemplateCache;
-			this.Culture = CultureInfo.InvariantCulture;
+			_body = body;
+			_globalsTypes = globalsTypes;
+			_referencedAssemblies = referencedAssemblies;
+			_templateCache = DefaultTemplateCache;
+			Culture = CultureInfo.InvariantCulture;
 		}
 
 		#region ITemplate interface implementation
@@ -94,17 +94,15 @@ namespace SharpTAL
 
 		public string Render(Dictionary<string, object> globals)
 		{
-			using (MemoryStream outputStream = new MemoryStream())
+			using (var outputStream = new MemoryStream())
+			using (var outputWriter = new StreamWriter(outputStream))
 			{
-				using (StreamWriter outputWriter = new StreamWriter(outputStream))
-				{
-					Render(outputWriter, globals);
-					outputWriter.Flush();
-					outputStream.Position = 0;
-					StreamReader reader = new StreamReader(outputStream);
-					string result = reader.ReadToEnd();
-					return result;
-				}
+				Render(outputWriter, globals);
+				outputWriter.Flush();
+				outputStream.Position = 0;
+				var reader = new StreamReader(outputStream);
+				string result = reader.ReadToEnd();
+				return result;
 			}
 		}
 
@@ -125,17 +123,15 @@ namespace SharpTAL
 				if (!context.ContainsKey("repeat"))
 					context["repeat"] = new RepeatDictionary();
 
-				// TODO: add template "macros" to context
-
-				templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, context });
+				_templateInfo.RenderMethod.Invoke(null, new object[] { outputWriter, context });
 			}
 			catch (TargetInvocationException ex)
 			{
-				throw new RenderTemplateException(templateInfo, ex.InnerException.Message, ex.InnerException);
+				throw new RenderTemplateException(_templateInfo, ex.InnerException.Message, ex.InnerException);
 			}
 			catch (Exception ex)
 			{
-				throw new RenderTemplateException(templateInfo, ex.Message, ex);
+				throw new RenderTemplateException(_templateInfo, ex.Message, ex);
 			}
 		}
 
@@ -148,8 +144,8 @@ namespace SharpTAL
 
 		protected virtual string FormatResult(object result)
 		{
-			IFormattable formattable = result as IFormattable;
-			string resultValue = "";
+			var formattable = result as IFormattable;
+			string resultValue;
 			if (formattable != null)
 				resultValue = formattable.ToString("", Culture);
 			else
@@ -195,28 +191,28 @@ namespace SharpTAL
 		void CompileCheck(Dictionary<string, object> globals)
 		{
 			// First time compile
-			if (templateInfo == null)
+			if (_templateInfo == null)
 			{
 				Recompile(globals);
 				return;
 			}
 
-			if (globals == null && globalsTypes == null)
+			if (globals == null && _globalsTypes == null)
 				return;
 
 			// Compare globals and globalsTypes
-			if ((globals == null && globalsTypes != null) ||
-				(globals != null && globalsTypes == null) ||
-				(globals != null && globalsTypes != null && globals.Count != globalsTypes.Count))
+			if ((globals == null && _globalsTypes != null) ||
+				(globals != null && _globalsTypes == null) ||
+				(globals != null && _globalsTypes != null && globals.Count != _globalsTypes.Count))
 			{
 				Recompile(globals);
 				return;
 			}
 
-			foreach (string varName in globalsTypes.Keys)
+			foreach (string varName in _globalsTypes.Keys)
 			{
 				if (globals.ContainsKey(varName) == false ||
-					globals[varName].GetType() != globalsTypes[varName])
+					globals[varName].GetType() != _globalsTypes[varName])
 				{
 					Recompile(globals);
 					return;
@@ -228,14 +224,14 @@ namespace SharpTAL
 		{
 			if (globals != null && globals.Count > 0)
 			{
-				globalsTypes = new Dictionary<string, Type>();
+				_globalsTypes = new Dictionary<string, Type>();
 				foreach (string name in globals.Keys)
 				{
 					object obj = globals[name];
-					globalsTypes.Add(name, obj != null ? obj.GetType() : null);
+					_globalsTypes.Add(name, obj != null ? obj.GetType() : null);
 				}
 			}
-			templateInfo = templateCache.CompileTemplate(body, globalsTypes, referencedAssemblies);
+			_templateInfo = _templateCache.CompileTemplate(_body, _globalsTypes, _referencedAssemblies);
 		}
 	}
 }

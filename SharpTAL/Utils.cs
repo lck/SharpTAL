@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -32,7 +32,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 
 namespace SharpTAL
@@ -41,16 +40,16 @@ namespace SharpTAL
 	{
 		public static Assembly ReadAssembly(string asmPath)
 		{
-			FileStream asmStream = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
-			byte[] asmBytes = Utils.ReadStream(asmStream);
+			var asmStream = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
+			byte[] asmBytes = ReadStream(asmStream);
 			Assembly assembly = Assembly.Load(asmBytes);
 			return assembly;
 		}
 
 		public static byte[] ReadStream(Stream stream)
 		{
-			byte[] buffer = new byte[32768];
-			using (MemoryStream ms = new MemoryStream())
+			var buffer = new byte[32768];
+			using (var ms = new MemoryStream())
 			{
 				while (true)
 				{
@@ -64,14 +63,11 @@ namespace SharpTAL
 
 		public static string ComputeHash(string source)
 		{
-			byte[] tmpSource;
-			byte[] tmpHash;
-
 			// Create a byte array from source data
-			tmpSource = ASCIIEncoding.ASCII.GetBytes(source);
+			byte[] tmpSource = Encoding.ASCII.GetBytes(source);
 
 			// Compute hash based on source data
-			tmpHash = new SHA1CryptoServiceProvider().ComputeHash(tmpSource);
+			byte[] tmpHash = new SHA1CryptoServiceProvider().ComputeHash(tmpSource);
 
 			string hash = ByteArrayToString(tmpHash);
 			return hash;
@@ -82,7 +78,7 @@ namespace SharpTAL
 			string hash = string.Empty;
 			if (globalsTypes != null && globalsTypes.Count > 0)
 			{
-				List<string> names = new List<string>(globalsTypes.Keys);
+				var names = new List<string>(globalsTypes.Keys);
 				names.Sort();
 				foreach (string name in names)
 				{
@@ -111,7 +107,7 @@ namespace SharpTAL
 		public static string ByteArrayToString(byte[] arrInput)
 		{
 			int i;
-			StringBuilder sOutput = new StringBuilder(arrInput.Length);
+			var sOutput = new StringBuilder(arrInput.Length);
 			for (i = 0; i < arrInput.Length - 1; i++)
 			{
 				sOutput.Append(arrInput[i].ToString("X2"));
@@ -124,12 +120,11 @@ namespace SharpTAL
 			if (string.IsNullOrEmpty(chr))
 				return chr;
 			char c = chr.Substring(0, 1)[0];
-			int cp = (int)c;
-			string name = null;
-			if (HTMLEntityDefs.Code2Name.TryGetValue(cp, out name))
+			int cp = c;
+			string name;
+			if (HtmlEntityDefs.Code2Name.TryGetValue(cp, out name))
 				return string.Format("&{0};", name);
-			else
-				return string.Format("&#{0};", cp);
+			return string.Format("&#{0};", cp);
 		}
 
 		public static void GetExtensionMethodNamespaces(Assembly assembly, List<string> namespaces)
@@ -153,7 +148,7 @@ namespace SharpTAL
 
 		public static string GetFullTypeName(Type type, Dictionary<string, string> names)
 		{
-			string typeName = "";
+			string typeName;
 			if (names.ContainsKey(type.FullName))
 			{
 				typeName = names[type.FullName];
@@ -196,7 +191,7 @@ namespace SharpTAL
 
 		public static List<Type> GetGenericTypeArguments(Type type)
 		{
-			List<Type> genericTypeArguments = new List<Type>();
+			var genericTypeArguments = new List<Type>();
 			Type genericType = GetGenericType(type);
 			if (genericType != null)
 			{

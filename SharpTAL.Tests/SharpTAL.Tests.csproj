@@ -49,23 +49,23 @@
   <ItemGroup>
     <Compile Include="CacheTests\FileSystemTemplateCacheTests.cs" />
     <Compile Include="CacheTests\MemoryTemplateCacheTests.cs" />
-    <Compile Include="METALTests\METALDefineMacroTests.cs" />
-    <Compile Include="METALTests\METALDefineParamsTests.cs" />
-    <Compile Include="METALTests\METALDefineSlotsTests.cs" />
-    <Compile Include="METALTests\METALImportTests.cs" />
-    <Compile Include="METALTests\METALNameSpaceTests.cs" />
+    <Compile Include="METALTests\MetalDefineMacroTests.cs" />
+    <Compile Include="METALTests\MetalDefineParamsTests.cs" />
+    <Compile Include="METALTests\MetalDefineSlotsTests.cs" />
+    <Compile Include="METALTests\MetalImportTests.cs" />
+    <Compile Include="METALTests\MetalNameSpaceTests.cs" />
     <Compile Include="TALESTests\CodeBlocksTests.cs" />
     <Compile Include="TALESTests\TextTemplateTests.cs" />
     <Compile Include="TALESTests\InterpolationTests.cs" />
-    <Compile Include="TALESTests\TALESCSharpPathTests.cs" />
-    <Compile Include="TALESTests\TALESStringTests.cs" />
-    <Compile Include="TALTests\TALAttributesTests.cs" />
-    <Compile Include="TALTests\TALConditionTests.cs" />
-    <Compile Include="TALTests\TALContentTests.cs" />
-    <Compile Include="TALTests\TALDefineTests.cs" />
-    <Compile Include="TALTests\TALOmitTagTests.cs" />
-    <Compile Include="TALTests\TALRepeatTests.cs" />
-    <Compile Include="TALTests\TALReplaceTests.cs" />
+    <Compile Include="TALESTests\TalesCSharpPathTests.cs" />
+    <Compile Include="TALESTests\TalesStringTests.cs" />
+    <Compile Include="TALTests\TalAttributesTests.cs" />
+    <Compile Include="TALTests\TalConditionTests.cs" />
+    <Compile Include="TALTests\TalContentTests.cs" />
+    <Compile Include="TALTests\TalDefineTests.cs" />
+    <Compile Include="TALTests\TalOmitTagTests.cs" />
+    <Compile Include="TALTests\TalRepeatTests.cs" />
+    <Compile Include="TALTests\TalReplaceTests.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

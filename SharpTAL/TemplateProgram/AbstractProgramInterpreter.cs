@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,14 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections.Generic;
+
 namespace SharpTAL.TemplateProgram
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-	using SharpTAL.TemplateParser;
-	using SharpTAL.TemplateProgram.Commands;
-
 	public abstract class AbstractProgramInterpreter
 	{
 		protected abstract void Handle_META_INTERPOLATION(ICommand command);
@@ -56,34 +53,36 @@ namespace SharpTAL.TemplateProgram
 		protected abstract void Handle_CMD_START_TAG(ICommand command);
 		protected abstract void Handle_CMD_ENDTAG_ENDSCOPE(ICommand command);
 		protected abstract void Handle_CMD_CODE_BLOCK(ICommand command);
-		
-		Dictionary<CommandType, Action<ICommand>> commandHandlers;
 
-		public AbstractProgramInterpreter()
+		readonly Dictionary<CommandType, Action<ICommand>> _commandHandlers;
+
+		protected AbstractProgramInterpreter()
 		{
-			commandHandlers = new Dictionary<CommandType, Action<ICommand>>();
-			commandHandlers.Add(CommandType.META_INTERPOLATION, Handle_META_INTERPOLATION);
-			commandHandlers.Add(CommandType.METAL_USE_MACRO, Handle_METAL_USE_MACRO);
-			commandHandlers.Add(CommandType.METAL_DEFINE_SLOT, Handle_METAL_DEFINE_SLOT);
-			commandHandlers.Add(CommandType.METAL_DEFINE_PARAM, Handle_METAL_DEFINE_PARAM);
-			commandHandlers.Add(CommandType.TAL_DEFINE, Handle_TAL_DEFINE);
-			commandHandlers.Add(CommandType.TAL_CONDITION, Handle_TAL_CONDITION);
-			commandHandlers.Add(CommandType.TAL_REPEAT, Handle_TAL_REPEAT);
-			commandHandlers.Add(CommandType.TAL_CONTENT, Handle_TAL_CONTENT);
-			commandHandlers.Add(CommandType.TAL_REPLACE, Handle_TAL_REPLACE);
-			commandHandlers.Add(CommandType.TAL_ATTRIBUTES, Handle_TAL_ATTRIBUTES);
-			commandHandlers.Add(CommandType.TAL_OMITTAG, Handle_TAL_OMITTAG);
-			commandHandlers.Add(CommandType.CMD_START_SCOPE, Handle_CMD_START_SCOPE);
-			commandHandlers.Add(CommandType.CMD_OUTPUT, Handle_CMD_OUTPUT);
-			commandHandlers.Add(CommandType.CMD_START_TAG, Handle_CMD_START_TAG);
-			commandHandlers.Add(CommandType.CMD_ENDTAG_ENDSCOPE, Handle_CMD_ENDTAG_ENDSCOPE);
-			commandHandlers.Add(CommandType.CMD_CODE_BLOCK, Handle_CMD_CODE_BLOCK);
+			_commandHandlers = new Dictionary<CommandType, Action<ICommand>>
+			{
+				{CommandType.MetaInterpolation, Handle_META_INTERPOLATION},
+				{CommandType.MetalUseMacro, Handle_METAL_USE_MACRO},
+				{CommandType.MetalDefineSlot, Handle_METAL_DEFINE_SLOT},
+				{CommandType.MetalDefineParam, Handle_METAL_DEFINE_PARAM},
+				{CommandType.TalDefine, Handle_TAL_DEFINE},
+				{CommandType.TalCondition, Handle_TAL_CONDITION},
+				{CommandType.TalRepeat, Handle_TAL_REPEAT},
+				{CommandType.TalContent, Handle_TAL_CONTENT},
+				{CommandType.TalReplace, Handle_TAL_REPLACE},
+				{CommandType.TalAttributes, Handle_TAL_ATTRIBUTES},
+				{CommandType.TalOmittag, Handle_TAL_OMITTAG},
+				{CommandType.CmdStartScope, Handle_CMD_START_SCOPE},
+				{CommandType.CmdOutput, Handle_CMD_OUTPUT},
+				{CommandType.CmdStartTag, Handle_CMD_START_TAG},
+				{CommandType.CmdEndtagEndscope, Handle_CMD_ENDTAG_ENDSCOPE},
+				{CommandType.CmdCodeBlock, Handle_CMD_CODE_BLOCK}
+			};
 		}
 
 		public void HandleCommands(IEnumerable<ICommand> commands)
 		{
 			foreach (ICommand cmd in commands)
-				commandHandlers[cmd.CommandType](cmd);
+				_commandHandlers[cmd.CommandType](cmd);
 		}
 	}
 }

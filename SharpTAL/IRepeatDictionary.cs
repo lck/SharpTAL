@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,13 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-
-	public interface IRepeatDictionary : IDictionary<string, ITALESIterator>
+	public interface IRepeatDictionary : IDictionary<string, ITalesIterator>
 	{
 	}
 }

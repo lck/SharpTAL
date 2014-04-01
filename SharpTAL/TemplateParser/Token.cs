@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,61 +26,58 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace SharpTAL.TemplateParser
 {
 	public class Token
 	{
-		string token;
-		int position = 0;
-		string source = null;
-		string filename = null;
+		private readonly string _token;
+		private readonly int _position;
+		private readonly string _source;
+		private readonly string _filename;
 
 		public Token(string token, int position = 0, string source = null, string filename = null)
 		{
-			this.token = token;
-			this.position = position;
-			this.source = source;
-			this.filename = filename ?? "";
+			_token = token;
+			_position = position;
+			_source = source;
+			_filename = filename ?? "";
 		}
 
 		public override bool Equals(object obj)
 		{
 			if (obj is Token)
-				return token == (obj as Token).token;
+				return _token == (obj as Token)._token;
 			return false;
 		}
 
 		public override string ToString()
 		{
-			return token;
+			return _token;
 		}
 
 		public TokenKind Kind
 		{
 			get
 			{
-				if (token.StartsWith("<"))
+				if (_token.StartsWith("<"))
 				{
-					if (token.StartsWith("<!--"))
+					if (_token.StartsWith("<!--"))
 						return TokenKind.Comment;
-					if (token.StartsWith("<![CDATA["))
+					if (_token.StartsWith("<![CDATA["))
 						return TokenKind.CData;
-					if (token.StartsWith("<!"))
+					if (_token.StartsWith("<!"))
 						return TokenKind.Declaration;
-					if (token.StartsWith("<?xml"))
+					if (_token.StartsWith("<?xml"))
 						return TokenKind.XmlDeclaration;
-					if (token.StartsWith("<?"))
+					if (_token.StartsWith("<?"))
 						return TokenKind.ProcessingInstruction;
-					if (token.StartsWith("</"))
+					if (_token.StartsWith("</"))
 						return TokenKind.EndTag;
-					if (token.EndsWith("/>"))
+					if (_token.EndsWith("/>"))
 						return TokenKind.EmptyTag;
-					if (token.EndsWith(">"))
+					if (_token.EndsWith(">"))
 						return TokenKind.StartTag;
 					return TokenKind.Invalid;
 				}
@@ -90,35 +87,35 @@ namespace SharpTAL.TemplateParser
 
 		public int Position
 		{
-			get { return position; }
+			get { return _position; }
 		}
 
 		public string Filename
 		{
-			get { return filename; }
+			get { return _filename; }
 		}
 
 		public Location Location
 		{
 			get
 			{
-				if (string.IsNullOrEmpty(this.source))
-					return new Location(0, this.position);
+				if (string.IsNullOrEmpty(_source))
+					return new Location(0, _position);
 
-				string body = this.source.Substring(0, this.position);
+				string body = _source.Substring(0, _position);
 				int line = body.Count(c => c == '\n');
-				return new Location(line + 1, this.position - body.LastIndexOf('\n') - 1);
+				return new Location(line + 1, _position - body.LastIndexOf('\n') - 1);
 			}
 		}
 
 		public Token Substring(int start)
 		{
-			return new Token(token.Substring(start), position + start, source, filename);
+			return new Token(_token.Substring(start), _position + start, _source, _filename);
 		}
 
 		public Token Substring(int start, int end)
 		{
-			return new Token(token.Substring(start, end), position + start, source, filename);
+			return new Token(_token.Substring(start, end), _position + start, _source, _filename);
 		}
 	}
 }

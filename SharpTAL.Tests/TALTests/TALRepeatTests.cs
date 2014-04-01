@@ -1,19 +1,13 @@
-﻿namespace SharpTAL.SharpTALTests.TALTests
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using NUnit.Framework;
+
+namespace SharpTAL.Tests.TALTests
 {
-	using System;
-	using System.Text;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.IO;
-	using System.Reflection;
-
-	using NUnit.Framework;
-
-	using SharpTAL.TemplateCache;
-
 	[TestFixture]
-    public class TALRepeatTests
+    public class TalRepeatTests
     {
         public static Dictionary<string, object> globals;
 
@@ -52,7 +46,7 @@
                 {
                     new Dictionary<string, IEnumerable>()
                     {
-                        { "title", "Image 2"}, { "catList", new List<int>() { 5, 2, 3} }, { "selected", Constants.DEFAULT_VALUE }
+                        { "title", "Image 2"}, { "catList", new List<int>() { 5, 2, 3} }, { "selected", Constants.DefaultValue }
                     }
                 },
                 {
@@ -62,7 +56,7 @@
                     }
                 },
             });
-            globals.Add("defList", new List<string>() { "Hello", Constants.DEFAULT_VALUE, "World" });
+            globals.Add("defList", new List<string>() { "Hello", Constants.DefaultValue, "World" });
             globals.Add("testString", "ABC"); ;
             globals.Add("testDict", new Dictionary<string, string>() { { "KeyA", "A" }, { "KeyB", "B" } }); ;
         }

@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,25 +26,24 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
+
 namespace SharpTAL.TemplateCache
 {
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Reflection;
-	using System.Text.RegularExpressions;
-	using SharpTAL.TemplateProgram;
-
 	public class FileSystemTemplateCache : AbstractTemplateCache
 	{
-		const string DEFAULT_FILENAME_PATTER = @"Template_{key}.dll";
-		const string SHA1_KEY_PATTERN = @"[a-zA-Z0-9]{38}";
+		private const string DefaultFilenamePatter = @"Template_{key}.dll";
+		private const string Sha1KeyPattern = @"[a-zA-Z0-9]{38}";
 
-		Dictionary<string, TemplateInfo> templateInfoCache;
-		object templateInfoCacheLock;
-		string templateCacheFolder;
-		string fileNamePattern;
-		Regex fileNamePatternRegex;
+		private Dictionary<string, TemplateInfo> _templateInfoCache;
+		private readonly object _templateInfoCacheLock;
+		private readonly string _templateCacheFolder;
+		private readonly string _fileNamePattern;
+		private Regex _fileNamePatternRegex;
 
 		/// <summary>
 		/// Initialize the filesystem template cache
@@ -59,7 +58,7 @@ namespace SharpTAL.TemplateCache
 		/// Initialize the filesystem template cache
 		/// </summary>
 		/// <param name="cacheFolder">Folder where cache will write and read generated assemblies</param>
-		/// <param name="clearCache">If it's true, clear all files matching the <paramref name="pattern"/> from cache folder</param>
+		/// <param name="clearCache">If it's true, clear all files matching the default pattern from cache folder</param>
 		public FileSystemTemplateCache(string cacheFolder, bool clearCache)
 			: this(cacheFolder, clearCache, null)
 		{
@@ -75,34 +74,33 @@ namespace SharpTAL.TemplateCache
 		/// Default pattern is "Template_{key}.dll".
 		/// Macro {key} will be replaced with computed hash key."
 		/// </param>
-		public FileSystemTemplateCache(string cacheFolder, bool clearCache, string pattern) :
-			base()
+		public FileSystemTemplateCache(string cacheFolder, bool clearCache, string pattern)
 		{
-			this.templateInfoCacheLock = new object();
-			this.templateCacheFolder = cacheFolder;
-			this.templateInfoCache = null;
-			this.fileNamePattern = string.IsNullOrEmpty(pattern) ? DEFAULT_FILENAME_PATTER : pattern;
+			_templateInfoCacheLock = new object();
+			_templateCacheFolder = cacheFolder;
+			_templateInfoCache = null;
+			_fileNamePattern = string.IsNullOrEmpty(pattern) ? DefaultFilenamePatter : pattern;
 
 			InitCache(clearCache);
 		}
 
 		public override TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies)
 		{
-			lock (templateInfoCacheLock)
+			lock (_templateInfoCacheLock)
 			{
 				// Cache is empty, load templates from cache folder
-				if (templateInfoCache == null)
+				if (_templateInfoCache == null)
 				{
-					templateInfoCache = LoadTemplatesInfo(templateCacheFolder);
+					_templateInfoCache = LoadTemplatesInfo(_templateCacheFolder);
 				}
 
 				// Generate template program
 				TemplateInfo ti = GenerateTemplateProgram(templateBody, globalsTypes, referencedAssemblies);
 
 				// Generated template found in cache
-				if (templateInfoCache.ContainsKey(ti.TemplateKey))
+				if (_templateInfoCache.ContainsKey(ti.TemplateKey))
 				{
-					return templateInfoCache[ti.TemplateKey];
+					return _templateInfoCache[ti.TemplateKey];
 				}
 
 				// Generate code
@@ -110,11 +108,11 @@ namespace SharpTAL.TemplateCache
 				ti.GeneratedSourceCode = codeGenerator.GenerateCode(ti);
 
 				// Path to output assembly
-				string assemblyFileName = fileNamePattern.Replace("{key}", ti.TemplateKey);
-				string assemblyPath = Path.Combine(templateCacheFolder, assemblyFileName);
+				string assemblyFileName = _fileNamePattern.Replace("{key}", ti.TemplateKey);
+				string assemblyPath = Path.Combine(_templateCacheFolder, assemblyFileName);
 
 				// Generate assembly
-				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
+				var assemblyCompiler = new AssemblyGenerator();
 				Assembly assembly = assemblyCompiler.GenerateAssembly(ti, false, assemblyPath, null);
 
 				// Try to load the Render() method from assembly
@@ -123,7 +121,7 @@ namespace SharpTAL.TemplateCache
 				// Try to load the template generator version from assembly
 				ti.GeneratorVersion = GetTemplateGeneratorVersion(assembly, ti);
 
-				templateInfoCache.Add(ti.TemplateKey, ti);
+				_templateInfoCache.Add(ti.TemplateKey, ti);
 
 				return ti;
 			}
@@ -132,38 +130,38 @@ namespace SharpTAL.TemplateCache
 		void InitCache(bool clearCache)
 		{
 			// Check cache folder
-			if (!Directory.Exists(templateCacheFolder))
+			if (!Directory.Exists(_templateCacheFolder))
 			{
-				throw new ArgumentException(string.Format("Template cache folder does not exists: [{0}]", templateCacheFolder));
+				throw new ArgumentException(string.Format("Template cache folder does not exists: [{0}]", _templateCacheFolder));
 			}
 
 			// Setup pattern
 			// If input pattern is "Template_{key}.dll"
 			// then result pattern is "(^Template_)(?<key>[a-zA-Z0-9]{38})(\.dll$)"
-			string[] patternGroups = fileNamePattern.Split(new string[] { "{key}" }, StringSplitOptions.None);
+			string[] patternGroups = _fileNamePattern.Split(new[] { "{key}" }, StringSplitOptions.None);
 
 			// Check if pattern contains exactly one "{key}" macro
 			if (patternGroups.Length != 2)
 			{
 				throw new ArgumentException(
-					string.Format(@"Invalid pattern specified. Macro ""{key}"" is missing or specified more than once: [{0}]",
-					fileNamePattern));
+					string.Format(@"Invalid pattern specified. Macro ""{{key}}"" is missing or specified more than once: [{0}]",
+					_fileNamePattern));
 			}
 
 			// Normalize pattern
 			string rePattern = string.Format(@"(^{0})(?<key>{1})({2}$)",
 				patternGroups[0].Replace(".", @"\."),
-				SHA1_KEY_PATTERN,
+				Sha1KeyPattern,
 				patternGroups[1].Replace(".", @"\."));
-			fileNamePatternRegex = new Regex(rePattern);
+			_fileNamePatternRegex = new Regex(rePattern);
 
 			// Delete all files from cache folder matching the pattern
 			if (clearCache)
 			{
-				DirectoryInfo di = new DirectoryInfo(templateCacheFolder);
+				var di = new DirectoryInfo(_templateCacheFolder);
 				foreach (FileInfo fi in di.GetFiles())
 				{
-					if (fileNamePatternRegex.Match(fi.Name).Success)
+					if (_fileNamePatternRegex.Match(fi.Name).Success)
 					{
 						File.Delete(fi.FullName);
 					}
@@ -173,15 +171,15 @@ namespace SharpTAL.TemplateCache
 
 		Dictionary<string, TemplateInfo> LoadTemplatesInfo(string cacheFolder)
 		{
-			Dictionary<string, TemplateInfo> templateCache = new Dictionary<string, TemplateInfo>();
+			var templateCache = new Dictionary<string, TemplateInfo>();
 
 			// Load assemblies containing type with full name [<TEMPLATE_NAMESPACE>.<TEMPLATE_TYPENAME>],
 			// with one public method [public static string Render(Dictionary<string, object> globals)]
 
-			DirectoryInfo di = new DirectoryInfo(cacheFolder);
+			var di = new DirectoryInfo(cacheFolder);
 			foreach (FileInfo fi in di.GetFiles())
 			{
-				Match fileNameMatch = fileNamePatternRegex.Match(fi.Name);
+				Match fileNameMatch = _fileNamePatternRegex.Match(fi.Name);
 				if (fileNameMatch.Success)
 				{
 					// Try to load file as assembly
@@ -189,7 +187,7 @@ namespace SharpTAL.TemplateCache
 					{
 						AssemblyName.GetAssemblyName(fi.FullName);
 					}
-					catch (System.BadImageFormatException)
+					catch (BadImageFormatException)
 					{
 						// The file is not an Assembly
 						continue;
@@ -199,7 +197,7 @@ namespace SharpTAL.TemplateCache
 					string templateHash = fileNameMatch.Groups["key"].Value;
 
 					// Create template info
-					TemplateInfo ti = new TemplateInfo() { TemplateKey = templateHash };
+					var ti = new TemplateInfo { TemplateKey = templateHash };
 
 					// Try to load the Render() method from assembly
 					Assembly assembly = Utils.ReadAssembly(fi.FullName);

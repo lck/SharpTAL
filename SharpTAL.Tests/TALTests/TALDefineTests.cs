@@ -1,20 +1,13 @@
-﻿namespace SharpTAL.SharpTALTests.TALTests
+﻿using System;
+using System.Collections.Generic;
+using System.Xml;
+
+using NUnit.Framework;
+
+namespace SharpTAL.Tests.TALTests
 {
-	using System;
-	using System.Text;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.IO;
-	using System.Reflection;
-	using System.Collections;
-	using System.Xml;
-
-	using NUnit.Framework;
-
-	using SharpTAL.TemplateCache;
-
 	[TestFixture]
-	public class TALDefineTests
+	public class TalDefineTests
 	{
 		public class XmlDocumentList : List<XmlDocument>
 		{

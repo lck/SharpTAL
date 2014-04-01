@@ -7,7 +7,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -33,7 +33,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SharpTAL.TemplateParser
@@ -43,50 +42,49 @@ namespace SharpTAL.TemplateParser
 	/// </summary>
 	public class ElementParser
 	{
-		static readonly string XML_NS = "http://www.w3.org/XML/1998/namespace";
+		private const string XmlNs = "http://www.w3.org/XML/1998/namespace";
 
-		static readonly Regex match_tag_prefix_and_name = new Regex(
+		private static readonly Regex MatchTagPrefixAndName = new Regex(
 			@"^(?<prefix></?)(?<name>([^:\n ]+:)?[^ \r\n\t>/]+)(?<suffix>(?<space>\s*)/?>)?", RegexOptions.Singleline);
-		static readonly Regex match_single_attribute = new Regex(
+		private static readonly Regex MatchSingleAttribute = new Regex(
 			@"(?<space>\s+)(?!\d)" +
 			@"(?<name>[^ =/>\n\t]+)" +
 			@"((?<eq>\s*=\s*)" +
 			@"((?<quote>[\'""])(?<value>.*?)\k<quote>|" +
 			@"(?<alt_value>[^\s\'"">/]+))|" +
 			@"(?<simple_value>(?![ \\n\\t\\r]*=)))", RegexOptions.Singleline);
-		static readonly Regex match_comment = new Regex(
-			@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
-		static readonly Regex match_cdata = new Regex(
-			@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
-		static readonly Regex match_declaration = new Regex(
-			@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
-		static readonly Regex match_processing_instruction = new Regex(
-			//@"^<\?(?<text>.*?)\?>", RegexOptions.Singleline);
+		//private static readonly Regex MatchComment = new Regex(
+		//	@"^<!--(?<text>.*)-->$", RegexOptions.Singleline);
+		//private static readonly Regex MatchCdata = new Regex(
+		//	@"^<!\[CDATA\[(?<text>.*)\]>$", RegexOptions.Singleline);
+		//private static readonly Regex MatchDeclaration = new Regex(
+		//	@"^<!(?<text>[^>]+)>$", RegexOptions.Singleline);
+		private static readonly Regex MatchProcessingInstruction = new Regex(
 			@"^<\?(?<name>\w+)(?<text>.*?)\?>", RegexOptions.Singleline);
-		static readonly Regex match_xml_declaration = new Regex(
-			@"^<\?xml(?=[ /])", RegexOptions.Singleline);
+		//private static readonly Regex MatchXmlDeclaration = new Regex(
+		//	@"^<\?xml(?=[ /])", RegexOptions.Singleline);
 
-		IEnumerable<Token> stream;
-		List<Dictionary<string, string>> namespaces;
-		List<Element> queue;
-		Stack<KeyValuePair<Token, int>> index;
+		private readonly IEnumerable<Token> _stream;
+		private readonly List<Dictionary<string, string>> _namespaces;
+		private readonly List<Element> _queue;
+		private readonly Stack<KeyValuePair<Token, int>> _index;
 
 		public ElementParser(IEnumerable<Token> stream, Dictionary<string, string> defaultNamespaces)
 		{
-			this.stream = stream;
-			this.queue = new List<Element>();
-			this.index = new Stack<KeyValuePair<Token, int>>();
-			this.namespaces = new List<Dictionary<string, string>> { new Dictionary<string, string>(defaultNamespaces) };
+			_stream = stream;
+			_queue = new List<Element>();
+			_index = new Stack<KeyValuePair<Token, int>>();
+			_namespaces = new List<Dictionary<string, string>> { new Dictionary<string, string>(defaultNamespaces) };
 		}
 
 		public IEnumerable<Element> Parse()
 		{
-			foreach (var token in this.stream)
+			foreach (var token in _stream)
 			{
-				var item = this.ParseToken(token);
-				this.queue.Add(item);
+				var item = ParseToken(token);
+				_queue.Add(item);
 			}
-			return this.queue;
+			return _queue;
 		}
 
 		Element ParseToken(Token token)
@@ -131,17 +129,17 @@ namespace SharpTAL.TemplateParser
 
 		Element visit_processing_instruction(Token token)
 		{
-			Match match = match_processing_instruction.Match(token.ToString());
-			Dictionary<string, object> node = groupdict(match_processing_instruction, match, token);
+			Match match = MatchProcessingInstruction.Match(token.ToString());
+			Dictionary<string, object> node = Groupdict(MatchProcessingInstruction, match, token);
 			return new Element(ElementKind.ProcessingInstruction, node);
 		}
 
 		Element visit_start_tag(Token token)
 		{
-			var ns = new Dictionary<string, string>(namespaces.Last());
-			namespaces.Add(ns);
+			var ns = new Dictionary<string, string>(_namespaces.Last());
+			_namespaces.Add(ns);
 			var node = parse_tag(token, ns);
-			index.Push(new KeyValuePair<Token, int>(node["name"] as Token, queue.Count));
+			_index.Push(new KeyValuePair<Token, int>(node["name"] as Token, _queue.Count));
 			return new Element(ElementKind.StartTag, node);
 		}
 
@@ -150,26 +148,26 @@ namespace SharpTAL.TemplateParser
 			Dictionary<string, string> ns;
 			try
 			{
-				ns = namespaces.Last();
-				namespaces.RemoveAt(namespaces.Count - 1);
+				ns = _namespaces.Last();
+				_namespaces.RemoveAt(_namespaces.Count - 1);
 			}
-			catch (InvalidOperationException ex)
+			catch (InvalidOperationException)
 			{
 				throw new ParseError("Unexpected end tag.", token);
 			}
-			Dictionary<string, object> node = parse_tag(token, ns); ;
-			while (index.Count > 0)
+			Dictionary<string, object> node = parse_tag(token, ns);
+			while (_index.Count > 0)
 			{
-				KeyValuePair<Token, int> idx = index.Pop();
+				KeyValuePair<Token, int> idx = _index.Pop();
 				Token name = idx.Key;
 				int pos = idx.Value;
 				if (node["name"].Equals(name))
 				{
-					Element el = queue[pos];
-					queue.RemoveAt(pos);
+					Element el = _queue[pos];
+					_queue.RemoveAt(pos);
 					Dictionary<string, object> start = el.StartTagTokens;
-					List<Element> children = queue.GetRange(pos, queue.Count - pos);
-					queue.RemoveRange(pos, queue.Count - pos);
+					List<Element> children = _queue.GetRange(pos, _queue.Count - pos);
+					_queue.RemoveRange(pos, _queue.Count - pos);
 					return new Element(ElementKind.Element, start, node, children);
 				}
 			}
@@ -178,14 +176,14 @@ namespace SharpTAL.TemplateParser
 
 		Element visit_empty_tag(Token token)
 		{
-			var ns = new Dictionary<string, string>(namespaces.Last());
+			var ns = new Dictionary<string, string>(_namespaces.Last());
 			var node = parse_tag(token, ns);
 			return new Element(ElementKind.Element, node);
 		}
 
-		static Dictionary<string, object> groupdict(Regex r, Match m, Token token)
+		static Dictionary<string, object> Groupdict(Regex r, Match m, Token token)
 		{
-			Dictionary<string, object> d = new Dictionary<string, object>();
+			var d = new Dictionary<string, object>();
 			foreach (string name in r.GetGroupNames())
 			{
 				Group g = m.Groups[name];
@@ -205,8 +203,8 @@ namespace SharpTAL.TemplateParser
 
 		static Dictionary<string, object> match_tag(Token token)
 		{
-			Match match = match_tag_prefix_and_name.Match(token.ToString());
-			Dictionary<string, object> node = groupdict(match_tag_prefix_and_name, match, token);
+			Match match = MatchTagPrefixAndName.Match(token.ToString());
+			Dictionary<string, object> node = Groupdict(MatchTagPrefixAndName, match, token);
 
 			int end = match.Index + match.Length;
 			token = token.Substring(end);
@@ -214,26 +212,24 @@ namespace SharpTAL.TemplateParser
 			var attrs = new List<Dictionary<string, object>>();
 			node["attrs"] = attrs;
 
-			foreach (Match m in match_single_attribute.Matches(token.ToString()))
+			foreach (Match m in MatchSingleAttribute.Matches(token.ToString()))
 			{
-				Dictionary<string, object> attr = groupdict(match_single_attribute, m, token);
-				Token alt_value = null;
+				Dictionary<string, object> attr = Groupdict(MatchSingleAttribute, m, token);
 				if (attr.Keys.Contains("alt_value"))
 				{
-					alt_value = attr["alt_value"] as Token;
+					var altValue = attr["alt_value"] as Token;
 					attr.Remove("alt_value");
-					if (!string.IsNullOrEmpty(alt_value.ToString()))
+					if (!string.IsNullOrEmpty(altValue.ToString()))
 					{
-						attr["value"] = alt_value;
+						attr["value"] = altValue;
 						attr["quote"] = "";
 					}
 				}
-				Token simple_value = null;
 				if (attr.Keys.Contains("simple_value"))
 				{
-					simple_value = attr["simple_value"] as Token;
+					var simpleValue = attr["simple_value"] as Token;
 					attr.Remove("simple_value");
-					if (!string.IsNullOrEmpty(simple_value.ToString()))
+					if (!string.IsNullOrEmpty(simpleValue.ToString()))
 					{
 						attr["quote"] = "";
 						attr["value"] = new Token("");
@@ -258,47 +254,46 @@ namespace SharpTAL.TemplateParser
 			if ((node["name"] as Token).ToString().Contains(':'))
 				prefix = (node["name"] as Token).ToString().Split(':')[0];
 
-			string defaultNs = prefix != null && ns.ContainsKey(prefix) ? ns[prefix] : XML_NS;
+			string defaultNs = prefix != null && ns.ContainsKey(prefix) ? ns[prefix] : XmlNs;
 			node["namespace"] = defaultNs;
 			node["ns_attrs"] = unpack_attributes(node["attrs"] as List<Dictionary<string, object>>, ns, defaultNs);
 
 			return node;
 		}
 
-		static void update_namespace(List<Dictionary<string, object>> attributes, Dictionary<string, string> ns)
+		static void update_namespace(IEnumerable<Dictionary<string, object>> attributes, Dictionary<string, string> ns)
 		{
 			foreach (var attribute in attributes)
 			{
-				string name = ((Token)attribute["name"]).ToString();
-				string value = ((Token)attribute["value"]).ToString();
+				string name = (attribute["name"]).ToString();
+				string value = (attribute["value"]).ToString();
 
 				if (name == "xmlns")
 					ns[""] = value;
-				else if (name.ToString().StartsWith("xmlns:"))
+				else if (name.StartsWith("xmlns:"))
 					ns[name.Substring(6)] = value;
 			}
 		}
 
-		static OrderedDictionary unpack_attributes(List<Dictionary<string, object>> attributes, Dictionary<string, string> ns, string defaultNs)
+		static OrderedDictionary unpack_attributes(IEnumerable<Dictionary<string, object>> attributes, IDictionary<string, string> ns, string defaultNs)
 		{
-			OrderedDictionary namespaced = new OrderedDictionary();
+			var namespaced = new OrderedDictionary();
 
 			foreach (var attribute in attributes)
 			{
-				string name = ((Token)attribute["name"]).ToString();
-				string value = ((Token)attribute["value"]).ToString();
+				string name = (attribute["name"]).ToString();
+				string value = (attribute["value"]).ToString();
 
-				string n = null;
-				string prefix = null;
+				string n;
 				if (name.Contains(':'))
 				{
-					prefix = name.Split(':')[0];
+					string prefix = name.Split(':')[0];
 					name = name.Substring(prefix.Length + 1);
 					try
 					{
 						n = ns[prefix];
 					}
-					catch (KeyNotFoundException ex)
+					catch (KeyNotFoundException)
 					{
 						throw new KeyNotFoundException(
 							string.Format("Undefined namespace prefix: {0}.", prefix));

@@ -1,8 +1,7 @@
 .. _telref-label:
 
-#############
-TAL Reference
-#############
+Language Reference
+==================
 
 .. toctree::
    :maxdepth: 2
@@ -10,3 +9,5 @@ TAL Reference
    tal.rst
    tales.rst
    metal.rst
+   substitution.rst
+   codeblocks.rst

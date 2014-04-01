@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,8 +29,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.IO;
-using System.Globalization;
 
 namespace SharpTAL.TemplateCache
 {
@@ -42,7 +40,7 @@ namespace SharpTAL.TemplateCache
 		/// of globals are not required, just the names and types of the global variables.
 		/// </summary>
 		/// <param name="templateBody">The template body</param>
-		/// <param name="globals">Dictionary of global variables</param>
+		/// <param name="globalsTypes">Dictionary of types of global variables</param>
 		/// <param name="referencedAssemblies">List of referenced assemblies</param>
 		/// <returns>The TemplateInfo generated from compiled template body</returns>
 		TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies);

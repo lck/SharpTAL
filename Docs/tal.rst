@@ -1,6 +1,5 @@
 .. _tal_chapter:
 
-=================================
 Template Attribute Language (TAL)
 =================================
 
@@ -14,7 +13,9 @@ The output from the template is usually XML-like but isn't required to
 be well-formed.
 
 The statements of the language are document tags with special
-attributes, and look like this::
+attributes, and look like this:
+
+.. code-block:: html
 
     <p namespace:command="argument">Some Text</p>
 
@@ -40,7 +41,9 @@ The TAL namespace URI is currently defined as::
 
 This is not a URL, but merely a unique identifier.  Do not expect a
 browser to resolve it successfully.  This definition is required in
-every file that uses ZPT.  For example::
+every file that uses ZPT.  For example:
+
+.. code-block:: html
 
   <div xmlns="http://www.w3.org/1999/xhtml"
        xmlns:tal="http://xml.zope.org/namespaces/tal">
@@ -51,8 +54,8 @@ All templates that you use ZPT in *must* include the
 ``xmlns:tal="http://xml.zope.org/namespaces/tal"`` attribute on some
 top-level tag.
 
-TAL Statements
---------------
+Statements
+----------
 
 A **TAL statement** has a name (the attribute name) and an argument
 (the attribute value).  For example, a ``tal:content`` statement might
@@ -117,8 +120,10 @@ element or subelements, ``tal:define`` is executed first.
 or ``tal:replace``. Finally, before ``tal:attributes``, we have
 ``tal:omit-tag`` (which is implied with ``tal:replace``).
 
-``tal:attributes``: Replace element attributes
-----------------------------------------------
+tal:attributes
+--------------
+
+Replace element attributes
 
 Syntax
 ~~~~~~
@@ -155,18 +160,24 @@ and the replacement expression is evaluated fresh for each repetition.
 Examples
 ~~~~~~~~
 
-Replacing a link::
+Replacing a link:
+
+.. code-block:: html
 
     <a href="/sample/link.html"
      tal:attributes="href context.url()">
 
-Replacing two attributes::
+Replacing two attributes:
+
+.. code-block:: html
 
     <textarea rows="80" cols="20"
      tal:attributes="rows request.rows();cols request.cols()">
 
-``tal:condition``: Conditionally insert or remove an element
-------------------------------------------------------------
+tal:condition
+-------------
+
+Conditionally insert or remove an element
 
 Syntax
 ~~~~~~
@@ -193,29 +204,35 @@ Description
 Examples
 ~~~~~~~~
 
-Test a variable before inserting it::
+Test a variable before inserting it:
 
-        <p tal:condition="request.message"
-           tal:content="request.message">
-           message goes here
-        </p>
+.. code-block:: html
 
-Testing for odd/even in a repeat-loop::
+    <p tal:condition="request.message"
+      tal:content="request.message">
+      message goes here
+    </p>
 
-        <div tal:repeat="item Enumerable.Range(0, 10)">
-          <p tal:condition="repeat.item.even">Even</p>
-          <p tal:condition="repeat.item.odd">Odd</p>
-        </div>
+Testing for odd/even in a repeat-loop:
 
-``tal:content``: Replace the content of an element
---------------------------------------------------
+.. code-block:: html
+
+    <div tal:repeat="item Enumerable.Range(0, 10)">
+      <p tal:condition='repeat["item"].even'>Even</p>
+      <p tal:condition='repeat["item"].odd'>Odd</p>
+    </div>
+
+tal:content
+-----------
+
+Replace the content of an element
  
 Syntax
 ~~~~~~
 
 ``tal:content`` syntax::
 
-        argument ::= (['text'] | 'structure') expression
+    argument ::= (['text'] | 'structure') expression
 
 Description
 ~~~~~~~~~~~
@@ -238,17 +255,23 @@ form), which is the reason that it is not the default.
 Examples
 ~~~~~~~~
 
-Inserting the user name::
+Inserting the user name:
 
-        <p tal:content="user.getUserName()">Fred Farkas</p>
+.. code-block:: html
 
-Inserting HTML/XML::
+    <p tal:content="user.getUserName()">Fred Farkas</p>
 
-        <p tal:content="structure context.getStory()">marked <b>up</b>
-        content goes here.</p>
+Inserting HTML/XML:
 
-``tal:define``: Define variables
---------------------------------
+.. code-block:: html
+
+    <p tal:content="structure context.getStory()">marked <b>up</b>
+    content goes here.</p>
+
+tal:define
+----------
+
+Define variables
 
 Syntax
 ~~~~~~
@@ -277,35 +300,43 @@ used as such in further expressions.
 Examples
 ~~~~~~~~
 
-Defining a global variable::
+Defining a global variable:
 
-        <tal:tag tal:define='global company_name '"My Company"'>
+.. code-block:: html
 
-Defining a local variable::
+    <tal:tag tal:define='global company_name '"My Company"'>
 
-        <tal:tag tal:define='company_name "My Company"'>
+Defining a local variable:
 
-Defining two local variables, where the second depends on the first::
+.. code-block:: html
 
-        <tal:tag tal:define="mytitle context.title; tlen mytitle.Length">
+    <tal:tag tal:define='company_name "My Company"'>
 
-Declare that the listed identifiers refers to previously bound variables in the nearest enclosing scope::
+Defining two local variables, where the second depends on the first:
 
-        <tal:tag tal:define="nonlocal mytitle context.title">
+.. code-block:: html
 
-Use functions that return void::
+    <tal:tag tal:define="mytitle context.title; tlen mytitle.Length">
 
-        <tal:tag tal:define='tmp 0;;Console.WriteLine("One!");;Console.WriteLine("Two!");;'>
+Declare that the listed identifiers refers to previously bound variables in the nearest enclosing scope:
 
-``tal:omit-tag``: Remove an element, leaving its contents
----------------------------------------------------------
+.. code-block:: html
+
+    <p tal:define="mytitle context.title">
+      <tal:tag tal:define="nonlocal mytitle context.new_title">
+    </p>
+
+tal:omit-tag
+------------
+
+Remove an element, leaving its contents
 
 Syntax
 ~~~~~~
 
 ``tal:omit-tag`` syntax::
 
-        argument ::= [ expression ]
+    argument ::= [ expression ]
 
 Description
 ~~~~~~~~~~~
@@ -325,37 +356,44 @@ the statement element is replaced with its contents.
 Examples
 ~~~~~~~~
 
-Unconditionally omitting a tag::
+Unconditionally omitting a tag:
 
-        <div tal:omit-tag="" comment="This tag will be removed">
-          <i>...but this text will remain.</i>
-        </div>
+.. code-block:: html
 
-Conditionally omitting a tag::
+    <div tal:omit-tag="" comment="This tag will be removed">
+      <i>...but this text will remain.</i>
+    </div>
 
-        <b tal:omit-tag="bold == false">I may be bold.</b>
+Conditionally omitting a tag:
+
+.. code-block:: html
+
+    <b tal:omit-tag="bold == false">I may be bold.</b>
 
 The above example will omit the ``b`` tag if the variable ``bold`` is false.
 
-Creating ten paragraph tags, with no enclosing tag::
+Creating ten paragraph tags, with no enclosing tag:
 
-        <span tal:repeat="n Enumerable.Range(0, 10)"
-              tal:omit-tag="">
-          <p tal:content="n">1</p>
-        </span>
+.. code-block:: html
+
+    <span tal:repeat="n Enumerable.Range(0, 10)" tal:omit-tag="">
+      <p tal:content="n">1</p>
+    </span>
 
 .. _tal_repeat:
 
-``tal:repeat``: Repeat an element
----------------------------------
+tal:repeat
+----------
+
+Repeat an element
 
 Syntax
 ~~~~~~
 
 ``tal:repeat`` syntax::
 
-        argument      ::= variable_name expression
-        variable_name ::= Name
+    argument      ::= variable_name expression
+    variable_name ::= Name
 
 Description
 ~~~~~~~~~~~
@@ -413,57 +451,67 @@ You can access the contents of the repeat variable using dictionary, e.g. ``repe
 Examples
 ~~~~~~~~
 
-Iterating over a sequence of strings::    
+Iterating over a sequence of strings:
 
-        <p tal:repeat='txt new List<string>() { "one", "two", "three" }'>
-           <span tal:replace="txt" />
-        </p>
+.. code-block:: html
+
+    <p tal:repeat='txt new List<string>() { "one", "two", "three" }'>
+       <span tal:replace="txt" />
+    </p>
 
 Inserting a sequence of table rows, and using the repeat variable
-to number the rows::
+to number the rows:
 
-        <table>
-          <tr tal:repeat="item here.cart">
-              <td tal:content='repeat["item"].number'>1</td>
-              <td tal:content="item.description">Widget</td>
-              <td tal:content="item.price">$1.50</td>
-          </tr>
-        </table>
+.. code-block:: html
 
-Nested repeats::
+    <table>
+      <tr tal:repeat="item here.cart">
+        <td tal:content='repeat["item"].number'>1</td>
+        <td tal:content="item.description">Widget</td>
+        <td tal:content="item.price">$1.50</td>
+      </tr>
+    </table>
 
-        <table border="1">
-          <tr tal:repeat="row Enumerable.Range(0, 10)">
-            <td tal:repeat="column Enumerable.Range(0, 10)">
-              <span tal:define='x repeat["row"].number; 
-                                y repeat["column"].number; 
-                                z x * y'
-                    tal:replace="string:${x} * ${y} = ${z}">1 * 1 = 1</span>
-            </td>
-          </tr>
-        </table>
+Nested repeats:
+
+.. code-block:: html
+
+    <table border="1">
+      <tr tal:repeat="row Enumerable.Range(0, 10)">
+        <td tal:repeat="column Enumerable.Range(0, 10)">
+          <span tal:define='x repeat["row"].number; 
+                            y repeat["column"].number; 
+                            z x * y'
+                tal:replace="string:${x} * ${y} = ${z}">1 * 1 = 1</span>
+        </td>
+      </tr>
+    </table>
 
 Insert objects. Separates groups of objects by type by drawing a rule
-between them::
+between them:
 
-        <div tal:repeat="object objects">
-          <h2 tal:condition='repeat["object"].first.meta_type'
-            tal:content="object.type">Meta Type</h2>
-          <p tal:content="object.id">Object ID</p>
-        </div>
+.. code-block:: html
+
+    <div tal:repeat="object objects">
+      <h2 tal:condition='repeat["object"].first.meta_type'
+        tal:content="object.type">Meta Type</h2>
+      <p tal:content="object.id">Object ID</p>
+    </div>
 
 .. note:: the objects in the above example should already be sorted by
    type.
 
-``tal:replace``: Replace an element
------------------------------------
+tal:replace
+-----------
+
+Replace an element
 
 Syntax
 ~~~~~~
 
 ``tal:replace`` syntax::
 
-        argument ::= ['structure'] expression
+    argument ::= ['structure'] expression
 
 Description
 ~~~~~~~~~~~
@@ -481,11 +529,14 @@ If the expression evaluates to ``null``, the element is simply removed.  If the 
 Examples
 ~~~~~~~~
 
-Inserting a title::
+Inserting a title:
 
-        <span tal:replace="context.title">Title</span>
+.. code-block:: html
 
-Inserting HTML/XML::
+    <span tal:replace="context.title">Title</span>
 
-        <div tal:replace="structure table" />
+Inserting HTML/XML:
 
+.. code-block:: html
+
+    <div tal:replace="structure table" />

@@ -1,19 +1,13 @@
-﻿namespace SharpTAL.SharpTALTests.TALTests
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+
+using NUnit.Framework;
+
+namespace SharpTAL.Tests.TALTests
 {
-	using System;
-	using System.Text;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.IO;
-	using System.Reflection;
-	using System.Globalization;
-
-	using NUnit.Framework;
-
-	using SharpTAL.TemplateCache;
-
 	[TestFixture]
-	public class TALAttributesTests
+	public class TalAttributesTests
 	{
 		public static Dictionary<string, object> globals;
 
@@ -58,7 +52,7 @@
 			globals.Add("needsQuoting", @"Does ""this"" work?");
 			globals.Add("number", 5);
 			globals.Add("uniQuote", @"Does ""this"" work?");
-			globals.Add("anotherdefault", new Dictionary<string, string>() { { "inhere", Constants.DEFAULT_VALUE } });
+			globals.Add("anotherdefault", new Dictionary<string, string>() { { "inhere", Constants.DefaultValue } });
 		}
 
 		public static void RunTest(string template, string expected, string errMsg)

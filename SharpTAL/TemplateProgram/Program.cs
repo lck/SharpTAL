@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,18 +26,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Linq;
+using System.Collections.Generic;
+
+using SharpTAL.TemplateProgram.Commands;
+
 namespace SharpTAL.TemplateProgram
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-
-	using SharpTAL.TemplateProgram.Commands;
-
 	public class Program : IProgram
 	{
-		protected List<ICommand> templateCommands;
-
 		public string Name { get { return string.Empty; } }
 		public string TemplatePath { get; protected set; }
 		public string TemplateBody { get; protected set; }
@@ -46,18 +43,7 @@ namespace SharpTAL.TemplateProgram
 		public Dictionary<int, int> EndTagLocationTable { get; protected set; }
 		public int Start { get; protected set; }
 		public int End { get; protected set; }
-
-		public List<ICommand> TemplateCommands
-		{
-			get
-			{
-				return templateCommands;
-			}
-			protected set
-			{
-				templateCommands = value;
-			}
-		}
+		public List<ICommand> TemplateCommands { get; protected set; }
 
 		public IEnumerable<ICommand> ProgramCommands
 		{
@@ -100,13 +86,17 @@ namespace SharpTAL.TemplateProgram
 				// Set the parent of each macro
 				if (Macros != null)
 				{
-					foreach (ProgramMacro macro in Macros.Values)
+					foreach (var program in Macros.Values)
+					{
+						var macro = (ProgramMacro)program;
 						macro.ParentProgram = this;
+					}
 				}
 
 				// Set the parent of each slot
-				foreach (METALUseMacro useMacroCmd in TemplateCommands.Where(c => c.CommandType == CommandType.METAL_USE_MACRO))
+				foreach (var command in TemplateCommands.Where(c => c.CommandType == CommandType.MetalUseMacro))
 				{
+					var useMacroCmd = (MetalUseMacro)command;
 					foreach (ProgramSlot slot in useMacroCmd.Slots.Values)
 						slot.ParentProgram = this;
 				}

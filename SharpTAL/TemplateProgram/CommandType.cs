@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,10 +25,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-
-using System;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace SharpTAL.TemplateProgram
 {
@@ -56,31 +52,31 @@ namespace SharpTAL.TemplateProgram
 	public enum CommandType
 	{
 		// META Commands
-		META_INTERPOLATION = 1,
+		MetaInterpolation = 1,
 
 		// METAL Commands
-		METAL_USE_MACRO = 101,
-		METAL_DEFINE_SLOT = 102,
-		METAL_FILL_SLOT = 103,
-		METAL_DEFINE_MACRO = 104,
-		METAL_DEFINE_PARAM = 105,
-		METAL_FILL_PARAM = 106,
-		METAL_IMPORT = 107,
+		MetalUseMacro = 101,
+		MetalDefineSlot = 102,
+		MetalFillSlot = 103,
+		MetalDefineMacro = 104,
+		MetalDefineParam = 105,
+		MetalFillParam = 106,
+		MetalImport = 107,
 
 		// TAL Commands
-		TAL_DEFINE = 1001,
-		TAL_CONDITION = 1002,
-		TAL_REPEAT = 1003,
-		TAL_CONTENT = 1004,
-		TAL_REPLACE = 1005,
-		TAL_ATTRIBUTES = 1006,
-		TAL_OMITTAG = 1007,
-		
+		TalDefine = 1001,
+		TalCondition = 1002,
+		TalRepeat = 1003,
+		TalContent = 1004,
+		TalReplace = 1005,
+		TalAttributes = 1006,
+		TalOmittag = 1007,
+
 		// Processing Commands
-		CMD_START_SCOPE = 10008,
-		CMD_OUTPUT = 10009,
-		CMD_START_TAG = 10010,
-		CMD_ENDTAG_ENDSCOPE = 10011,
-		CMD_CODE_BLOCK = 10012
+		CmdStartScope = 10008,
+		CmdOutput = 10009,
+		CmdStartTag = 10010,
+		CmdEndtagEndscope = 10011,
+		CmdCodeBlock = 10012
 	}
 }

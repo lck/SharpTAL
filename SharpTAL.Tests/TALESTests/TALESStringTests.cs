@@ -1,18 +1,12 @@
-﻿namespace SharpTAL.SharpTALTests.TALESTests
+﻿using System;
+using System.Collections.Generic;
+
+using NUnit.Framework;
+
+namespace SharpTAL.Tests.TALESTests
 {
-	using System;
-	using System.Text;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.IO;
-	using System.Reflection;
-
-	using NUnit.Framework;
-
-	using SharpTAL.TemplateCache;
-
 	[TestFixture]
-	public class TALESStringTests
+	public class TalesStringTests
 	{
 		public static Dictionary<string, object> globals;
 

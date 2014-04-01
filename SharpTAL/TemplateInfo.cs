@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,19 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+using SharpTAL.TemplateProgram;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Reflection;
-	using System.IO;
-	using System.Globalization;
-	using SharpTAL.TemplateProgram;
-
 	public class TemplateInfo
 	{
 		#region Template Cache output
-		
+
 		/// <summary>
 		/// Contains a unique key that represent the template in the template cache.
 		/// The template key is computed from the following parts:
@@ -49,9 +48,6 @@ namespace SharpTAL
 		/// </summary>
 		public string TemplateKey;
 
-		// TODO: sem dat zoznam render() metod (aj tych z makier), ale v akom tvare ? ako MethodInfo ?
-		//	maly by byt v takom tvare aby sa dali priamo volat z inej template render() metody ktora tento template importuje
-		//	to znamena ze metal:import bude importovat assemblies, nebude injectovat importovane templates do main template
 		/// <summary>
 		/// Reference to template render method.
 		/// </summary>

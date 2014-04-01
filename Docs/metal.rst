@@ -1,8 +1,7 @@
 .. _metal_chapter:
 
-===================================================
-Macro Expansion Template Attribute Language (METAL)
-===================================================
+Macros (METAL)
+==============
 
 The *Macro Expansion Template Attribute Language* (METAL) standard is
 a facility for HTML/XML macro preprocessing. It can be used in
@@ -17,8 +16,8 @@ rendering.
 
 A single Page Template can accomodate multiple macros.
 
-METAL Namespace
----------------
+Namespace
+---------
 
 The METAL namespace URI and recommended alias are currently defined
 as::
@@ -29,8 +28,8 @@ Just like the TAL namespace URI, this URI is not attached to a web
 page; it's just a unique identifier.  This identifier must be used in
 all templates which use METAL.
 
-METAL Statements
-----------------
+Statements
+----------
 
 METAL defines a number of statements:
 
@@ -46,8 +45,10 @@ Although METAL does not define the syntax of expression non-terminals,
 leaving that up to the implementation, a canonical expression syntax
 for use in METAL arguments is described in TALES Specification.
 
-``define-macro``: Define a macro
---------------------------------
+metal:define-macro
+------------------
+
+Define a macro
 
 Syntax
 ~~~~~~
@@ -74,8 +75,10 @@ Simple macro definition:
       Copyright 2004, <em>Foobar</em> Inc.
     </p>
 
-``metal:define-slot``: Define a macro customization point
----------------------------------------------------------
+metal:define-slot
+-----------------
+
+Define a macro customization point
 
 Syntax
 ~~~~~~
@@ -113,8 +116,10 @@ This example defines a macro with one slot named ``name``. When you use
 this macro you can customize the ``b`` element by filling the ``name``
 slot.
 
-``metal:fill-slot``: Customize a macro
---------------------------------------
+metal:fill-slot
+---------------
+
+Customize a macro
 
 Syntax
 ~~~~~~
@@ -156,8 +161,10 @@ You can fill the ``name`` slot like so:
       Hello <b metal:fill-slot="name">Kevin Bacon</b>
     </p>
 
-``use-macro``: Use a macro
---------------------------
+metal:use-macro
+---------------
+
+Use a macro
 
 Syntax
 ~~~~~~
@@ -195,8 +202,10 @@ template which has been passed as a keyword argument to ``ITemplateCache``'s
 ``RenderTemplate`` method. When the macro is expanded, the ``p`` element and
 its contents will be replaced by the macro.
 
-``metal:define-param``: Define a macro parameter
-------------------------------------------------
+metal:define-param
+------------------
+
+Define a macro parameter
 
 Syntax
 ~~~~~~
@@ -243,8 +252,10 @@ You can declare parameters with default values:
       I'm <b>${age}</b> years old.
     </p>
 
-``metal:fill-param``: Fill a macro parameter
---------------------------------------------
+metal:fill-param
+----------------
+
+Fill a macro parameter
 
 Syntax
 ~~~~~~
@@ -286,8 +297,10 @@ You can fill the ``name`` and ``age`` parameters like so:
        metal:fill-param='name "Roman"; age 33'>
     </p>
 
-``metal:import``: Import macro definitions from external file
--------------------------------------------------------------
+metal:import
+------------
+
+Import macro definitions from external file
 
 Syntax
 ~~~~~~

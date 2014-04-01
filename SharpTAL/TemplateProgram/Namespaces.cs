@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -30,11 +30,11 @@ namespace SharpTAL.TemplateProgram
 {
 	public static class Namespaces
 	{
-		public static readonly string XML_NS = "http://www.w3.org/XML/1998/namespace";
-		public static readonly string XMLNS_NS = "http://www.w3.org/2000/xmlns/";
-		public static readonly string XHTML_NS = "http://www.w3.org/1999/xhtml";
-		public static readonly string META_NS = "http://xml.zope.org/namespaces/meta";
-		public static readonly string TAL_NS = "http://xml.zope.org/namespaces/tal";
-		public static readonly string METAL_NS = "http://xml.zope.org/namespaces/metal";
+		public static readonly string XmlNs = "http://www.w3.org/XML/1998/namespace";
+		public static readonly string XmlnsNs = "http://www.w3.org/2000/xmlns/";
+		public static readonly string XhtmlNs = "http://www.w3.org/1999/xhtml";
+		public static readonly string MetaNs = "http://xml.zope.org/namespaces/meta";
+		public static readonly string TalNs = "http://xml.zope.org/namespaces/tal";
+		public static readonly string MetalNs = "http://xml.zope.org/namespaces/metal";
 	}
 }

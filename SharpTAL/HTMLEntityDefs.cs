@@ -1,12 +1,12 @@
 ﻿//
-// HTMLEntityDefs.cs
+// HtmlEntityDefs.cs
 //
 // Ported to C# from htmlentitydefs.py from the Standard Python Library
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,16 +29,17 @@
 //
 
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace SharpTAL
 {
-	public sealed class HTMLEntityDefs
+	public sealed class HtmlEntityDefs
 	{
 		/// <summary>
 		/// Maps the HTML entity name to the Unicode codepoint
 		/// </summary>
-		public static readonly Dictionary<string, int> Name2Code = new Dictionary<string, int>()
-        {
+		public static readonly Dictionary<string, int> Name2Code = new Dictionary<string, int>
+		{
 			{"AElig",     0x00c6} // latin capital letter AE = latin capital ligature AE, U+00C6 ISOlat1
 			,{"Aacute",   0x00c1} // latin capital letter A with acute, U+00C1 ISOlat1
 			,{"Acirc",    0x00c2} // latin capital letter A with circumflex, U+00C2 ISOlat1
@@ -304,7 +305,7 @@ namespace SharpTAL
 		/// </summary>
 		public static readonly Dictionary<string, string> EntityDefs = new Dictionary<string, string>();
 
-		static HTMLEntityDefs()
+		static HtmlEntityDefs()
 		{
 			foreach (var kv in Name2Code)
 			{
@@ -314,7 +315,7 @@ namespace SharpTAL
 				Code2Name.Add(codepoint, name);
 
 				if (codepoint <= 0xff)
-					EntityDefs.Add(name, ((char)codepoint).ToString());
+					EntityDefs.Add(name, ((char)codepoint).ToString(CultureInfo.InvariantCulture));
 				else
 					EntityDefs.Add(name, string.Format("&#{0};", codepoint));
 			}

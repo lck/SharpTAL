@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,28 +26,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections;
+using System.Collections.Generic;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-
-	public class RepeatItem : ITALESIterator
+	public class RepeatItem : ITalesIterator
 	{
-		private IEnumerable sequence;
-		private int position;
+		private int _position;
 
 		public RepeatItem(IEnumerable sequence)
 		{
-			this.sequence = sequence;
-			this.position = -1;
+			_position = -1;
 
-			ICollection c = sequence as ICollection;
+			var c = sequence as ICollection;
 			if (c != null)
 				length = c.Count;
 			else
 			{
-				string s = sequence as string;
+				var s = sequence as string;
 				if (s != null)
 					length = s.Length;
 				else
@@ -55,19 +52,19 @@ namespace SharpTAL
 			}
 		}
 
-		#region ITALESIterator implementation
+		#region ITalesIterator implementation
 
 		public void next(bool isLast)
 		{
-			position++;
+			_position++;
 			end = isLast;
 		}
 
 		public int length { get; protected set; }
 
-		public int index { get { return position; } }
+		public int index { get { return _position; } }
 
-		public int number { get { return position + 1; } }
+		public int number { get { return _position + 1; } }
 
 		public bool even { get { return index % 2 == 0; } }
 
@@ -82,7 +79,7 @@ namespace SharpTAL
 			get
 			{
 				string result = "";
-				int nextCol = position;
+				int nextCol = _position;
 				if (nextCol == 0)
 					return "a";
 				while (nextCol > 0)
@@ -90,7 +87,7 @@ namespace SharpTAL
 					int tmp = nextCol;
 					nextCol = tmp / 26;
 					int thisCol = tmp % 26;
-					result = ((char)(((int)'a') + thisCol)).ToString() + result;
+					result = ((char)(('a') + thisCol)) + result;
 				}
 				return result;
 			}
@@ -102,7 +99,7 @@ namespace SharpTAL
 		{
 			get
 			{
-				Dictionary<string, int> romanNumeralList = new Dictionary<string, int>()
+				var romanNumeralList = new Dictionary<string, int>
                     {
                         { "m", 1000 }
                         ,{ "cm", 900 }
@@ -118,9 +115,9 @@ namespace SharpTAL
                         ,{ "iv", 4 }
                         ,{ "i", 1 }
                     };
-				if (position > 3999)
+				if (_position > 3999)
 					return " ";
-				int num = position + 1;
+				int num = _position + 1;
 				string result = "";
 				foreach (KeyValuePair<string, int> kv in romanNumeralList)
 				{

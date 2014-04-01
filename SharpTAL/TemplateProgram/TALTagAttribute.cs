@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,27 +26,28 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using SharpTAL.TemplateParser;
+
 namespace SharpTAL.TemplateProgram
 {
-	using SharpTAL.TemplateParser;
-
-	public class TALTagAttribute : TagAttribute
+	public class TalTagAttribute : TagAttribute
 	{
 		public CommandType CommandType { get; set; }
 
-		public TALTagAttribute()
+		public TalTagAttribute()
 		{
 		}
 
-		public TALTagAttribute(TagAttribute tagAttr)
+		public TalTagAttribute(TagAttribute tagAttr)
 		{
 			Name = tagAttr.Name;
 			Value = tagAttr.Value;
 			Eq = tagAttr.Eq;
 			Quote = tagAttr.Quote;
 			QuoteEntity = tagAttr.QuoteEntity;
-			if (tagAttr is TALTagAttribute)
-				CommandType = ((TALTagAttribute)tagAttr).CommandType;
+			var attr = tagAttr as TalTagAttribute;
+			if (attr != null)
+				CommandType = attr.CommandType;
 		}
 	}
 }

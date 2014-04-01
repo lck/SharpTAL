@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,23 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Text.RegularExpressions;
+
 namespace SharpTAL.TemplateParser
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-	using System.Text.RegularExpressions;
-
 	public class TagAttribute
 	{
-		static readonly Regex _re_needs_escape = new Regex(@"[&<>""\']");
+		private static readonly Regex ReNeedsEscape = new Regex(@"[&<>""\']");
 
 		public string Name { get; set; }
 		public string Value { get; set; }
 		public string Eq { get; set; }
 		public string Quote { get; set; }
 		public string QuoteEntity { get; set; }
-		
+
 		public string EscapedValue
 		{
 			get
@@ -52,7 +49,7 @@ namespace SharpTAL.TemplateParser
 				if (string.IsNullOrEmpty(str))
 					return str;
 
-				if (!_re_needs_escape.IsMatch(str))
+				if (!ReNeedsEscape.IsMatch(str))
 					return str;
 
 				if (str.IndexOf('&') >= 0)
@@ -80,13 +77,13 @@ namespace SharpTAL.TemplateParser
 				if (string.IsNullOrEmpty(str))
 					return str;
 
-				int cp = HTMLEntityDefs.Name2Code["lt"];
+				int cp = HtmlEntityDefs.Name2Code["lt"];
 				str = str.Replace("&lt;", ((char)cp).ToString());
 
-				cp = HTMLEntityDefs.Name2Code["gt"];
+				cp = HtmlEntityDefs.Name2Code["gt"];
 				str = str.Replace("&gt;", ((char)cp).ToString());
 
-				cp = HTMLEntityDefs.Name2Code["quot"];
+				cp = HtmlEntityDefs.Name2Code["quot"];
 				str = str.Replace("&quot;", ((char)cp).ToString());
 
 				return str;

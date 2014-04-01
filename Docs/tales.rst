@@ -1,8 +1,7 @@
 .. _tales_chapter:
 
-=====================================================
-Template Attribute Language Expression Syntax (TALES)
-=====================================================
+Expressions (TALES)
+===================
 
 The *Template Attribute Language Expression Syntax* (TALES) standard
 describes expressions that supply :ref:`tal_chapter` and
@@ -30,8 +29,8 @@ can define any number of expression types, with whatever syntax you
 like. It also determines which expression type is indicated by
 omitting the prefix.
 
-TALES Expression Types
-----------------------
+Types
+-----
 
 These are the TALES expression types supported by default in ``SharpTAL``:
 
@@ -80,8 +79,8 @@ Syntax
 
 String expression syntax::
 
-        string_expression ::= ( plain_string | [ varsub ] )*
-        varsub            ::= ( '${ Expression }' )
+    string_expression ::= ( plain_string | [ varsub ] )*
+    varsub            ::= ( '${ Expression }' )
 
 Description
 ~~~~~~~~~~~
@@ -97,9 +96,11 @@ where ``expression`` is a TALES-expression. The escaped string value of the expr
 Examples
 ~~~~~~~~
 
-Basic string formatting::
+Basic string formatting:
 
-    <span tal:replace="string:${this} and ${that}">
+.. code-block:: html
+
+    <span tal:replace="string:${what} and ${that}">
       Spam and Eggs
     </span>
 
@@ -107,13 +108,17 @@ Basic string formatting::
       total: 12
     </p>
 
-Including a dollar sign::
+Including a dollar sign:
+
+.. code-block:: html
 
     <p tal:content="string:$${cost}">
       cost: $42.00
     </p>
 
-Including operator ${...}::
+Including operator ${...}:
+
+.. code-block:: html
 
     <p tal:content="string:The expression operator: \${cost}">
       cost: $42.00

@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -27,39 +27,36 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace SharpTAL.TemplateParser
 {
 	public class TemplateError : Exception
 	{
-		string msg;
-		Token token;
-		string filename;
+		private readonly string _msg;
+		private readonly Token _token;
+		private readonly string _filename;
 
 		public TemplateError(string msg, Token token)
 		{
-			this.msg = msg;
-			this.token = token;
-			this.filename = token.Filename;
+			_msg = msg;
+			_token = token;
+			_filename = token.Filename;
 		}
 
 		public override string Message
 		{
 			get
 			{
-				string text = string.Format("{0}\n\n", msg);
-				text += string.Format("   - String:   \"{0}\"", token);
+				string text = string.Format("{0}\n\n", _msg);
+				text += string.Format("   - String:   \"{0}\"", _token);
 
-				if (filename != null)
+				if (_filename != null)
 				{
 					text += "\n";
-					text += string.Format("   - Filename: {0}", filename);
+					text += string.Format("   - Filename: {0}", _filename);
 				}
 
-				Location loc = token.Location;
+				Location loc = _token.Location;
 				text += "\n";
 				text += string.Format("   - Location: ({0}:{1})", loc.Line, loc.Position);
 
@@ -71,7 +68,7 @@ namespace SharpTAL.TemplateParser
 		{
 			get
 			{
-				return token.Position;
+				return _token.Position;
 			}
 		}
 	}

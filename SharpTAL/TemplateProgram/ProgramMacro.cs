@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -40,18 +39,18 @@ namespace SharpTAL.TemplateProgram
 	/// </summary>
 	public class ProgramMacro : IProgram
 	{
-		int endTagCommandLocation;
-		Program parentProgram;
+		private readonly int _endTagCommandLocation;
+		private Program _parentProgram;
 
 		public string Name { get; private set; }
-		public string TemplatePath { get { return parentProgram.TemplatePath; } }
-		public string TemplateBody { get { return parentProgram.TemplateBody; } }
-		public string TemplateBodyHash { get { return parentProgram.TemplateBodyHash; } }
-		public Dictionary<string, IProgram> Macros { get { return parentProgram.Macros; } }
-		public Dictionary<int, int> EndTagLocationTable { get { return parentProgram.EndTagLocationTable; } }
-		public List<ICommand> TemplateCommands { get { return parentProgram.TemplateCommands; } }
+		public string TemplatePath { get { return _parentProgram.TemplatePath; } }
+		public string TemplateBody { get { return _parentProgram.TemplateBody; } }
+		public string TemplateBodyHash { get { return _parentProgram.TemplateBodyHash; } }
+		public Dictionary<string, IProgram> Macros { get { return _parentProgram.Macros; } }
+		public Dictionary<int, int> EndTagLocationTable { get { return _parentProgram.EndTagLocationTable; } }
+		public List<ICommand> TemplateCommands { get { return _parentProgram.TemplateCommands; } }
 		public int Start { get; protected set; }
-		public int End { get { return parentProgram.EndTagLocationTable[endTagCommandLocation] + 1; } }
+		public int End { get { return _parentProgram.EndTagLocationTable[_endTagCommandLocation] + 1; } }
 
 		public IEnumerable<ICommand> ProgramCommands
 		{
@@ -65,10 +64,10 @@ namespace SharpTAL.TemplateProgram
 		{
 			set
 			{
-				parentProgram = value;
+				_parentProgram = value;
 
 				// Set the parent of each macro command
-				foreach (ICommand cmd in parentProgram.TemplateCommands.GetRange(Start, End - Start))
+				foreach (ICommand cmd in _parentProgram.TemplateCommands.GetRange(Start, End - Start))
 					cmd.ParentProgram = this;
 			}
 		}
@@ -78,11 +77,10 @@ namespace SharpTAL.TemplateProgram
 		/// and defines the range of commands that we can execute
 		/// </summary>
 		public ProgramMacro(string name, int start, int endTagCommandLocation)
-			: base()
 		{
 			Name = name;
 			Start = start;
-			this.endTagCommandLocation = endTagCommandLocation;
+			_endTagCommandLocation = endTagCommandLocation;
 		}
 
 		public override string ToString()

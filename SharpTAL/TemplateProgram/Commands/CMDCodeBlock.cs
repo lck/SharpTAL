@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -28,17 +28,13 @@
 
 namespace SharpTAL.TemplateProgram.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using SharpTAL.TemplateParser;
-
-	public class CMDCodeBlock : Command
+	public class CmdCodeBlock : Command
 	{
 		public string Language { get; protected set; }
 		public string Code { get; protected set; }
 
-		public CMDCodeBlock(string language, string code)
-			: base(null, CommandType.CMD_CODE_BLOCK)
+		public CmdCodeBlock(string language, string code)
+			: base(null, CommandType.CmdCodeBlock)
 		{
 			Language = language;
 			Code = code;

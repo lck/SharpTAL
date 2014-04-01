@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,20 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
+
+using SharpTAL.TemplateParser;
+
 namespace SharpTAL.TemplateProgram.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using SharpTAL.TemplateParser;
-
-	public class METALUseMacro : Command
+	public class MetalUseMacro : Command
 	{
 		public string Expression { get; protected set; }
 		public Dictionary<string, ProgramSlot> Slots { get; protected set; }
-		public List<METALDefineParam> Parameters { get; protected set; }
+		public List<MetalDefineParam> Parameters { get; protected set; }
 
-		public METALUseMacro(Tag tag, string expression, Dictionary<string, ProgramSlot> slots, List<METALDefineParam> parameters)
-			: base(tag, CommandType.METAL_USE_MACRO)
+		public MetalUseMacro(Tag tag, string expression, Dictionary<string, ProgramSlot> slots, List<MetalDefineParam> parameters)
+			: base(tag, CommandType.MetalUseMacro)
 		{
 			Expression = expression;
 			Slots = slots;

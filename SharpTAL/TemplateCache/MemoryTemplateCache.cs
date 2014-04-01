@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,39 +26,37 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
 namespace SharpTAL.TemplateCache
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Reflection;
-	using SharpTAL.TemplateProgram;
-
 	public class MemoryTemplateCache : AbstractTemplateCache
 	{
-		Dictionary<string, TemplateInfo> templateInfoCache;
-		object templateInfoCacheLock;
+		private readonly Dictionary<string, TemplateInfo> _templateInfoCache;
+		private readonly object _templateInfoCacheLock;
 
 		/// <summary>
 		/// Initialize the template cache
 		/// </summary>
-		public MemoryTemplateCache() :
-			base()
+		public MemoryTemplateCache()
 		{
-			templateInfoCache = new Dictionary<string, TemplateInfo>();
-			templateInfoCacheLock = new object();
+			_templateInfoCache = new Dictionary<string, TemplateInfo>();
+			_templateInfoCacheLock = new object();
 		}
 
 		public override TemplateInfo CompileTemplate(string templateBody, Dictionary<string, Type> globalsTypes, List<Assembly> referencedAssemblies)
 		{
-			lock (templateInfoCacheLock)
+			lock (_templateInfoCacheLock)
 			{
 				// Generate template program
 				TemplateInfo ti = GenerateTemplateProgram(templateBody, globalsTypes, referencedAssemblies);
 
 				// Generated template found in cache
-				if (templateInfoCache.ContainsKey(ti.TemplateKey))
+				if (_templateInfoCache.ContainsKey(ti.TemplateKey))
 				{
-					return templateInfoCache[ti.TemplateKey];
+					return _templateInfoCache[ti.TemplateKey];
 				}
 
 				// Generate code
@@ -66,7 +64,7 @@ namespace SharpTAL.TemplateCache
 				ti.GeneratedSourceCode = codeGenerator.GenerateCode(ti);
 
 				// Generate assembly
-				AssemblyGenerator assemblyCompiler = new AssemblyGenerator();
+				var assemblyCompiler = new AssemblyGenerator();
 				Assembly assembly = assemblyCompiler.GenerateAssembly(ti, true, null, null);
 
 				// Try to load the Render() method from assembly
@@ -75,7 +73,7 @@ namespace SharpTAL.TemplateCache
 				// Try to load the template generator version from assembly
 				ti.GeneratorVersion = GetTemplateGeneratorVersion(assembly, ti);
 
-				templateInfoCache.Add(ti.TemplateKey, ti);
+				_templateInfoCache.Add(ti.TemplateKey, ti);
 
 				return ti;
 			}

@@ -4,7 +4,7 @@
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
 //
-// Copyright (c) 2010 - 2013 Roman Lacko
+// Copyright (c) 2010 - 2014 Roman Lacko
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -27,7 +27,6 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,14 +45,16 @@ namespace SharpTAL
 			// Create compiler parameters
 			//---------------------------
 
-			CompilerParameters compilerParameters = new CompilerParameters();
-			compilerParameters.GenerateExecutable = false;
-			compilerParameters.GenerateInMemory = generateInMemory;
-			compilerParameters.IncludeDebugInformation = false;
-			compilerParameters.WarningLevel = 4;
-			compilerParameters.TreatWarningsAsErrors = false;
-			compilerParameters.TempFiles = new TempFileCollection(Path.GetTempPath(), false);
-			compilerParameters.OutputAssembly = assemblyPath;
+			var compilerParameters = new CompilerParameters
+			{
+				GenerateExecutable = false,
+				GenerateInMemory = generateInMemory,
+				IncludeDebugInformation = false,
+				WarningLevel = 4,
+				TreatWarningsAsErrors = false,
+				TempFiles = new TempFileCollection(Path.GetTempPath(), false),
+				OutputAssembly = assemblyPath
+			};
 
 			if (!string.IsNullOrEmpty(keyFileName))
 			{
@@ -65,8 +66,8 @@ namespace SharpTAL
 			//---------------------------
 
 			// Add core assemblies
-			List<string> assemblies = new List<string>()
-            {
+			var assemblies = new List<string>
+			{
                 "System.dll",
                 "System.Core.dll",
                 "System.Security.dll",
@@ -83,7 +84,7 @@ namespace SharpTAL
 					Type type = ti.GlobalsTypes[varName];
 					if (type != null)
 					{
-						List<Type> genericTypeArguments = new List<Type>(Utils.GetGenericTypeArguments(type));
+						var genericTypeArguments = new List<Type>(Utils.GetGenericTypeArguments(type));
 						List<Assembly> asmList = genericTypeArguments.Select(t => t.Assembly).ToList();
 						foreach (var assembly in asmList)
 						{
@@ -133,7 +134,7 @@ namespace SharpTAL
 				compilerVersion = "v4.0";
 			}
 
-			Dictionary<string, string> providerOptions = new Dictionary<string, string>()
+			var providerOptions = new Dictionary<string, string>
             {
                 { "CompilerVersion", compilerVersion }
             };
@@ -143,12 +144,12 @@ namespace SharpTAL
 
 				if (compilerResults.Errors.HasErrors)
 				{
-					StringBuilder exceptionBuilder = new StringBuilder("Compilation has failed with following errors:\n============\n");
+					var exceptionBuilder = new StringBuilder("Compilation has failed with following errors:\n============\n");
 					string[] sourceLines = ti.GeneratedSourceCode.Split('\n');
 
 					foreach (CompilerError error in compilerResults.Errors)
 					{
-						exceptionBuilder.AppendLine(error.ErrorNumber + ": " + error.ErrorText + " (line " + error.Line.ToString() + ")");
+						exceptionBuilder.AppendLine(error.ErrorNumber + ": " + error.ErrorText + " (line " + error.Line + ")");
 
 						// Add source lines for context
 						int firstLine = Math.Max(0, error.Line - 2);
