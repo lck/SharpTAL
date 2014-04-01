@@ -44,14 +44,59 @@
 				Environment.NewLine, errMsg, template, actual, expected);
 		}
 
-		[Test]
-		public void TestSingleParam()
-		{
-			RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param=""string blue null"">Before <i tal:content=""blue"">blue</i> After</div>",
-				@"<html><body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='blue ""white""'/> here</body></html>",
-				@"<html><div class=""funny"">Before <i>white</i> After</div></html>",
-				"Single param definition failed.");
-		}
+        [Test]
+        public void TestSingleParamOverrideDefaultParameterValue()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param='string blue ""green""'>Before <i tal:content=""blue"">blue</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='blue ""white""'/> here</body></html>",
+                @"<html><div class=""funny"">Before <i>white</i> After</div></html>",
+                "Single param definition failed.");
+        }
+
+        [Test]
+        public void TestSingleParamWithNoDefaultNullableParameterValue()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param=""string blue"">Before <i tal:content=""blue"">blue</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='blue ""white""'/> here</body></html>",
+                @"<html><div class=""funny"">Before <i>white</i> After</div></html>",
+                "Single param definition failed.");
+        }
+
+        [Test]
+        public void TestSingleParamWithNoDefaultNotNullableParameterValue()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param=""int age"">Before <i tal:content=""age"">23</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='age 55'/> here</body></html>",
+                @"<html><div class=""funny"">Before <i>55</i> After</div></html>",
+                "Single param definition failed.");
+        }
+
+        [Test]
+        public void TestSingleParamWithOnlyDefaultParameterValue()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param='string blue ""red""'>Before <i tal:content=""blue"">blue</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt here</body></html>",
+                @"<html><div class=""funny"">Before <i>red</i> After</div></html>",
+                "Single param definition failed.");
+        }
+
+        [Test]
+        public void TestSingleParamWithOnlyDefaultParameterDefaultValue()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param='string blue default'>Before <i tal:content=""blue"">blue</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt here</body></html>",
+                @"<html><div class=""funny"">Before <i>blue</i> After</div></html>",
+                "Single param definition failed.");
+        }
+
+        [Test]
+        public void TestSingleParamFillWithDefault()
+        {
+            RunTest(@"<div metal:define-macro=""one"" class=""funny"" metal:define-param='string blue ""red""'>Before <i tal:content=""blue"">blue</i> After</div>",
+                @"<html><body metal:use-macro='macros[""one""]'>Nowt <i metal:fill-param='blue default'/> here</body></html>",
+                @"<html><div class=""funny"">Before <i>blue</i> After</div></html>",
+                "Single param definition failed.");
+        }
 
 		[Test]
 		public void TestDoubleParams()

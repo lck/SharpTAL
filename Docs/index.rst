@@ -11,7 +11,7 @@ Contents
    talref.rst
    api.rst
 
-.. include:: ../CHANGES.txt
+.. include:: ../CHANGES.rst
 
 =======
 Authors

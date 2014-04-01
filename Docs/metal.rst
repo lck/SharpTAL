@@ -54,7 +54,7 @@ Syntax
 
 ``metal:define-macro`` syntax::
 
-        argument ::= Name
+    argument ::= Name
 
 Description
 ~~~~~~~~~~~
@@ -66,11 +66,13 @@ sub-tree.
 Examples
 ~~~~~~~~
 
-Simple macro definition::
+Simple macro definition:
 
-        <p metal:define-macro="copyright">
-          Copyright 2004, <em>Foobar</em> Inc.
-        </p>
+.. code-block:: html
+
+    <p metal:define-macro="copyright">
+      Copyright 2004, <em>Foobar</em> Inc.
+    </p>
 
 ``metal:define-slot``: Define a macro customization point
 ---------------------------------------------------------
@@ -80,7 +82,7 @@ Syntax
 
 ``metal:define-slot`` syntax::
 
-        argument ::= Name
+    argument ::= Name
 
 Description
 ~~~~~~~~~~~
@@ -99,11 +101,13 @@ Slot names must be unique within a macro.
 Examples
 ~~~~~~~~
 
-Simple macro with slot::
+Simple macro with slot:
 
-        <p metal:define-macro="hello">
-          Hello <b metal:define-slot="name">World</b>
-        </p>
+.. code-block:: html
+
+    <p metal:define-macro="hello">
+      Hello <b metal:define-slot="name">World</b>
+    </p>
 
 This example defines a macro with one slot named ``name``. When you use
 this macro you can customize the ``b`` element by filling the ``name``
@@ -136,17 +140,21 @@ contents will be silently dropped.
 Examples
 ~~~~~~~~
 
-Given this macro::
+Given this macro:
 
-        <p metal:define-macro="hello">
-          Hello <b metal:define-slot="name">World</b>
-        </p>
+.. code-block:: html
 
-You can fill the ``name`` slot like so::
+    <p metal:define-macro="hello">
+      Hello <b metal:define-slot="name">World</b>
+    </p>
 
-        <p metal:use-macro='master.macros["hello"]'>
-          Hello <b metal:fill-slot="name">Kevin Bacon</b>
-        </p>
+You can fill the ``name`` slot like so:
+
+.. code-block:: html
+
+    <p metal:use-macro='master.macros["hello"]'>
+      Hello <b metal:fill-slot="name">Kevin Bacon</b>
+    </p>
 
 ``use-macro``: Use a macro
 --------------------------
@@ -156,7 +164,7 @@ Syntax
 
 ``metal:use-macro`` syntax::
 
-        argument ::= expression
+    argument ::= expression
 
 Description
 ~~~~~~~~~~~
@@ -174,10 +182,13 @@ the macro body uses any macros, they are expanded first.
 Examples
 ~~~~~~~~
 
-Basic macro usage::
+Basic macro usage:
 
-        <p metal:use-macro='other.macros["header"]'> header macro from
-          defined in other.html template </p>
+.. code-block:: html
+
+    <p metal:use-macro='other.macros["header"]'>
+      header macro from defined in other.html template
+    </p>
 
 This example refers to the ``header`` macro defined in the ``other``
 template which has been passed as a keyword argument to ``ITemplateCache``'s
@@ -212,15 +223,15 @@ Parameter names must be unique within a macro.
 Examples
 ~~~~~~~~
 
-Simple macro with two parameters::
+Simple macro with two parameters:
 
-        <p metal:define-macro="hello">
-          <tal:tag metal:define-param='string name "Samantha"' />
-          <tal:tag metal:define-param='int age 23' />
-          
-          Hello, my name is <b tal:content="name">Name</b>.
-          I'm <b tal:content="age">100</b> years old.
-        </p>
+.. code-block:: html
+
+    <p metal:define-macro="hello"
+       metal:define-param='string name "Samantha"; int age 23'>
+      Hello, my name is <b>${name}</b>.
+      I'm <b>${age}</b> years old.
+    </p>
 
 ``metal:fill-param``: Fill a macro parameter
 --------------------------------------------
@@ -231,7 +242,7 @@ Syntax
 ``metal:fill-param`` syntax::
 
     argument             ::= attribute_statement [';' attribute_statement]*
-    attribute_statement  ::= param_name expression
+    attribute_statement  ::= param_name [expression]
     param_name           ::= Parameter Name
 
 Description
@@ -239,8 +250,7 @@ Description
 
 The ``metal:fill-param`` statement fills macro parameters.
 
-The ``metal:fill-param`` statement must be used inside a
-``metal:use-macro`` statement.
+The ``metal:fill-param`` statement must be used inside a ``metal:use-macro`` statement.
 
 If the named parameter does not exist within the macro, the parameter
 contents will be silently dropped.
@@ -248,22 +258,33 @@ contents will be silently dropped.
 Examples
 ~~~~~~~~
 
-Given this macro::
+Given this macro:
 
-        <p metal:define-macro="hello">
-          <tal:tag metal:define-param='string name "Samantha";
-          int age 23' />
-          
-          Hello, my name is <b tal:content="name">Name</b>.
-          I'm <b tal:content="age">100</b> years old.
-        </p>
+.. code-block:: html
 
-You can fill the ``name`` and ``age`` parameters like so::
+    <p metal:define-macro="hello"
+       metal:define-param='string name; int age'>
+      Hello, my name is <b>${name}</b>.
+      I'm <b>${age}</b> years old.
+    </p>
 
-        <p metal:use-macro='master.macros["hello"]'>
-          <tal:tag metal:fill-param='name "Roman"'> />
-          <tal:tag metal:fill-param='age 33'> />
-        </p>
+You can fill the ``name`` and ``age`` parameters like so:
+
+.. code-block:: html
+
+    <p metal:use-macro='master.macros["hello"]'
+       metal:fill-param='name "Roman"; age 33'>
+    </p>
+
+You can declare parameters with default values:
+
+.. code-block:: html
+
+    <p metal:define-macro="hello"
+       metal:define-param='string name "Roman"; int age 33'>
+      Hello, my name is <b>${name}</b>.
+      I'm <b>${age}</b> years old.
+    </p>
 
 ``metal:import``: Import macro definitions from external file
 -------------------------------------------------------------
@@ -288,30 +309,36 @@ If the namespace is not specified, macros are imported to default namespace.
 Examples
 ~~~~~~~~
 
-Import macros from file ``Macros.html`` into default namespace and use imported macro ``hello``::
+Import macros from file ``Macros.html`` into default namespace and use imported macro ``hello``:
 
-        <p metal:import="Macros.html">
-          <p metal:use-macro='macros["hello"]'>
-            <tal:tag metal:fill-param='name "Roman"'> />
-            <tal:tag metal:fill-param='age 33'> />
-          </p>
-        </p>
+.. code-block:: html
 
-Import macros from file ``Macros.html`` into custom namespace ``mymacros`` and use imported macro ``hello``::
+    <p metal:import="Macros.html">
+      <p metal:use-macro='macros["hello"]'
+         metal:fill-param='name "Roman"; age 33'>
+      </p>
+    </p>
 
-        <p metal:import="mymacros:Macros.html">
-          <p metal:use-macro='mymacros.macros["hello"]'>
-            <tal:tag metal:fill-param='name "Roman"'> />
-            <tal:tag metal:fill-param='age 33'> />
-          </p>
-        </p>
+Import macros from file ``Macros.html`` into custom namespace ``mymacros`` and use imported macro ``hello``:
 
-Import macros from multiple files into one custom namespace::
+.. code-block:: html
 
-        <p metal:import="mymacros:Macros1.html;mymacros:Macros2.html">
-        </p>
+    <p metal:import="mymacros:Macros.html">
+      <p metal:use-macro='mymacros.macros["hello"]'
+         metal:fill-param='name "Roman"; age 33'>
+      </p>
+    </p>
 
-Import macros from multiple files into multiple custom namespaces::
+Import macros from multiple files into one custom namespace:
 
-        <p metal:import="mymacros1:Macros1.html;mymacros2:Macros2.html">
-        </p>
+.. code-block:: html
+
+    <p metal:import="mymacros:Macros1.html;mymacros:Macros2.html">
+    </p>
+
+Import macros from multiple files into multiple custom namespaces:
+
+.. code-block:: html
+
+    <p metal:import="mymacros1:Macros1.html;mymacros2:Macros2.html">
+    </p>

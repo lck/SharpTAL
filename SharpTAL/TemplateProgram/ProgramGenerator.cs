@@ -765,16 +765,17 @@ namespace SharpTAL.TemplateProgram
 				List<string> stmtBits = new List<string>(defineStmt.Split(new char[] { ' ' }));
 				string varType;
 				string varName;
-				string expression;
-				if (stmtBits.Count < 3)
+				string expression = "";
+				if (stmtBits.Count < 2)
 				{
 					// Error, badly formed define-param command
-					string msg = string.Format("Badly formed define-param command '{0}'.  Define commands must be of the form: 'varType varName expression[;varType varName expression]'", argument);
+					string msg = string.Format("Badly formed define-param command '{0}'.  Define commands must be of the form: 'varType varName [expression][;varType varName [expression]]'", argument);
 					throw new TemplateParseException(currentStartTag, msg);
 				}
 				varType = stmtBits[0];
 				varName = stmtBits[1];
-				expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
+                if (stmtBits.Count >= 3)
+                    expression = string.Join(" ", stmtBits.GetRange(2, stmtBits.Count - 2).ToArray());
 
 				commands.Add(new METALDefineParam(currentStartTag, varType, varName, expression));
 			}

@@ -577,7 +577,7 @@ Global variable with namespace name allready exists.", programNamespace));
 		protected string FormatCSharpExpression(string expression)
 		{
 			var parser = new CSharpParser();
-			var expr = parser.ParseExpression(expression + ";");
+			parser.ParseExpression(expression + ";");
 			if (parser.HasErrors)
 			{
 				var errors = string.Join(Environment.NewLine, parser.Errors.Select(err => err.Message));
@@ -751,10 +751,16 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteCmdInfo(defineParamCmd);
 
-			string expression = FormatExpression(defineParamCmd.Expression);
-
-			// Create param variable
-			WriteToBody(@"{0} {1} = {2};", defineParamCmd.Type, defineParamCmd.Name, expression);
+            // Create param variable
+            if (string.IsNullOrWhiteSpace(defineParamCmd.Expression))
+		    {
+                WriteToBody(@"{0} {1} = default({0});", defineParamCmd.Type, defineParamCmd.Name);
+            }
+		    else
+		    {
+                string expression = FormatExpression(defineParamCmd.Expression);
+                WriteToBody(@"{0} {1} = {2};", defineParamCmd.Type, defineParamCmd.Name, expression);
+            }
 			WriteToBody(@"if (__currentParams.ContainsKey(""{0}""))", defineParamCmd.Name);
 			WriteToBody(@"{{");
 			WriteToBody("     // This param is filled");
