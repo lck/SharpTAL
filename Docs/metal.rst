@@ -204,7 +204,7 @@ Syntax
 ``metal:define-param`` syntax::
 
     argument             ::= attribute_statement [';' attribute_statement]*
-    attribute_statement  ::= param_type param_name expression
+    attribute_statement  ::= param_type param_name [expression]
     param_type           ::= Parameter Type
     param_name           ::= Parameter Name
 
@@ -228,7 +228,17 @@ Simple macro with two parameters:
 .. code-block:: html
 
     <p metal:define-macro="hello"
-       metal:define-param='string name "Samantha"; int age 23'>
+       metal:define-param='string name; int age'>
+      Hello, my name is <b>${name}</b>.
+      I'm <b>${age}</b> years old.
+    </p>
+
+You can declare parameters with default values:
+
+.. code-block:: html
+
+    <p metal:define-macro="hello"
+       metal:define-param='string name "Roman"; int age 33'>
       Hello, my name is <b>${name}</b>.
       I'm <b>${age}</b> years old.
     </p>
@@ -242,7 +252,7 @@ Syntax
 ``metal:fill-param`` syntax::
 
     argument             ::= attribute_statement [';' attribute_statement]*
-    attribute_statement  ::= param_name [expression]
+    attribute_statement  ::= param_name expression
     param_name           ::= Parameter Name
 
 Description
@@ -274,16 +284,6 @@ You can fill the ``name`` and ``age`` parameters like so:
 
     <p metal:use-macro='master.macros["hello"]'
        metal:fill-param='name "Roman"; age 33'>
-    </p>
-
-You can declare parameters with default values:
-
-.. code-block:: html
-
-    <p metal:define-macro="hello"
-       metal:define-param='string name "Roman"; int age 33'>
-      Hello, my name is <b>${name}</b>.
-      I'm <b>${age}</b> years old.
     </p>
 
 ``metal:import``: Import macro definitions from external file
