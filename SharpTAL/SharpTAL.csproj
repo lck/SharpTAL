@@ -110,7 +110,7 @@
     <Compile Include="TemplateProgram\Commands\CmdStartScope.cs" />
     <Compile Include="TemplateProgram\Commands\CmdOutput.cs" />
     <Compile Include="TemplateProgram\Commands\CmdStartTag.cs" />
-    <Compile Include="TemplateProgram\Commands\CmdEntTagEndScope.cs" />
+    <Compile Include="TemplateProgram\Commands\CmdEndTagEndScope.cs" />
     <Compile Include="TemplateProgram\Commands\MetalDefineSlot.cs" />
     <Compile Include="TemplateProgram\Commands\TalCondition.cs" />
     <Compile Include="TemplateProgram\Commands\TalRepeat.cs" />

@@ -1,5 +1,5 @@
 ﻿//
-// CMDEntTagEndScope.cs
+// CmdEndTagEndScope.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -30,9 +30,9 @@ using SharpTAL.TemplateParser;
 
 namespace SharpTAL.TemplateProgram.Commands
 {
-	public class CmdEntTagEndScope : Command
+	public class CmdEndTagEndScope : Command
 	{
-		public CmdEntTagEndScope(Tag tag)
+		public CmdEndTagEndScope(Tag tag)
 			: base(tag, CommandType.CmdEndtagEndscope)
 		{
 		}

@@ -49,23 +49,23 @@
   <ItemGroup>
     <Compile Include="CacheTests\FileSystemTemplateCacheTests.cs" />
     <Compile Include="CacheTests\MemoryTemplateCacheTests.cs" />
-    <Compile Include="METALTests\MetalDefineMacroTests.cs" />
-    <Compile Include="METALTests\MetalDefineParamsTests.cs" />
-    <Compile Include="METALTests\MetalDefineSlotsTests.cs" />
-    <Compile Include="METALTests\MetalImportTests.cs" />
-    <Compile Include="METALTests\MetalNameSpaceTests.cs" />
-    <Compile Include="TALESTests\CodeBlocksTests.cs" />
-    <Compile Include="TALESTests\TextTemplateTests.cs" />
-    <Compile Include="TALESTests\InterpolationTests.cs" />
-    <Compile Include="TALESTests\TalesCSharpPathTests.cs" />
-    <Compile Include="TALESTests\TalesStringTests.cs" />
-    <Compile Include="TALTests\TalAttributesTests.cs" />
-    <Compile Include="TALTests\TalConditionTests.cs" />
-    <Compile Include="TALTests\TalContentTests.cs" />
-    <Compile Include="TALTests\TalDefineTests.cs" />
-    <Compile Include="TALTests\TalOmitTagTests.cs" />
-    <Compile Include="TALTests\TalRepeatTests.cs" />
-    <Compile Include="TALTests\TalReplaceTests.cs" />
+    <Compile Include="MetalTests\MetalDefineMacroTests.cs" />
+    <Compile Include="MetalTests\MetalDefineParamsTests.cs" />
+    <Compile Include="MetalTests\MetalDefineSlotsTests.cs" />
+    <Compile Include="MetalTests\MetalImportTests.cs" />
+    <Compile Include="MetalTests\MetalNameSpaceTests.cs" />
+    <Compile Include="TalesTests\CodeBlocksTests.cs" />
+    <Compile Include="TalesTests\TextTemplateTests.cs" />
+    <Compile Include="TalesTests\InterpolationTests.cs" />
+    <Compile Include="TalesTests\TalesCSharpPathTests.cs" />
+    <Compile Include="TalesTests\TalesStringTests.cs" />
+    <Compile Include="TalTests\TalAttributesTests.cs" />
+    <Compile Include="TalTests\TalConditionTests.cs" />
+    <Compile Include="TalTests\TalContentTests.cs" />
+    <Compile Include="TalTests\TalDefineTests.cs" />
+    <Compile Include="TalTests\TalOmitTagTests.cs" />
+    <Compile Include="TalTests\TalRepeatTests.cs" />
+    <Compile Include="TalTests\TalReplaceTests.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -75,10 +75,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="METALTests\Imports\Imports 1.html">
+    <Content Include="MetalTests\Imports\Imports 1.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="METALTests\Imports\Imports 2.html">
+    <Content Include="MetalTests\Imports\Imports 2.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -461,7 +461,7 @@ namespace SharpTAL.TemplateProgram
 						_endTagsCommandMap[(int)endTagCommandLocation] = _programCommands.Count;
 
 						// We need a "close scope and tag" command
-						_programCommands.Add(new CmdEntTagEndScope(tag));
+						_programCommands.Add(new CmdEndTagEndScope(tag));
 						return;
 					}
 					if (!tag.Singleton)

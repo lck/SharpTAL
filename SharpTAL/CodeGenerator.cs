@@ -1116,7 +1116,7 @@ Global variable with namespace name allready exists.", programNamespace));
 
 		protected override void Handle_CMD_ENDTAG_ENDSCOPE(ICommand command)
 		{
-			var entTagEndScopeCmd = (CmdEntTagEndScope)command;
+			var entTagEndScopeCmd = (CmdEndTagEndScope)command;
 
 			string tagName = entTagEndScopeCmd.Tag.Name;
 			bool singletonTag = entTagEndScopeCmd.Tag.Singleton;

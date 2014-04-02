@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using NUnit.Framework;
 
-namespace SharpTAL.Tests.METALTests
+namespace SharpTAL.Tests.MetalTests
 {
 	[TestFixture]
 	public class MetalDefineSlotsTests

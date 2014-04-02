@@ -4,7 +4,7 @@ using System.Reflection;
 
 using NUnit.Framework;
 
-namespace SharpTAL.Tests.TALTests
+namespace SharpTAL.Tests.TalTests
 {
 	public static class Extensions
 	{

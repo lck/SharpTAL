@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using NUnit.Framework;
 
-namespace SharpTAL.Tests.TALESTests
+namespace SharpTAL.Tests.TalesTests
 {
 	[TestFixture]
 	public class TextTemplateTests

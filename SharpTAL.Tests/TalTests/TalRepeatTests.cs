@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using NUnit.Framework;
 
-namespace SharpTAL.Tests.TALTests
+namespace SharpTAL.Tests.TalTests
 {
 	[TestFixture]
     public class TalRepeatTests
