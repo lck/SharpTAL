@@ -19,28 +19,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpTAL.Tests", "SharpTAL.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{FEE6FF2A-1FF2-4658-9D8E-3C01C1377335}"
 	ProjectSection(SolutionItems) = preProject
-		Docs\api.rst = Docs\api.rst
 		Docs\build.bat = Docs\build.bat
+		Docs\CHANGES.rst = Docs\CHANGES.rst
+		Docs\codeblocks.rst = Docs\codeblocks.rst
 		Docs\conf.py = Docs\conf.py
 		Docs\index.rst = Docs\index.rst
-		Docs\intro.rst = Docs\intro.rst
 		Docs\metal.rst = Docs\metal.rst
+		Docs\substitution.rst = Docs\substitution.rst
 		Docs\tal.rst = Docs\tal.rst
 		Docs\tales.rst = Docs\tales.rst
 		Docs\talref.rst = Docs\talref.rst
-		Docs\tutorial.rst = Docs\tutorial.rst
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{05158FDF-0386-4D95-B7A2-77BDA0E17A66}"
-	ProjectSection(SolutionItems) = preProject
-		Libs\ICSharpCode.NRefactory.CSharp.dll = Libs\ICSharpCode.NRefactory.CSharp.dll
-		Libs\ICSharpCode.NRefactory.dll = Libs\ICSharpCode.NRefactory.dll
-		Libs\ICSharpCode.NRefactory.Xml.dll = Libs\ICSharpCode.NRefactory.Xml.dll
-		Libs\Mono.Cecil.dll = Libs\Mono.Cecil.dll
-		Libs\Mono.Cecil.Mdb.dll = Libs\Mono.Cecil.Mdb.dll
-		Libs\Mono.Cecil.Pdb.dll = Libs\Mono.Cecil.Pdb.dll
-		Libs\Mono.Cecil.Rocks.dll = Libs\Mono.Cecil.Rocks.dll
-		Libs\nunit.framework.dll = Libs\nunit.framework.dll
 	EndProjectSection
 EndProject
 Global

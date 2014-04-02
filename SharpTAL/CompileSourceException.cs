@@ -1,5 +1,5 @@
 ﻿//
-// Errors.cs
+// CompileSourceException.cs
 //
 // Author:
 //   Roman Lacko (backup.rlacko@gmail.com)
@@ -29,42 +29,8 @@
 using System;
 using System.CodeDom.Compiler;
 
-using SharpTAL.TemplateParser;
-
 namespace SharpTAL
 {
-	public class TemplateParseException : Exception
-	{
-		private readonly Tag _tag;
-		private readonly string _errorDescription;
-
-		public TemplateParseException(Tag tag, string errorDescription)
-			: base(errorDescription)
-		{
-			_tag = tag;
-			_errorDescription = errorDescription;
-		}
-
-		public override string Message
-		{
-			get
-			{
-				if (_tag != null)
-				{
-					return string.Format("{1}{0}Tag: {2}{0}Source: {3}{0}Line: {4}{0}Position: {5}",
-						Environment.NewLine, _errorDescription,
-						_tag, _tag.SourcePath, _tag.LineNumber, _tag.LinePosition);
-				}
-				return _errorDescription;
-			}
-		}
-
-		public override string ToString()
-		{
-			return Message;
-		}
-	}
-
 	public class CompileSourceException : Exception
 	{
 		private readonly TemplateInfo _templateInfo;
@@ -90,25 +56,6 @@ namespace SharpTAL
 			get
 			{
 				return _errors;
-			}
-		}
-	}
-
-	public class RenderTemplateException : Exception
-	{
-		private readonly TemplateInfo _templateInfo;
-
-		public RenderTemplateException(TemplateInfo templateInfo, string message, Exception innerException)
-			: base(message, innerException)
-		{
-			_templateInfo = templateInfo;
-		}
-
-		public TemplateInfo TemplateInfo
-		{
-			get
-			{
-				return _templateInfo;
 			}
 		}
 	}

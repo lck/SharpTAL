@@ -26,26 +26,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.IO;
+using System.Reflection;
+using System.Xml;
+using System.Diagnostics;
+
+using SharpTAL.TemplateProgram;
+using SharpTAL.TemplateCache;
+
 namespace SharpTAL.Demo
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-	using System.Text;
-	using System.IO;
-	using System.Reflection;
-	using System.Xml;
-	using System.Diagnostics;
-	using System.Collections;
-	using SharpTAL.TemplateProgram;
-	using SharpTAL.TemplateCache;
-
 	public static class DemoExtensions
 	{
 		public static string XmlToString(this XmlDocument xml)
 		{
-			StringBuilder sb = new StringBuilder();
-			StringWriter sw = new StringWriter(sb);
+			var sb = new StringBuilder();
+			var sw = new StringWriter(sb);
 			xml.Save(sw);
 			return sb.ToString();
 		}
@@ -72,21 +71,21 @@ namespace SharpTAL.Demo
 
 	class Demo
 	{
-		static void Main(string[] args)
+		static void Main()
 		{
 			// Referenced Assemblies
-			List<Assembly> refAssemblies = new List<Assembly>() { typeof(Demo).Assembly };
+			var refAssemblies = new List<Assembly> { typeof(Demo).Assembly };
 
 			// Globals
-			Dictionary<string, object> globals = new Dictionary<string, object>()
+			var globals = new Dictionary<string, object>
             {
                 {
-                    "friends", new List<Friend>()
+                    "friends", new List<Friend>
                     {
-                        new Friend() { Name="Samantha", Age=33 },
-                        new Friend() { Name="Kim", Age=35 },
-                        new Friend() { Name="Sandra", Age=22 },
-                        new Friend() { Name="Natalie", Age=20 }
+                        new Friend { Name="Samantha", Age=33 },
+                        new Friend { Name="Kim", Age=35 },
+                        new Friend { Name="Sandra", Age=22 },
+                        new Friend { Name="Natalie", Age=20 }
                     }
                 }
             };
@@ -103,7 +102,7 @@ namespace SharpTAL.Demo
 				});
 
 			// Globals types
-			Dictionary<string, Type> globalsTypes = new Dictionary<string, Type>();
+			var globalsTypes = new Dictionary<string, Type>();
 			foreach (var kw in globals)
 			{
 				globalsTypes.Add(kw.Key, kw.Value.GetType());
@@ -111,15 +110,15 @@ namespace SharpTAL.Demo
 
 			try
 			{
-				Stopwatch sw = new Stopwatch();
-				
+				var sw = new Stopwatch();
+
 				// Basic test
 				Console.WriteLine("Basic tests:");
 				Console.WriteLine("=======================================");
 				sw.Start();
-				Console.WriteLine(new SharpTAL.Template("Hello ${w}!").Render(new Dictionary<string, object> { { "w", "world" } }));
+				Console.WriteLine(new Template("Hello ${w}!").Render(new Dictionary<string, object> { { "w", "world" } }));
 				sw.Stop();
-				Console.WriteLine(string.Format("{0} ms", sw.ElapsedMilliseconds));
+				Console.WriteLine("{0} ms", sw.ElapsedMilliseconds);
 
 				// Template program generator speed tests
 				Console.WriteLine();
@@ -127,20 +126,20 @@ namespace SharpTAL.Demo
 				Console.WriteLine("=======================================");
 				sw.Reset();
 				sw.Start();
-				ProgramGenerator pageTemplateParser = new ProgramGenerator();
+				var programGenerator = new ProgramGenerator();
 				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
 					sw.Start();
-					TemplateInfo ti = new TemplateInfo
+					var ti = new TemplateInfo
 					{
 						TemplateBody = Resources.Main,
 						GlobalsTypes = globalsTypes,
 						ReferencedAssemblies = refAssemblies
 					};
-					pageTemplateParser.GenerateTemplateProgram(ref ti);
+					programGenerator.GenerateTemplateProgram(ref ti);
 					sw.Stop();
-					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+					Console.WriteLine("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds);
 				}
 				sw.Stop();
 
@@ -148,14 +147,14 @@ namespace SharpTAL.Demo
 				Console.WriteLine();
 				Console.WriteLine("Template compilation speed tests:");
 				Console.WriteLine("=================================");
-				Template template = new Template(Resources.Main, globalsTypes, refAssemblies);
+				var template = new Template(Resources.Main, globalsTypes, refAssemblies);
 				for (int i = 0; i < 5; i++)
 				{
 					sw.Reset();
 					sw.Start();
 					template.Compile();
 					sw.Stop();
-					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+					Console.WriteLine("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds);
 				}
 
 				// FS Template cache no. 1
@@ -167,7 +166,7 @@ namespace SharpTAL.Demo
 				{
 					Directory.CreateDirectory(cacheFolder);
 				}
-				FileSystemTemplateCache cache1 = new FileSystemTemplateCache(cacheFolder, true, @"Demo_{key}.dll");
+				var cache1 = new FileSystemTemplateCache(cacheFolder, true, @"Demo_{key}.dll");
 				template.TemplateCache = cache1;
 				string result = "";
 				for (int i = 0; i < 5; i++)
@@ -176,7 +175,7 @@ namespace SharpTAL.Demo
 					sw.Start();
 					result = template.Render(globals);
 					sw.Stop();
-					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+					Console.WriteLine("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds);
 				}
 				Console.WriteLine();
 
@@ -184,7 +183,7 @@ namespace SharpTAL.Demo
 				Console.WriteLine();
 				Console.WriteLine("FS template cache no.2 (loading generated templates):");
 				Console.WriteLine("=====================================================");
-				FileSystemTemplateCache cache2 = new FileSystemTemplateCache(cacheFolder, false, @"Demo_{key}.dll");
+				var cache2 = new FileSystemTemplateCache(cacheFolder, false, @"Demo_{key}.dll");
 				template.TemplateCache = cache2;
 				for (int i = 0; i < 5; i++)
 				{
@@ -192,14 +191,14 @@ namespace SharpTAL.Demo
 					sw.Start();
 					template.Render(globals);
 					sw.Stop();
-					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+					Console.WriteLine("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds);
 				}
 
 				// Memory Template cache
 				Console.WriteLine();
 				Console.WriteLine("Memory template cache:");
 				Console.WriteLine("======================");
-				MemoryTemplateCache cache3 = new MemoryTemplateCache();
+				var cache3 = new MemoryTemplateCache();
 				template.TemplateCache = cache3;
 				for (int i = 0; i < 5; i++)
 				{
@@ -207,7 +206,7 @@ namespace SharpTAL.Demo
 					sw.Start();
 					template.Render(globals);
 					sw.Stop();
-					Console.WriteLine(string.Format("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds));
+					Console.WriteLine("{0}: {1} ms", i + 1, sw.ElapsedMilliseconds);
 				}
 
 				Console.WriteLine();
