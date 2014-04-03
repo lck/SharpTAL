@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+	<metadata>
+		<id>SharpTAL</id>
+		<version>{{version}}</version>
+		<title>SharpTAL</title>
+		<authors>Roman Lacko</authors>
+		<owners>Roman Lacko</owners>
+		<licenseUrl>http://sharptal.codeplex.com/license</licenseUrl>
+		<projectUrl>http://sharptal.codeplex.com/</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>SharpTAL is fast HTML/XML template engine.</description>
+		<copyright>Copyright 2010-2014 Roman Lacko</copyright>
+		<tags>Template HTML XML</tags>
+	</metadata>
+</package>

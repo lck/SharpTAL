@@ -26,22 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
+using System.IO;
+
+using SharpTAL.TemplateCache;
+
 namespace SharpTAL
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Reflection;
-	using System.IO;
-	using System.Globalization;
-	using SharpTAL.TemplateCache;
-
 	public interface ITemplate
 	{
 		/// <summary>
 		/// Template cache to store the compiled template body
 		/// </summary>
 		ITemplateCache TemplateCache { get; set; }
-		
+
 		/// <summary>
 		/// Compile template to ensure that the compiled assembly is already in cache when
 		/// RenderTemplate is called for the first time. For precompiling, the actual values
@@ -59,8 +57,7 @@ namespace SharpTAL
 		/// <summary>
 		/// Render the template
 		/// </summary>
-		/// <param name="output">The output stream</param>
-		/// <param name="templateBody">The template body</param>
+		/// <param name="outputWriter">The output stream</param>
 		/// <param name="globals">Dictionary of global variables</param>
 		void Render(StreamWriter outputWriter, Dictionary<string, object> globals);
 	}

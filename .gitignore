@@ -18,3 +18,5 @@ _UpgradeReport_Files/
 **/App_Data/aspnetdb_log.ldf
 
 Docs/_build/
+build/
+SharpTAL*.nupkg
