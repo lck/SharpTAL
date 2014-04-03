@@ -67,7 +67,27 @@ task CopySharpTALFiles -depends CreateOutpuDirectories {
 	$sharptal_files | ForEach-Object { Copy-Item "$_" $build_dir\Output }
 }
 
-task DoRelease -depends Compile, `
+task Merge {
+	$old = pwd
+	cd $build_dir
+	
+	Remove-Item SharpTAL.Partial.dll -ErrorAction SilentlyContinue 
+	Rename-Item $build_dir\SharpTAL.dll SharpTAL.Partial.dll
+	
+	& $tools_dir\ILMerge.exe SharpTAL.Partial.dll `
+		ICSharpCode.NRefactory.dll `
+		ICSharpCode.NRefactory.CSharp.dll `
+		ICSharpCode.NRefactory.Xml.dll `
+		/out:SharpTAL.dll `
+		/t:library `
+		"/internalize"
+	if ($lastExitCode -ne 0) {
+        throw "Error: Failed to merge assemblies!"
+    }
+	cd $old
+}
+
+task DoRelease -depends Compile, Merge, `
 	CleanOutputDirectory, `
 	CreateOutpuDirectories, `
 	CopySharpTALFiles, `
