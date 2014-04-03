@@ -1,10 +1,11 @@
 Changes
 =======
 
-2.2 (2014-??-??)
+3.0 (2014-03-04)
 ----------------
 
 - Macro parameters can be declared without default values
+- Removed runtime dependency on ICSharpCode.NRefactory
 
 
 2.1 (2013-05-30)

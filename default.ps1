@@ -6,7 +6,7 @@ properties {
 	$packages_dir = "$base_dir\packages"
 	$buildartifacts_dir = "$build_dir\"
 	$sln_file = "$base_dir\SharpTAL.sln"
-	$version = "2.2.0"
+	$version = "3.0.0"
 	$tools_dir = "$base_dir\Tools"
 	$global:configuration = "Release"
 	
@@ -67,6 +67,29 @@ task CopySharpTALFiles -depends CreateOutpuDirectories {
 	$sharptal_files | ForEach-Object { Copy-Item "$_" $build_dir\Output }
 }
 
+task ZipOutput {
+	
+	if($env:buildlabel -eq 13)
+	{
+		return 
+	}
+
+	$old = pwd
+	cd $build_dir\Output
+	
+	$file = "SharpTAL-$version-bin.zip"
+    
+	exec { 
+		& $tools_dir\zip.exe -9 -A -r `
+			$file `
+			*.*
+	}
+	
+	Copy-Item $file $base_dir\$file
+	
+    cd $old
+}
+
 task Merge {
 	$old = pwd
 	cd $build_dir
@@ -91,7 +114,8 @@ task DoRelease -depends Compile, Merge, `
 	CleanOutputDirectory, `
 	CreateOutpuDirectories, `
 	CopySharpTALFiles, `
-	CreateNugetPackages {
+	ZipOutput, `
+    CreateNugetPackages {
 	
 	Write-Host "Done building SharpTAL"
 }
@@ -99,11 +123,7 @@ task DoRelease -depends Compile, Merge, `
 task UploadNuget -depends InitNuget, PushNugetPackages
 
 task InitNuget {
-
 	$global:nugetVersion = "$version"
-	if ($global:uploadCategory -and $global:uploadCategory.EndsWith("-Unstable")){
-		$global:nugetVersion += "-Unstable"
-	}
 }
 
 task PushNugetPackages {
