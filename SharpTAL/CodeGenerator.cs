@@ -310,7 +310,7 @@ namespace Templates
 					{
 						string typeName = Utils.GetFullTypeName(type, _typeNamesCache);
 						_globalNames.Add(varName);
-						WriteToGlobals(@"{0} {1} = ({0})context[""{1}""];", typeName, varName);
+						WriteToGlobals(@"var {1} = ({0})context[""{1}""];", typeName, varName);
 					}
 				}
 			}
