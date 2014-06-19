@@ -1038,13 +1038,13 @@ namespace SharpTAL.TemplateProgram
 					structure = true;
 					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
 				}
-				else if (attProps[1] == "text")
+				else if (attProps[0] == "text")
 				{
 					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
 				}
 				else
 				{
-					// It's not a type selection after all - assume it's part of the path
+					// It's not a type selection after all - assume it's part of the expression
 					expression = argument;
 				}
 			}

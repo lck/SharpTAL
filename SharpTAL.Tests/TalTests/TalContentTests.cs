@@ -91,6 +91,14 @@ namespace SharpTAL.Tests.TalTests
 		}
 
 		[Test]
+		public void TestContentExplicitText()
+		{
+			RunTest(@"<html><p tal:content=""text test"">Original</p></html>"
+				, "<html><p>testing</p></html>"
+				, "Content of string did not evaluate to contain string");
+		}
+
+		[Test]
 		public void TestContentStructure()
 		{
 			Dictionary<string, object> weblog = new Dictionary<string, object>
