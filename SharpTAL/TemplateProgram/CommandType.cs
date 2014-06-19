@@ -69,8 +69,8 @@ namespace SharpTAL.TemplateProgram
 		TalRepeat = 1003,
 		TalContent = 1004,
 		TalReplace = 1005,
-		TalAttributes = 1006,
-		TalOmittag = 1007,
+		TalOmittag = 1006,
+		TalAttributes = 1007,
 
 		// Processing Commands
 		CmdStartScope = 10008,
