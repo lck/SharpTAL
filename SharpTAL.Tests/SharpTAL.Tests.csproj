@@ -57,6 +57,7 @@
     <Compile Include="TalesTests\TalesStringTests.cs" />
     <Compile Include="TalTests\TalAttributesTests.cs" />
     <Compile Include="TalTests\TalConditionTests.cs" />
+    <Compile Include="TalTests\TalOnErrorTests.cs" />
     <Compile Include="TalTests\TalContentTests.cs" />
     <Compile Include="TalTests\TalDefineTests.cs" />
     <Compile Include="TalTests\TalOmitTagTests.cs" />

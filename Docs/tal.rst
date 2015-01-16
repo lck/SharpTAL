@@ -85,6 +85,8 @@ These are the available TAL statements:
 - ``tal:replace`` - replace the content of an element and remove the
   element leaving the content.
 
+- ``tal:on-error`` - substitute the content of an element if processing fails
+
 Order of Operations
 -------------------
 
@@ -112,6 +114,9 @@ element has multiple statements, they are executed in this order:
 #. ``tal:omit-tag``
 
 #. ``tal:attributes``
+
+Since the ``tal:on-error`` statement is only invoked when an error occurs,
+it does not appear in the list.
 
 There is a reasoning behind this ordering.  Because users often want
 to set up variables for use in other statements contained within this
@@ -511,11 +516,10 @@ Syntax
 
 ``tal:replace`` syntax::
 
-    argument ::= ['structure'] expression
+    argument ::= (['text'] | 'structure') expression
 
 Description
 ~~~~~~~~~~~
-
 
 The ``tal:replace`` statement replaces an element with dynamic
 content.  It replaces the statement element with either text or a
@@ -540,3 +544,42 @@ Inserting HTML/XML:
 .. code-block:: html
 
     <div tal:replace="structure table" />
+
+tal:on-error
+------------
+
+Handle errors
+
+Syntax
+~~~~~~
+
+``tal:on-error`` syntax::
+
+    argument ::= (['text'] | 'structure') expression
+
+Description
+~~~~~~~~~~~
+
+The ``tal:on-error`` statement provides error handling for your template.
+When a TAL statement produces an error, the TAL interpreter searches for
+a ``tal:on-error`` statement on the same element, then on the enclosing element,
+and so forth. The first tal:on-error found is invoked. It is treated
+as a ``tal:content`` statement.
+
+Examples
+~~~~~~~~
+
+Simple error message:
+
+.. code-block:: html
+
+    <b tal:on-error="string: Username is not defined!" 
+        tal:content="user.UserName">Samantha</b>
+
+Calling an error-handling utility:
+
+.. code-block:: html
+
+    <div tal:on-error="structure errorHandler.HandleTemplateError">
+        ...
+    </div>

@@ -69,6 +69,7 @@ namespace Templates
             Dictionary<string, MacroDelegate> __currentSlots = new Dictionary<string, MacroDelegate>();
             Dictionary<string, object> __paramMap = new Dictionary<string, object>();
             Dictionary<string, object> __currentParams = new Dictionary<string, object>();
+            MacroDelegate __currentOnErrorHandler = null;
             CommandInfo __currentCmdInfo = new CommandInfo();
             
             // Template globals
@@ -114,7 +115,8 @@ namespace Templates
                         __tagContentType,
                         __currentAttributes,
                         __repeatAttributesCopy,
-                        __currentCmdInfo
+                        __currentCmdInfo,
+                        __currentOnErrorHandler
                     };
                     __programStack.Push(vars);
                 };
@@ -132,6 +134,7 @@ namespace Templates
                     __currentAttributes = (Dictionary<string, Attr>)vars[8];
                     __repeatAttributesCopy = (Dictionary<string, Attr>)vars[9];
                     __currentCmdInfo = (CommandInfo)vars[10];
+                    __currentOnErrorHandler = (MacroDelegate)vars[11];
                 };
                 
                 ${body}
@@ -462,7 +465,7 @@ Global variable with namespace name allready exists.", programNamespace));
 					WriteToBody(@"//====================");
 					WriteToBody(@"MacroDelegate macro_{0}_{1} = delegate()", programNamespace, macro.Name);
 					WriteToBody(@"{{");
-					_rendererBodyTabs += "    ";
+					IndentBodyTabs();
 					WriteToBody(@"__CleanProgram();");
 
 					// Process METAL_DEFINE_PARAM commands
@@ -472,7 +475,7 @@ Global variable with namespace name allready exists.", programNamespace));
 					HandleCommands(macro.ProgramCommands.Where(c => c.CommandType != CommandType.MetalDefineParam));
 
 					// Finalize macro delegate
-					_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+					DedentBodyTabs();
 					WriteToBody(@"}};");
 					WriteToBody(@"{0}.macros.Add(""{1}"", macro_{0}_{1});", programNamespace, macro.Name);
 					WriteToBody(@"__macros.Add(@""{0}.{1}"", @""{2}"");", programNamespace, macro.Name, macro.TemplatePath);
@@ -628,6 +631,16 @@ Global variable with namespace name allready exists.", programNamespace));
 				Environment.NewLine, _rendererBodyTabs, text);
 		}
 
+		protected void IndentBodyTabs()
+		{
+			_rendererBodyTabs += "    ";
+		}
+
+		protected void DedentBodyTabs()
+		{
+			_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+		}
+
 		static string SafeVariableName(string str)
 		{
 			string name = "";
@@ -672,7 +685,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"object use_macro_delegate_{0} = {1};", subScopeId, expression);
 			WriteToBody(@"if (use_macro_delegate_{0} != null && use_macro_delegate_{0} is MacroDelegate)", subScopeId);
 			WriteToBody(@"{{");
-			_rendererBodyTabs += "    ";
+			IndentBodyTabs();
 			WriteToBody(@"__outputTag = 0;");
 			WriteToBody(@"__tagContent = use_macro_delegate_{0};", subScopeId);
 			WriteToBody(@"__tagContentType = 1;");
@@ -698,13 +711,13 @@ Global variable with namespace name allready exists.", programNamespace));
 				WriteToBody(@"//====================");
 				WriteToBody(@"MacroDelegate slot_{0}_delegate_{1} = delegate()", slotName, slotId);
 				WriteToBody(@"{{");
-				_rendererBodyTabs += "    ";
+				IndentBodyTabs();
 
 				// Process slot commands
 				HandleCommands(slot.ProgramCommands);
 
 				// Finalize slot delegate
-				_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+				DedentBodyTabs();
 				WriteToBody(@"}};");
 				WriteToBody(@"__slotMap[""{0}""] = slot_{0}_delegate_{1};", slotName, slotId);
 				WriteToBody(@"");
@@ -877,7 +890,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"        repeat[""{0}""].next(islast_{0}_{1});", varName, repeatSubScopeId);
 			WriteToBody(@"    }}");
 
-			_rendererBodyTabs += "    ";
+			IndentBodyTabs();
 		}
 
 		protected override void Handle_TAL_CONTENT(ICommand command)
@@ -892,6 +905,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteCmdInfo(command);
 
 			expression = FormatExpression(expression);
+			// TODO: on-error try-catch
 			WriteToBody(@"object content_expression_result_{0} = {1};", scopeId, expression);
 			WriteToBody(@"");
 			WriteToBody(@"if (content_expression_result_{0} == null)", scopeId);
@@ -920,6 +934,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteCmdInfo(command);
 
 			expression = FormatExpression(expression);
+			// TODO: on-error try-catch
 			WriteToBody(@"object content_expression_result_{0} = {1};", scopeId, expression);
 			WriteToBody(@"");
 			WriteToBody(@"if (content_expression_result_{0} == null)", scopeId);
@@ -949,6 +964,7 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			if (_currentScope == null || (_currentScope != null && _currentScope.Interpolation))
 			{
+				// TODO: on-error try-catch
 				string expression = FormatStringExpression(data);
 				WriteToBody(@"output.Write({0});", expression);
 			}
@@ -962,6 +978,7 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteCmdInfo(command);
 
+			// TODO: on-error try-catch
 			string code = FormatCodeBlock(codeCmd);
 			WriteToBodyNoFormat(code);
 		}
@@ -983,6 +1000,42 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"}}");
 		}
 
+		protected override void Handle_TAL_ONERROR(ICommand command)
+		{
+			// TODO:
+			var onErrorCmd = (TalOnError)command;
+
+			string expression = onErrorCmd.Expression;
+			bool structure = onErrorCmd.Structure;
+
+			string scopeId = _currentScope.Id;
+
+			WriteCmdInfo(command);
+
+			expression = FormatExpression(expression);
+			
+			// Create on-error macro delegate
+			WriteToBody(@"MacroDelegate on_error_macro_{0} = delegate()", scopeId);
+			WriteToBody(@"{{");
+			WriteToBody(@"    object on_error_expression_result_{0} = {1};", scopeId, expression);
+			WriteToBody(@"    ");
+			WriteToBody(@"    if (on_error_expression_result_{0} == null)", scopeId);
+			WriteToBody(@"    {{");
+			WriteToBody(@"        // Output none of our content or the existing content, but potentially the tags");
+			WriteToBody(@"        __moveToEndTag = true;", scopeId);
+			WriteToBody(@"    }}");
+			WriteToBody(@"    else if (!IsDefaultValue(on_error_expression_result_{0}))", scopeId);
+			WriteToBody(@"    {{");
+			WriteToBody(@"        // We have content, so let's suppress the natural content and output this!");
+			WriteToBody(@"        __tagContent = {0};", expression);
+			WriteToBody(@"        __tagContentType = {0};", structure ? 1 : 0);
+			WriteToBody(@"        __moveToEndTag = true;");
+			WriteToBody(@"    }}");
+			WriteToBody(@"}};");
+			WriteToBody(@"__currentOnErrorHandler = on_error_macro_{0};", scopeId);
+			WriteToBody(@"");
+		}
+
 		protected override void Handle_CMD_START_SCOPE(ICommand command)
 		{
 			// Pushes the current state onto the stack, and sets up the new state
@@ -998,7 +1051,7 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody("");
 			WriteToBody("// Start scope: {0}", _currentScope.Id);
 			WriteToBody("{{");
-			_rendererBodyTabs += "    ";
+			IndentBodyTabs();
 
 			string scopeId = _currentScope.Id;
 
@@ -1011,7 +1064,8 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"    __outputTag,");
 			WriteToBody(@"    __currentAttributes,");
 			WriteToBody(@"    __tagContent,");
-			WriteToBody(@"    __tagContentType");
+			WriteToBody(@"    __tagContentType,");
+			WriteToBody(@"    __currentOnErrorHandler");
 			WriteToBody(@"}};");
 			WriteToBody(@"");
 			WriteToBody(@"__scopeStack.Push(push_scope_{0});", scopeId);
@@ -1131,28 +1185,42 @@ Global variable with namespace name allready exists.", programNamespace));
 
 			WriteToBody(@"if (__tagContent != null)");
 			WriteToBody(@"{{");
-			WriteToBody(@"    if (__tagContentType == 1)");
+			WriteToBody(@"    try");
 			WriteToBody(@"    {{");
-			WriteToBody(@"        if (__tagContent is MacroDelegate)");
+			WriteToBody(@"        if (__tagContentType == 1)");
 			WriteToBody(@"        {{");
-			WriteToBody(@"            // Save our state!");
-			WriteToBody(@"            __PushProgram();");
-			WriteToBody(@"            // Execute macro or slot delegate");
-			WriteToBody(@"            ((MacroDelegate)__tagContent)();");
-			WriteToBody(@"            // Restore state");
-			WriteToBody(@"            __PopProgram();");
-			WriteToBody(@"            // End of the macro expansion (if any) so clear the slots and params");
-			WriteToBody(@"            __slotMap = new Dictionary<string, MacroDelegate>();");
-			WriteToBody(@"            __paramMap = new Dictionary<string, object>();");
+			WriteToBody(@"            if (__tagContent is MacroDelegate)");
+			WriteToBody(@"            {{");
+			WriteToBody(@"                // Save our state!");
+			WriteToBody(@"                __PushProgram();");
+			WriteToBody(@"                // Execute macro or slot delegate");
+			WriteToBody(@"                ((MacroDelegate)__tagContent)();");
+			WriteToBody(@"                // Restore state");
+			WriteToBody(@"                __PopProgram();");
+			WriteToBody(@"                // End of the macro expansion (if any) so clear the slots and params");
+			WriteToBody(@"                __slotMap = new Dictionary<string, MacroDelegate>();");
+			WriteToBody(@"                __paramMap = new Dictionary<string, object>();");
+			WriteToBody(@"            }}");
+			WriteToBody(@"            else");
+			WriteToBody(@"            {{");
+			WriteToBody(@"                output.Write((string)__tagContent);");
+			WriteToBody(@"            }}");
 			WriteToBody(@"        }}");
 			WriteToBody(@"        else");
 			WriteToBody(@"        {{");
-			WriteToBody(@"            output.Write(__tagContent);");
+			WriteToBody(@"            output.Write(Escape(FormatResult(__tagContent)));");
 			WriteToBody(@"        }}");
 			WriteToBody(@"    }}");
-			WriteToBody(@"    else");
+			WriteToBody(@"    catch(Exception ex_{0})", scopeId);
 			WriteToBody(@"    {{");
-			WriteToBody(@"        output.Write(Escape(FormatResult(__tagContent)));");
+			WriteToBody(@"       if (__currentOnErrorHandler is MacroDelegate)");
+			WriteToBody(@"       {{");
+			WriteToBody(@"           ((MacroDelegate)__currentOnErrorHandler)();");
+			WriteToBody(@"       }}");
+			WriteToBody(@"       if (__currentOnErrorHandler is MacroDelegate)");
+			WriteToBody(@"       {{");
+			WriteToBody(@"           throw;");
+			WriteToBody(@"       }}");
 			WriteToBody(@"    }}");
 			WriteToBody(@"}}");
 
@@ -1178,7 +1246,7 @@ Global variable with namespace name allready exists.", programNamespace));
 					WriteToBody(@"// Restore the current attributes");
 					WriteToBody(@"__currentAttributes = new Dictionary<string, Attr>(__currentAttributesCopy_{1});", scopeId, repeatScope.Id);
 					WriteToBody(@"");
-					_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+					DedentBodyTabs();
 					WriteToBody("}}");
 					WriteToBody(@"while (!islast_{0}_{1});", repeatScope.VarName, repeatScope.Id);
 					WriteToBody(@"END_REPEAT_{0}:", repeatScope.Id);
@@ -1188,7 +1256,7 @@ Global variable with namespace name allready exists.", programNamespace));
 				{
 					WriteToBody("");
 					WriteToBody("// End sub-scope: {0}", subScope.Id);
-					_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+					DedentBodyTabs();
 					WriteToBody("}}");
 				}
 			}
@@ -1201,10 +1269,11 @@ Global variable with namespace name allready exists.", programNamespace));
 			WriteToBody(@"__currentAttributes = (Dictionary<string, Attr>)pop_scope_{0}[2];", scopeId);
 			WriteToBody(@"__tagContent = (object)pop_scope_{0}[3];", scopeId);
 			WriteToBody(@"__tagContentType = (int)pop_scope_{0}[4];", scopeId);
+			WriteToBody(@"__currentOnErrorHandler = (MacroDelegate)pop_scope_{0}[5];", scopeId);
 
 			WriteToBody("");
 			WriteToBody("// End scope: {0}", scopeId);
-			_rendererBodyTabs = _rendererBodyTabs.Remove(_rendererBodyTabs.Length - 5, 4);
+			DedentBodyTabs();
 			WriteToBody("}}");
 
 			_currentScope = _scopeStack.Pop();

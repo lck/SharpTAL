@@ -39,6 +39,9 @@ namespace SharpTAL.TemplateProgram
 	// tal:omit-tag
 	// tal:attributes
 	//
+	// Since the on-error statement is only invoked when an error occurs,
+	// it does not appear in the list.
+	//
 	// There is a reasoning behind this ordering.  Because users often want
 	// to set up variables for use in other statements contained within this
 	// element or subelements, ``tal:define`` is executed first.
@@ -64,6 +67,7 @@ namespace SharpTAL.TemplateProgram
 		MetalImport = 107,
 
 		// TAL Commands
+		TalOnError = 1000,
 		TalDefine = 1001,
 		TalCondition = 1002,
 		TalRepeat = 1003,

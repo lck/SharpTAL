@@ -122,7 +122,8 @@ namespace SharpTAL.TemplateProgram
 				{CommandType.TalContent, Handle_TAL_CONTENT},
 				{CommandType.TalReplace, Handle_TAL_REPLACE},
 				{CommandType.TalAttributes, Handle_TAL_ATTRIBUTES},
-				{CommandType.TalOmittag, Handle_TAL_OMITTAG}
+				{CommandType.TalOmittag, Handle_TAL_OMITTAG},
+				{CommandType.TalOnError, Handle_TAL_ONERROR}
 			};
 		}
 
@@ -162,7 +163,7 @@ namespace SharpTAL.TemplateProgram
 				// Compile template program from template body
 				if (importedProgram == null)
 				{
-					// TODO: Implement the template loader (see TODO.txt) - load from filesystem by default
+					// TODO: Implement the template loader (load from filesystem by default)
 					string templateBody = File.ReadAllText(templatePath);
 					importedProgram = GetTemplateProgram(templateBody, templatePath);
 					ti.ImportedPrograms.Add(templatePath, importedProgram);
@@ -229,7 +230,7 @@ namespace SharpTAL.TemplateProgram
 				att.Value = att.UnescapedValue;
 
 			// Sorted dictionary of TAL attributes grouped by attribute type. The dictionary is sorted by the attribute type.
-			SortedDictionary<CommandType, List<TagAttribute>> talAttributesDictionary = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
+			var talAttributesDictionary = new SortedDictionary<CommandType, List<TagAttribute>>(new CommandTypeComparer());
 			// Clean HTML/XML attributes
 			var cleanAttributes = new List<TagAttribute>();
 			var popFunctionList = new List<Action>();
@@ -555,7 +556,8 @@ namespace SharpTAL.TemplateProgram
 				{string.Format("{0}:replace", prefix), CommandType.TalReplace},
 				{string.Format("{0}:omit-tag", prefix), CommandType.TalOmittag},
 				{string.Format("{0}:condition", prefix), CommandType.TalCondition},
-				{string.Format("{0}:repeat", prefix), CommandType.TalRepeat}
+				{string.Format("{0}:repeat", prefix), CommandType.TalRepeat},
+				{string.Format("{0}:on-error", prefix), CommandType.TalOnError}
 			};
 		}
 
@@ -1127,6 +1129,48 @@ namespace SharpTAL.TemplateProgram
 				expression = argument;
 
 			return new List<Command> { new TalOmitTag(_currentStartTag, expression) };
+		}
+
+		List<Command> Handle_TAL_ONERROR(List<TagAttribute> attributes)
+		{
+			// Only last declared attribute is valid
+			string argument = attributes[attributes.Count - 1].Value;
+
+			// Compile a on-error command
+
+			// Sanity check
+			if (argument.Length == 0)
+			{
+				// No argument passed
+				const string msg = "No argument passed!  on-error commands must be of the form: 'expression'";
+				throw new TemplateParseException(_currentStartTag, msg);
+			}
+
+			bool structure = false;
+			string expression;
+
+			string[] attProps = argument.Split(new[] { ' ' });
+			if (attProps.Length > 1)
+			{
+				if (attProps[0] == "structure")
+				{
+					structure = true;
+					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
+				}
+				else if (attProps[0] == "text")
+				{
+					expression = string.Join(" ", attProps, 1, attProps.Length - 1);
+				}
+				else
+				{
+					// It's not a type selection after all - assume it's part of the path
+					expression = argument;
+				}
+			}
+			else
+				expression = argument;
+
+			return new List<Command> { new TalOnError(_currentStartTag, expression, structure) };
 		}
 	}
 }

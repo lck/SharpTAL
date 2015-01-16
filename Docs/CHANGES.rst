@@ -1,6 +1,12 @@
 Changes
 =======
 
+3.1 (2014-06-??)
+----------------
+
+- Added support for the tal:on-error from the reference specification
+
+
 3.0 (2014-03-04)
 ----------------
 

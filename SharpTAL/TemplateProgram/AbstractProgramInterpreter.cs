@@ -48,6 +48,7 @@ namespace SharpTAL.TemplateProgram
 		protected abstract void Handle_TAL_REPLACE(ICommand command);
 		protected abstract void Handle_TAL_ATTRIBUTES(ICommand command);
 		protected abstract void Handle_TAL_OMITTAG(ICommand command);
+		protected abstract void Handle_TAL_ONERROR(ICommand command);
 		protected abstract void Handle_CMD_START_SCOPE(ICommand command);
 		protected abstract void Handle_CMD_OUTPUT(ICommand command);
 		protected abstract void Handle_CMD_START_TAG(ICommand command);
@@ -71,6 +72,7 @@ namespace SharpTAL.TemplateProgram
 				{CommandType.TalReplace, Handle_TAL_REPLACE},
 				{CommandType.TalAttributes, Handle_TAL_ATTRIBUTES},
 				{CommandType.TalOmittag, Handle_TAL_OMITTAG},
+				{CommandType.TalOnError, Handle_TAL_ONERROR},
 				{CommandType.CmdStartScope, Handle_CMD_START_SCOPE},
 				{CommandType.CmdOutput, Handle_CMD_OUTPUT},
 				{CommandType.CmdStartTag, Handle_CMD_START_TAG},
