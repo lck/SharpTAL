@@ -419,7 +419,11 @@ namespace Templates
 			string usings = "";
 			foreach (string ns in namespacesList)
 			{
-				usings = string.Format("{0}using {1};{2}", usings, ns, Environment.NewLine);
+                string nst = ns.Trim();
+                if (! String.IsNullOrEmpty(nst))
+                {
+                    usings = string.Format("{0}using {1};{2}", usings, nst, Environment.NewLine);
+                };
 			}
 
 			//-------------------------
