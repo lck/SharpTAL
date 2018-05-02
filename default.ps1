@@ -52,7 +52,7 @@ task Test -depends Compile {
  $test_prjs | ForEach-Object { 
         Write-Host "Testing $build_dir\$_ (default)"
 	Set-Location -Path $build_dir
-        exec { &"$nUnit" "$build_dir\$_" }
+        exec { &"$nUnit" "$build_dir\$_"  --labels=All }
  }
 }
 
