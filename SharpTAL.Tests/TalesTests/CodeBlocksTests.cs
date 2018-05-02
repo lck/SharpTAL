@@ -17,7 +17,6 @@ namespace SharpTAL.Tests.TalesTests
 		}
 
 		[Test]
-		[ExpectedException(typeof())]
 		public void TestCodeBlockInvalid()
 		{
 			Assert.Throws<TemplateParseException>(() => RunTest(@"<?csharp if (1 > 2) { ?>",
