@@ -15,7 +15,7 @@ namespace SharpTAL.Tests.TalTests
 		{
 		}
 
-		[OneTimeTearDowng]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}
