@@ -73,8 +73,8 @@ namespace SharpTAL.Tests.TalTests
         public void TestInvalidPath()
         {
             Assert.Throws<CompileSourceException>(() => RunTest(@"<html><p tal:repeat=""entry wibble"">Hello</p></html>",
-                "<html></html>",
-                                                           "Repeat of non-existant element failed"));
+                                                                "<html></html>",
+                                                                "Repeat of non-existant element failed"));
         }
 
         [Test]
