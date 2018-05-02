@@ -53,6 +53,7 @@ task Test -depends Compile {
         Write-Host "Testing $build_dir\$_ (default)"
 	Set-Location -Path $build_dir
         exec { &"$nUnit" "$build_dir\$_"  --labels=All }
+	Set-Location -Path $base_dir
  }
 }
 
