@@ -32,12 +32,12 @@ namespace SharpTAL.Tests.TalTests
 			}
 		}
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}

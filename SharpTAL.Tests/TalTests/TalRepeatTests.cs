@@ -11,12 +11,12 @@ namespace SharpTAL.Tests.TalTests
     {
         public static Dictionary<string, object> globals;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void SetUpClass()
         {
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void CleanupClass()
         {
         }
@@ -36,7 +36,7 @@ namespace SharpTAL.Tests.TalTests
             globals.Add("bigList", bigList);
             globals.Add("fourList", new List<string>() { "zero", "one", "two", "three" });
             globals.Add("nested", new List<Dictionary<string, IEnumerable>>()
-            { 
+            {
                 {
                     new Dictionary<string, IEnumerable>()
                     {

@@ -22,12 +22,12 @@ namespace SharpTAL.Tests.TalesTests
 			return 0;
 		}
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}

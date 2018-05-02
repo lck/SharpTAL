@@ -19,12 +19,12 @@ namespace SharpTAL.Tests.TalTests
 	{
 		public static Dictionary<string, object> globals;
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}

@@ -8,7 +8,7 @@ namespace SharpTAL.Tests.CacheTests
 	[TestFixture]
 	public class FileSystemTemplateCacheTests : CacheTestsBase
 	{
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 			string cacheFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Template Cache");
