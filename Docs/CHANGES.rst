@@ -1,6 +1,20 @@
 Changes
 =======
 
+3.0.1 (2017-05-05)
+------------------
+
+Internal:
+
+- Tests were converted to NUnit version 3. [Evgeny Cherkashin]
+  Removed content of packages. Now it is restored during build.
+  Dependency packages versions updated to the latest.
+
+Bugs Fixed:
+
+- Code generator used "nil" namespace, it is filtered out. [Evgeny Cherkashin]
+
+
 3.0 (2014-03-04)
 ----------------
 
