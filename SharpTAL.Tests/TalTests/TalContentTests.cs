@@ -34,10 +34,10 @@ namespace SharpTAL.Tests.TalTests
 		{
 			string entry = @"Some structure: <b tal:content=""weblog/subject""></b>";
 			Dictionary<string, string> weblog = new Dictionary<string, string>
-            {
-                { "subject", "Test subject" },
-                { "entry",  entry }
-            };
+			{
+				{ "subject", "Test subject" },
+				{ "entry",  entry }
+			};
 			globals = new Dictionary<string, object>();
 			globals.Add("test", "testing");
 			globals.Add("one", new List<object>() { 1 });
@@ -102,9 +102,9 @@ namespace SharpTAL.Tests.TalTests
 		public void TestContentStructure()
 		{
 			Dictionary<string, object> weblog = new Dictionary<string, object>
-            {
-                { "subject", "Test subject" },
-            };
+			{
+				{ "subject", "Test subject" },
+			};
 			globals["weblog"] = weblog;
 			string macros = @"<p metal:define-macro=""entry"">Some structure: <b tal:content='weblog[""subject""]'></b></p>";
 			RunTest(macros + @"<html><p metal:use-macro='macros[""entry""]'>Original</p></html>"
@@ -136,5 +136,19 @@ namespace SharpTAL.Tests.TalTests
 				, @"<html><p>str</p></html>"
 				, "Multiline tag did not evaluate to expected result");
 		}
+		[Test]
+		public void TestRenderCSharpObject()
+		{
+			globals.Add("model", new TestModel());
+			RunTest(@"<html><p tal:content='model.Value'></p></html>"
+					, @"<html><p>a_string</p></html>"
+					, "CSharp object reference process failed"
+				   );
+		}
+	}
+
+	public class TestModel
+	{
+		public string Value = "a_string";
 	}
 }
