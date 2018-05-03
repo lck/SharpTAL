@@ -46,12 +46,14 @@ task Compile -depends Init {
 task Test -depends Compile {
  Write-Host $test_prjs
  
- $nUnit = Get-PackagePath NUnit.Runners
- $nUnit = "$nUnit\tools\nunit-console.exe"
+ $nUnit = Get-PackagePath NUnit.ConsoleRunner
+ $nUnit = "$nUnit\tools\nunit3-console.exe"
  
  $test_prjs | ForEach-Object { 
         Write-Host "Testing $build_dir\$_ (default)"
-        exec { &"$nUnit" "$build_dir\$_" }
+	Set-Location -Path $build_dir
+        exec { &"$nUnit" "$build_dir\$_"  --labels=All }
+	Set-Location -Path $base_dir
  }
 }
 
