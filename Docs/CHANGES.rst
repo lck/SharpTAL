@@ -12,7 +12,7 @@ Internal:
 
 Bugs Fixed:
 
-- Code generator used "nil" namespace, it is filtered out. [Evgeny Cherkashin]
+- Code generator used "null" namespace, it is filtered out. [Evgeny Cherkashin]
 
 
 3.0 (2014-03-04)
