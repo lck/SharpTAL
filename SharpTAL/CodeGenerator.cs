@@ -53,7 +53,7 @@ namespace Templates
     public class Template_${template_hash}
     {
         public const string GENERATOR_VERSION = ""${generator_version}"";
-        
+
         public static void Render(StreamWriter output, SharpTAL.IRenderContext context)
         {
             Stack<List<object>> __programStack = new Stack<List<object>>();
@@ -70,20 +70,20 @@ namespace Templates
             Dictionary<string, object> __paramMap = new Dictionary<string, object>();
             Dictionary<string, object> __currentParams = new Dictionary<string, object>();
             CommandInfo __currentCmdInfo = new CommandInfo();
-            
+
             // Template globals
             var repeat = (SharpTAL.IRepeatDictionary)context[""repeat""];
             // TODO: get macros from context
             Dictionary<string, MacroDelegate> macros = new Dictionary<string, MacroDelegate>();
-            
+
             FormatResult = (Func<object, string>)context[""__FormatResult""];
             IsFalseResult = (Func<object, bool>)context[""__IsFalseResult""];
-            
+
             try
             {
                 // Globals
                 ${globals}
-                
+
                 // Delegates
                 MacroDelegate __CleanProgram = delegate()
                 {
@@ -133,13 +133,13 @@ namespace Templates
                     __repeatAttributesCopy = (Dictionary<string, Attr>)vars[9];
                     __currentCmdInfo = (CommandInfo)vars[10];
                 };
-                
+
                 ${body}
             }
             catch (Exception ex)
             {
                 string msg = string.Format(""Render method failed with following error:{0}  {1}"", Environment.NewLine, ex.Message);
-                
+
                 // Current Command Info
                 msg = string.Format(""{0}{1}{1}Current Command Info:"", msg, Environment.NewLine);
                 if (__currentCmdInfo != null)
@@ -150,7 +150,7 @@ namespace Templates
                     msg = string.Format(@""{0}{1}  Position:   {2}"", msg, Environment.NewLine, __currentCmdInfo.Position);
                     msg = string.Format(@""{0}{1}  Source:     {2}"", msg, Environment.NewLine, __currentCmdInfo.Source);
                 }
-                
+
                 // Macros
                 msg = string.Format(""{0}{1}{1}Macros:"", msg, Environment.NewLine);
                 foreach (string key in __macros.Keys)
@@ -162,23 +162,23 @@ namespace Templates
                     }
                     msg = string.Format(@""{0}{1}  """"{2}""""{3}"", msg, Environment.NewLine, key, importInfo);
                 }
-                
+
                 throw new Exception(msg, ex);
             }
         }
-        
+
         private static Func<object, string> FormatResult { get; set; }
         private static Func<object, bool> IsFalseResult { get; set; }
         private const string DEFAULT_VALUE = ""${defaultvalue}"";
         private static readonly Regex _re_needs_escape = new Regex(@""[&<>""""\']"");
         private static readonly Regex _re_amp = new Regex(@""&(?!([A-Za-z]+|#[0-9]+);)"");
         private delegate void MacroDelegate();
-        
+
         private class ProgramNamespace
         {
             public Dictionary<string, MacroDelegate> macros = new Dictionary<string, MacroDelegate>();
         }
-        
+
         private class CommandInfo
         {
             public CommandInfo()
@@ -202,7 +202,7 @@ namespace Templates
             public int Position;
             public string Source;
         }
-        
+
         private class Attr
         {
             public string Name;
@@ -211,7 +211,7 @@ namespace Templates
             public string Quote;
             public string QuoteEntity;
         }
-        
+
         private static string Escape(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -231,7 +231,7 @@ namespace Templates
                 str = str.Replace("">"", ""&gt;"");
             return str;
         }
-        
+
         private static string EscapeAttrValue(string str, string quote, string quoteEntity)
         {
             if (string.IsNullOrEmpty(str))
@@ -241,7 +241,7 @@ namespace Templates
                 str = str.Replace(quote, quoteEntity);
             return str;
         }
-        
+
         private static bool IsDefaultValue(object obj)
         {
             if ((obj is string) && ((string)obj) == DEFAULT_VALUE)
@@ -333,7 +333,6 @@ namespace Templates
 					ProcessProgramMacros(importedProgram, destNs, programNamespaces);
 				}
 			}
-
 			// Main template macros are also in the global namespace
 			WriteToGlobals(@"macros = {0}.macros;", MainProgramNamespace);
 
@@ -419,6 +418,7 @@ namespace Templates
 			string usings = "";
 			foreach (string ns in namespacesList)
 			{
+                if (ns == null) continue;
                 string nst = ns.Trim();
                 if (! String.IsNullOrEmpty(nst))
                 {
