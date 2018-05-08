@@ -10,12 +10,12 @@ namespace SharpTAL.Tests.MetalTests
 	{
 		public static Dictionary<string, object> globals;
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}
@@ -62,8 +62,8 @@ namespace SharpTAL.Tests.MetalTests
 		public void TestMultipleImportOneCustomNs()
 		{
 			RunTest(@"<html><div metal:import=""imp1:METALTests/Imports/Imports 1.html;imp1:METALTests/Imports/Imports 2.html""><i metal:use-macro='imp1.macros[""Macro2""]'>Now</i></div></html>",
-				@"<html><div>Macro2</div></html>",
-				"Multiple import macros to one custom namespace failed.");
+				    @"<html><div>Macro2</div></html>",
+				    "Multiple import macros to one custom namespace failed.");
 		}
 
 		[Test]

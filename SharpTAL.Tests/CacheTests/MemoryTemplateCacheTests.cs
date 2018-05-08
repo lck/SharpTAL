@@ -7,7 +7,7 @@ namespace SharpTAL.Tests.CacheTests
 	[TestFixture]
 	public class MemoryTemplateCacheTests : CacheTestsBase
 	{
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 			Cache = new MemoryTemplateCache();

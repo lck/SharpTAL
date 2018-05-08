@@ -22,12 +22,12 @@ namespace SharpTAL.Tests.TalesTests
 			return 0;
 		}
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void SetUpClass()
 		{
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void CleanupClass()
 		{
 		}
@@ -159,21 +159,19 @@ namespace SharpTAL.Tests.TalesTests
 		}
 
 		[Test]
-		[ExpectedException(typeof(CompileSourceException))]
 		public void TestNoSuchPath()
 		{
-			RunTest(@"<html tal:content=""string:${no.such.path}"">Exists</html>",
-			   "<html></html>",
-			   "No such path failed!");
+			Assert.Throws<CompileSourceException>(() => RunTest(@"<html tal:content=""string:${no.such.path}"">Exists</html>",
+                                                                "<html></html>",
+                                                                "No such path failed!"));
 		}
 
 		[Test]
-		[ExpectedException(typeof(CompileSourceException))]
 		public void TestPartialMissing()
 		{
-			RunTest(@"<html tal:content=""string: First bit here: ${alt} second bit not: ${nosuchname} there."">Exists</html>",
-				"<html>First bit here: Wobble the way second bit not:  there.</html>",
-				"Combination of non-existant variable and existing test failed!");
+			Assert.Throws<CompileSourceException>(() => RunTest(@"<html tal:content=""string: First bit here: ${alt} second bit not: ${nosuchname} there."">Exists</html>",
+                                                                "<html>First bit here: Wobble the way second bit not:  there.</html>",
+                                                                "Combination of non-existant variable and existing test failed!"));
 		}
 	}
 }

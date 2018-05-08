@@ -21,3 +21,5 @@ Docs/_build/
 build/
 SharpTAL*.nupkg
 SharpTAL*.zip
+.vs
+/packages/*/
