@@ -7,8 +7,8 @@ Changes
 Internal:
 
 - Tests were converted to NUnit version 3. [Evgeny Cherkashin]
-  Removed content of packages. Now it is restored during build.
-  Dependency packages versions updated to the latest.
+- Removed content of packages. Now it is restored during build. [Evgeny Cherkashin]
+- Dependency packages versions updated to the latest. [Evgeny Cherkashin]
 
 Bugs Fixed:
 
